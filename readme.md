@@ -86,6 +86,14 @@ Open **Manage → Device** and use the **iOS Simulator** section to:
 
 ---
 
+## UI Preview
+
+![FRTMProxy Light UI](.github/Screenshot%202026-01-12%20alle%2016.29.04.png)
+
+![FRTMProxy Dark UI](.github/Screenshot%202026-01-12%20alle%2016.29.15.png)
+
+---
+
 ## Core Technologies
 
 - **SwiftUI** for every view (macOS target).
