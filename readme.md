@@ -2,9 +2,6 @@
 
 FRTMProxy is a macOS app built with SwiftUI to sniff, inspect, and debug HTTP/S traffic in real time with a strong focus on user experience. Inside you’ll find a ready-to-use MITM proxy, a fast inspector, and an editor to map local responses in just a few clicks.
 
-![Dark theme](media/Screenshot%202025-11-19%20alle%2009.15.07.png)
-![Light theme](media/Screenshot%202025-11-19%20alle%2009.15.16.png)
-
 > **Note**: The application is not meant for production execution, but as an internal tool for API debugging.
 
 ---
