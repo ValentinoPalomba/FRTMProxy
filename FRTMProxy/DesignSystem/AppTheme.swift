@@ -559,6 +559,118 @@ enum ThemeLibrary {
         }
     )
 
+    private static let eInkDark = AppTheme(
+        id: "e-ink-dark",
+        name: "E Ink Dark",
+        description: "Un tema scuro che simula l'inversione di un display E Ink.",
+        preferredColorScheme: .dark,
+        category: .dark,
+        previewSwatches: [
+            Color(hex: "000000"),
+            Color(hex: "1C1C1C"),
+            Color(hex: "FFFFFF")
+        ],
+        palette: { _ in
+            palette(
+                background: "000000",
+                surface: "1C1C1C",
+                surfaceElevated: "2C2C2C",
+                accent: "FFFFFF",
+                accentSecondary: "AAAAAA",
+                success: "FFFFFF",
+                warning: "FFFFFF",
+                danger: "FFFFFF",
+                textPrimary: "FFFFFF",
+                textSecondary: "888888",
+                border: "333333"
+            )
+        }
+    )
+
+    private static let eInkLight = AppTheme(
+        id: "e-ink-light",
+        name: "E Ink Light",
+        description: "Un tema ad alto contrasto che imita un display E Ink.",
+        preferredColorScheme: .light,
+        category: .light,
+        previewSwatches: [
+            Color(hex: "F7F7F7"),
+            Color(hex: "FFFFFF"),
+            Color(hex: "000000")
+        ],
+        palette: { _ in
+            palette(
+                background: "F7F7F7",
+                surface: "FFFFFF",
+                surfaceElevated: "F2F2F2",
+                accent: "000000",
+                accentSecondary: "555555",
+                success: "000000",
+                warning: "000000",
+                danger: "000000",
+                textPrimary: "000000",
+                textSecondary: "777777",
+                border: "E0E0E0"
+            )
+        }
+    )
+
+    private static let notionDark = AppTheme(
+        id: "notion-dark",
+        name: "Notion Dark",
+        description: "Una versione scura del tema Notion per non affaticare gli occhi.",
+        preferredColorScheme: .dark,
+        category: .dark,
+        previewSwatches: [
+            Color(hex: "191919"),
+            Color(hex: "252525"),
+            Color(hex: "D4D4D4")
+        ],
+        palette: { _ in
+            palette(
+                background: "191919",
+                surface: "252525",
+                surfaceElevated: "2E2E2E",
+                accent: "4B8BFF",
+                accentSecondary: "FFA633",
+                success: "34D399",
+                warning: "FBBF24",
+                danger: "F87171",
+                textPrimary: "D4D4D4",
+                textSecondary: "9B9B9B",
+                border: "3A3A3A"
+            )
+        }
+    )
+
+    private static let notionLight = AppTheme(
+        id: "notion-light",
+        name: "Notion Light",
+        description: "Un tema pulito e minimale ispirato a Notion.",
+        preferredColorScheme: .light,
+        category: .light,
+        previewSwatches: [
+            Color(hex: "FFFFFF"),
+            Color(hex: "F1F1EF"),
+            Color(hex: "373530")
+        ],
+        palette: { _ in
+            palette(
+                background: "FFFFFF",
+                surface: "F7F7F5",
+                surfaceElevated: "F1F1EF",
+                accent: "3B82F6",
+                accentSecondary: "F59E0B",
+                success: "22C55E",
+                warning: "F97316",
+                danger: "EF4444",
+                textPrimary: "373530",
+                textSecondary: "787774",
+                border: "E5E5E3"
+            )
+        }
+    )
+
     private static let gruvboxDark = AppTheme(
         id: "gruvbox-dark",
         name: "Gruvbox Dark",
@@ -607,7 +719,11 @@ enum ThemeLibrary {
         nordDark,
         tokyoNight,
         gruvboxLight,
-        gruvboxDark
+        gruvboxDark,
+        notionLight,
+        notionDark,
+        eInkLight,
+        eInkDark
     ]
 
     static var defaultTheme: AppTheme { systemTheme }
