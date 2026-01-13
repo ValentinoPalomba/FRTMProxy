@@ -14,6 +14,7 @@ final class ProxyViewModel: ObservableObject {
     @Published private(set) var activePort: Int
     @Published var breakpointRules: [String: FlowBreakpointRule] = [:]
     @Published private(set) var activeBreakpointHit: FlowBreakpointHit?
+    @Published private(set) var activeTrafficProfile: TrafficProfile = TrafficProfileLibrary.disabled
     
     private let service: ProxyServiceProtocol
     private let ruleStore: MapRuleStoreProtocol
@@ -88,6 +89,10 @@ final class ProxyViewModel: ObservableObject {
         flows.removeAll()
         selectedFlowID = nil
         service.clearFlows()
+    }
+
+    func selectTrafficProfile(_ profile: TrafficProfile) {
+        setTrafficProfile(profile)
     }
     
     func mapResponse(body: String, status: Int? = nil, headers: [String: String]? = nil) {
@@ -393,10 +398,21 @@ final class ProxyViewModel: ObservableObject {
             }
             .store(in: &settingsCancellables)
 
+        settings.$selectedTrafficProfileID
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] profileID in
+                guard let self else { return }
+                let profile = TrafficProfileLibrary.profile(with: profileID)
+                self.setTrafficProfile(profile)
+            }
+            .store(in: &settingsCancellables)
+
         defaultPort = settings.defaultPort
         autoClearOnStart = settings.autoClearOnStart
         restrictInterceptionToHosts = settings.restrictInterceptionToActivePinnedHosts
         interceptionHosts = settings.pinnedHosts.filter(\.isActive).map(\.host)
+        setTrafficProfile(settings.activeTrafficProfile, force: true)
 
         if settings.autoStartProxy && !isRunning {
             startProxy()
@@ -556,7 +572,11 @@ final class ProxyViewModel: ObservableObject {
         service.isRunningPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] running in
-                self?.isRunning = running
+                guard let self else { return }
+                self.isRunning = running
+                if running {
+                    self.service.applyTrafficProfile(self.activeTrafficProfile)
+                }
             }
             .store(in: &cancellables)
         
@@ -597,6 +617,16 @@ final class ProxyViewModel: ObservableObject {
     private func persistBreakpoints() {
         let array = breakpointRules.values.sorted(by: { $0.key < $1.key })
         breakpointStore.save(breakpoints: array)
+    }
+
+    private func setTrafficProfile(_ profile: TrafficProfile, force: Bool = false) {
+        if !force && profile == activeTrafficProfile {
+            return
+        }
+        activeTrafficProfile = profile
+        if isRunning {
+            service.applyTrafficProfile(profile)
+        }
     }
 
     private func saveBreakpointRule(_ rule: FlowBreakpointRule) {

@@ -26,6 +26,10 @@ final class SettingsStore: ObservableObject {
         didSet { defaults.set(restrictInterceptionToActivePinnedHosts, forKey: restrictInterceptionKey) }
     }
 
+    @Published var selectedTrafficProfileID: String {
+        didSet { defaults.set(selectedTrafficProfileID, forKey: trafficProfileKey) }
+    }
+
     private let defaults = UserDefaults.standard
     private let themeKey = "settings.theme"
     private let portKey = "settings.defaultPort"
@@ -33,9 +37,14 @@ final class SettingsStore: ObservableObject {
     private let autoClearKey = "settings.autoClear"
     private let pinnedHostsKey = "settings.pinnedHosts"
     private let restrictInterceptionKey = "settings.restrictInterceptionToActivePinnedHosts"
+    private let trafficProfileKey = "settings.trafficProfile"
 
     var activeTheme: AppTheme {
         ThemeLibrary.theme(with: selectedThemeID)
+    }
+
+    var activeTrafficProfile: TrafficProfile {
+        TrafficProfileLibrary.profile(with: selectedTrafficProfileID)
     }
 
     init() {
@@ -48,6 +57,8 @@ final class SettingsStore: ObservableObject {
         self.autoClearOnStart = defaults.bool(forKey: autoClearKey)
         self.pinnedHosts = SettingsStore.loadPinnedHosts(from: defaults, key: pinnedHostsKey)
         self.restrictInterceptionToActivePinnedHosts = defaults.bool(forKey: restrictInterceptionKey)
+        let storedProfileID = defaults.string(forKey: trafficProfileKey)
+        self.selectedTrafficProfileID = TrafficProfileLibrary.profile(with: storedProfileID).id
     }
 
     func pinHost(_ rawHost: String) {

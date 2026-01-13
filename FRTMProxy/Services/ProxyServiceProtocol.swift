@@ -14,6 +14,7 @@ protocol ProxyServiceProtocol: AnyObject {
     func deleteRule(forKey key: String)
     func mockRequest(for flowID: String, body: String, headers: [String: String]?)
     func mockResponse(for flowID: String, body: String, status: Int?, headers: [String: String]?)
+    func applyTrafficProfile(_ profile: TrafficProfile)
     func retryFlow(flowID: String, method: String, url: String, body: String?, headers: [String: String])
     func updateBreakpointRule(_ rule: FlowBreakpointRule)
     func deleteBreakpointRule(forKey key: String)

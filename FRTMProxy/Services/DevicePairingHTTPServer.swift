@@ -294,37 +294,36 @@ final class DevicePairingHTTPServer {
           <style>
             :root {
               color-scheme: light dark;
-              /* Based on Xcode Light Theme */
-              --bg: #F5F5F7;
+              --bg: #F9F9FB;
               --surface: #FFFFFF;
-              --surface-elevated: #ECEEF3;
-              --text: #131417;
-              --text-muted: #5E5E65;
-              --accent: #0A84FF;
-              --border: #D2D2D7;
-              --shadow: rgba(0, 0, 0, 0.07);
+              --surface-elevated: #F2F3F7;
+              --text: #1D1D1F;
+              --text-muted: #6E6E73;
+              --accent: #007AFF;
+              --accent-secondary: #1FD4A9;
+              --border: #EAEAEB;
+              --shadow: rgba(15, 23, 42, 0.08);
             }
             @media (prefers-color-scheme: dark) {
               :root {
-                /* Based on Xcode Dark Theme */
-                --bg: #1C1C1E;
-                --surface: #1F1F23;
-                --surface-elevated: #2C2C3A;
-                --text: #F2F2F7;
-                --text-muted: #8E8E93;
-                --accent: #0A84FF;
-                --border: #32323C;
-                --shadow: rgba(0, 0, 0, 0.25);
+                --bg: #0C121B;
+                --surface: #111927;
+                --surface-elevated: #151E2D;
+                --text: #E7EDF6;
+                --text-muted: #8C9AAF;
+                --accent: #1FD4A9;
+                --accent-secondary: #2CA0FF;
+                --border: #1E2735;
+                --shadow: rgba(0, 0, 0, 0.45);
               }
             }
             *, *::before, *::after { box-sizing: border-box; }
             body {
-              font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", system-ui, sans-serif;
+              font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
               background: var(--bg);
               color: var(--text);
               margin: 0;
               min-height: 100dvh;
-              -webkit-font-smoothing: antialiased;
             }
             .page {
               max-width: 560px;
@@ -341,14 +340,12 @@ final class DevicePairingHTTPServer {
             }
             .eyebrow {
               text-transform: uppercase;
-              letter-spacing: 0.1em;
+              letter-spacing: 0.2em;
               font-size: 11px;
-              font-weight: 600;
               color: var(--accent);
             }
             h1 {
               font-size: 28px;
-              letter-spacing: -0.01em;
               margin: 0;
             }
             p {
@@ -361,7 +358,7 @@ final class DevicePairingHTTPServer {
               border: 1px solid var(--border);
               border-radius: 22px;
               padding: 20px;
-              box-shadow: 0 10px 30px var(--shadow);
+              box-shadow: 0 18px 40px var(--shadow);
             }
             .profile-card {
               display: flex;
@@ -401,7 +398,6 @@ final class DevicePairingHTTPServer {
             .stat .value {
               font-size: 16px;
               font-weight: 600;
-              font-family: -apple-system-ui-monospaced, "SF Mono", "Menlo", monospace;
               color: var(--text);
             }
             .primary {
@@ -414,14 +410,12 @@ final class DevicePairingHTTPServer {
               font-weight: 600;
               font-size: 15px;
               text-decoration: none;
-              color: white;
-              background: var(--accent);
-              box-shadow: 0 8px 24px -4px var(--accent);
-              transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+              color: #0B111C;
+              background: linear-gradient(120deg, var(--accent) 0%, var(--accent-secondary) 100%);
+              box-shadow: 0 12px 30px rgba(0,0,0,0.15);
             }
             .primary:active {
-              transform: translateY(1px) scale(0.99);
-              box-shadow: 0 4px 12px -2px var(--accent);
+              transform: translateY(1px);
             }
             .steps {
               list-style: none;
@@ -436,7 +430,6 @@ final class DevicePairingHTTPServer {
               gap: 12px;
             }
             .step-index {
-              flex-shrink: 0;
               width: 32px;
               height: 32px;
               border-radius: 12px;

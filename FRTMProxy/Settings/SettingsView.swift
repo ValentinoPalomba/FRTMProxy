@@ -52,6 +52,21 @@ struct SettingsView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
+
+            Section(header: Text("Traffic Profiles")) {
+                Picker("Simulated network", selection: $settings.selectedTrafficProfileID) {
+                    ForEach(TrafficProfileLibrary.presets) { profile in
+                        Text(profile.name).tag(profile.id)
+                    }
+                }
+                .pickerStyle(.menu)
+                Text(TrafficProfileLibrary.profile(with: settings.selectedTrafficProfileID).summary)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                Text("Presets inject latency, bandwidth caps and packet loss on intercepted traffic. Switching profile while the proxy runs takes effect immediately.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
     }

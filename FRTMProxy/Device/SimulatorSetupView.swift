@@ -46,7 +46,7 @@ final class SimulatorSetupViewModel: ObservableObject {
                 await MainActor.run {
                     self?.bootedSimulators = devices
                     self?.isInstalling = false
-                    self?.statusMessage = message.isEmpty ? "Certificato installato." : message
+                    self?.statusMessage = message.isEmpty ? "Certificate installed successfully." : message
                 }
             } catch {
                 await MainActor.run {
@@ -85,7 +85,7 @@ struct SimulatorSetupView: View {
             Text("iOS Simulator")
                 .font(DesignSystem.Fonts.mono(16, weight: .bold))
                 .foregroundStyle(colors.textPrimary)
-            Text("Installa il certificato mitmproxy sui simulatori avviati con un clic.")
+            Text("Install the mitmproxy certificate on booted simulators with one click.")
                 .font(DesignSystem.Fonts.sans(12, weight: .medium))
                 .foregroundStyle(colors.textSecondary)
         }
@@ -93,9 +93,9 @@ struct SimulatorSetupView: View {
 
     private var instructionList: some View {
         VStack(alignment: .leading, spacing: 8) {
-            instructionRow(1, "Avvia almeno un simulatore in Xcode (stato booted).")
-            instructionRow(2, "Premi “Install certificate” per caricare il certificato nei keychain simulatori.")
-            instructionRow(3, "Riavvia l’app nel simulatore per rendere effettiva la CA.")
+            instructionRow(1, "Launch at least one simulator from Xcode so it appears as booted.")
+            instructionRow(2, "Press “Install certificate” to push the mitmproxy CA into every booted simulator.")
+            instructionRow(3, "Restart the target app inside the simulator to pick up the new certificate.")
         }
     }
 
@@ -106,7 +106,7 @@ struct SimulatorSetupView: View {
                 .foregroundStyle(colors.textSecondary)
 
             if model.bootedSimulators.isEmpty {
-                callout("Nessun simulatore avviato rilevato. Apri Simulator/Xcode e premi “Refresh booted”.", icon: "exclamationmark.circle", tint: colors.warning)
+                callout("No booted simulators detected. Open Simulator/Xcode and tap “Refresh booted”.", icon: "exclamationmark.circle", tint: colors.warning)
             } else {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(model.bootedSimulators, id: \.udid) { simulator in

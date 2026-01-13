@@ -4,6 +4,7 @@ import sys
 import time
 import uuid
 import base64
+import random
 from mitmproxy import http, ctx
 
 # Regole di Map Local: key = "<host><path>", value = dict con body/headers/status
@@ -11,6 +12,17 @@ MAP_LOCAL_RULES = {}
 FLOW_BY_ID = {}
 FLOW_BY_KEY = {}
 BREAKPOINT_RULES = {}
+TRAFFIC_PROFILE_DEFAULT = {
+    "id": "traffic.off",
+    "name": "Nessun profilo",
+    "description": "",
+    "latency_ms": 0,
+    "jitter_ms": 0,
+    "downstream_kbps": 0,
+    "upstream_kbps": 0,
+    "packet_loss": 0
+}
+ACTIVE_TRAFFIC_PROFILE = dict(TRAFFIC_PROFILE_DEFAULT)
 
 
 def flow_key(flow: http.HTTPFlow) -> str:
@@ -63,6 +75,103 @@ def serialize_message_body(message) -> str:
         return _as_data_url(mime, data)
 
     return message.get_text()
+
+def traffic_profile_enabled() -> bool:
+    return (ACTIVE_TRAFFIC_PROFILE or {}).get("id") != TRAFFIC_PROFILE_DEFAULT["id"]
+
+def update_traffic_profile(profile_payload):
+    global ACTIVE_TRAFFIC_PROFILE
+    merged = dict(TRAFFIC_PROFILE_DEFAULT)
+    if isinstance(profile_payload, dict):
+        merged.update({
+            "id": profile_payload.get("id", TRAFFIC_PROFILE_DEFAULT["id"]),
+            "name": profile_payload.get("name", TRAFFIC_PROFILE_DEFAULT["name"]),
+            "description": profile_payload.get("description", ""),
+            "latency_ms": max(int(profile_payload.get("latency_ms", 0)), 0),
+            "jitter_ms": max(int(profile_payload.get("jitter_ms", 0)), 0),
+            "downstream_kbps": max(int(profile_payload.get("downstream_kbps", 0)), 0),
+            "upstream_kbps": max(int(profile_payload.get("upstream_kbps", 0)), 0),
+            "packet_loss": max(min(float(profile_payload.get("packet_loss", 0) or 0), 1), 0),
+        })
+    ACTIVE_TRAFFIC_PROFILE = merged
+    ctx.log.info(f"[TRAFFIC] profilo attivo: {merged.get('name')}")
+    debug_log(f"traffic profile aggiornato: {merged}")
+
+def apply_profile_latency(direction: str):
+    if not traffic_profile_enabled():
+        return
+    base = ACTIVE_TRAFFIC_PROFILE.get("latency_ms", 0)
+    jitter = ACTIVE_TRAFFIC_PROFILE.get("jitter_ms", 0)
+    total = base
+    if jitter and jitter > 0:
+        total = base + random.uniform(-jitter, jitter)
+    if total <= 0:
+        return
+    delay = max(total / 1000.0, 0)
+    time.sleep(delay)
+    debug_log(f"[TRAFFIC] {direction} latency {int(delay * 1000)}ms")
+
+def apply_profile_bandwidth(byte_count: int, kbps_limit: int, direction: str):
+    if not traffic_profile_enabled():
+        return
+    if not byte_count or byte_count <= 0:
+        return
+    if not kbps_limit or kbps_limit <= 0:
+        return
+    bytes_per_second = max(kbps_limit * 125, 1)
+    delay = byte_count / bytes_per_second
+    if delay <= 0:
+        return
+    time.sleep(delay)
+    debug_log(f"[TRAFFIC] {direction} throttled {byte_count}B in {int(delay * 1000)}ms")
+
+def maybe_inject_packet_loss(flow: http.HTTPFlow) -> bool:
+    if not traffic_profile_enabled():
+        return False
+    loss_rate = float(ACTIVE_TRAFFIC_PROFILE.get("packet_loss") or 0)
+    if loss_rate <= 0:
+        return False
+    if random.random() > loss_rate:
+        return False
+    flow.response = http.Response.make(
+        598,
+        b"Simulated packet loss (traffic profile)",
+        {"Content-Type": "text/plain"}
+    )
+    ctx.log.info("[TRAFFIC] packet loss simulato su response")
+    return True
+
+def tag_response_with_profile(flow: http.HTTPFlow):
+    if not traffic_profile_enabled():
+        return
+    try:
+        if flow.response:
+            flow.response.headers["X-FRTraffic-Profile"] = ACTIVE_TRAFFIC_PROFILE.get("id", "traffic.off")
+    except Exception:
+        pass
+
+def apply_profile_to_request(flow: http.HTTPFlow):
+    if not traffic_profile_enabled():
+        return
+    apply_profile_latency("uplink")
+    body = flow.request.raw_content or b""
+    apply_profile_bandwidth(len(body), ACTIVE_TRAFFIC_PROFILE.get("upstream_kbps", 0), "uplink")
+
+def apply_profile_to_response(flow: http.HTTPFlow):
+    if not traffic_profile_enabled():
+        return
+    apply_profile_latency("downlink")
+    packet_loss = maybe_inject_packet_loss(flow)
+    tag_response_with_profile(flow)
+    if packet_loss:
+        return
+    body = b""
+    try:
+        if flow.response:
+            body = flow.response.get_content() or b""
+    except Exception:
+        body = flow.response.raw_content if flow.response else b""
+    apply_profile_bandwidth(len(body or b""), ACTIVE_TRAFFIC_PROFILE.get("downstream_kbps", 0), "downlink")
 
 def try_decode_data_url(payload: str):
     if not isinstance(payload, str):
@@ -180,6 +289,10 @@ def handle_command(cmd):
     flow_id = cmd.get("id")
     debug_log(f"comando ricevuto type={t} flow_id={flow_id}")
     flow = FLOW_BY_ID.get(flow_id)
+
+    if t == "traffic_profile":
+        update_traffic_profile(cmd.get("profile"))
+        return
 
     if t == "mock_response":
         if not flow:
@@ -357,6 +470,8 @@ def request(flow: http.HTTPFlow):
     if waiting_request:
         flow.intercept()
 
+    apply_profile_to_request(flow)
+
     # Applica il Map Local prima di inviare la richiesta al server
     rule = MAP_LOCAL_RULES.get(flow_key(flow))
     if rule:
@@ -375,6 +490,8 @@ def response(flow: http.HTTPFlow):
     # aggiorna il flow in cache (serve se arriva il comando dopo la response)
     FLOW_BY_ID[flow.id] = flow
     FLOW_BY_KEY[flow_key(flow)] = flow
+
+    apply_profile_to_response(flow)
 
     waiting_response = should_break(flow, "response")
     if waiting_response:

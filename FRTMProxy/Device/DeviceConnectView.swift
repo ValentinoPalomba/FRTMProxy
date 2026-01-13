@@ -129,6 +129,20 @@ struct DeviceConnectView: View {
             case .simulator: return "Simulator"
             }
         }
+
+        var iconName: String {
+            switch self {
+            case .device: return "iphone.radiowaves.left.and.right"
+            case .simulator: return "macwindow"
+            }
+        }
+
+        var subtitle: String {
+            switch self {
+            case .device: return "QR profile"
+            case .simulator: return "Certificate install"
+            }
+        }
     }
 
     @EnvironmentObject private var settings: SettingsStore
@@ -180,10 +194,10 @@ struct DeviceConnectView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Connect physical devices")
+                    Text("Pair devices over your Wi‑Fi")
                         .font(DesignSystem.Fonts.mono(19, weight: .bold))
                         .foregroundStyle(colors.textPrimary)
-                    Text("Genera un profilo con proxy + CA e distribuiscilo con un solo QR code.")
+                    Text("Generate a proxy + CA configuration profile and share it instantly via QR code.")
                         .font(DesignSystem.Fonts.sans(12, weight: .medium))
                         .foregroundStyle(colors.textSecondary)
                 }
@@ -201,36 +215,25 @@ struct DeviceConnectView: View {
     }
 
     private var tabPicker: some View {
-        HStack {
-            Picker("Modalità", selection: $selectedTab) {
-                ForEach(ConnectTab.allCases) { tab in
-                    Text(tab.title).tag(tab)
-                }
+        HStack(spacing: 12) {
+            ForEach(ConnectTab.allCases) { tab in
+                tabButton(for: tab)
             }
-            .pickerStyle(.segmented)
-            .controlSize(.large)
-
             Spacer()
         }
         .padding(.horizontal, 20)
     }
 
     private var pairingSection: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 20) {
             Text("Device setup")
                 .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)
-
-            ViewThatFits {
-                HStack(alignment: .top, spacing: 18) {
-                    deviceCard
-                    connectionCard
-                }
-                VStack(spacing: 18) {
-                    deviceCard
-                    connectionCard
-                }
-            }
+            deviceSection
+            Divider()
+                .overlay(colors.border.opacity(0.25))
+            serverControlsSection
+            warningsSection
         }
         .padding(.horizontal, 20)
     }
@@ -246,21 +249,21 @@ struct DeviceConnectView: View {
         .padding(.horizontal, 20)
     }
 
-    private var deviceCard: some View {
+    private var deviceSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Dispositivo fisico")
+                Text("Physical device profile")
                     .font(DesignSystem.Fonts.mono(16, weight: .bold))
                     .foregroundStyle(colors.textPrimary)
-                Text("Il profilo include proxy e certificato CA per la rete selezionata.")
+                Text("Includes proxy settings and the mitmproxy CA for the detected Wi‑Fi network.")
                     .font(DesignSystem.Fonts.sans(12, weight: .medium))
                     .foregroundStyle(colors.textSecondary)
             }
 
             VStack(alignment: .leading, spacing: 10) {
-                instructionRow(index: 1, text: "Scansiona il QR con la fotocamera/Safari e scarica il profilo.")
-                instructionRow(index: 2, text: "In Impostazioni → Profilo scaricato, installa e inserisci il codice di sblocco.")
-                instructionRow(index: 3, text: "Impostazioni → Generali → Info → Impostazioni certificati → abilita la fiducia della CA.")
+                instructionRow(index: 1, text: "Scan the QR code with Camera/Safari and download the configuration profile.")
+                instructionRow(index: 2, text: "Go to Settings → Profile Downloaded, install it and confirm with the device passcode.")
+                instructionRow(index: 3, text: "Trust the mitmproxy CA under Settings → General → About → Certificate Trust Settings.")
             }
 
             QRCodeView(text: model.connectionURL?.absoluteString ?? "", size: 240)
@@ -277,52 +280,88 @@ struct DeviceConnectView: View {
                     Image(systemName: "link")
                         .foregroundStyle(colors.accent)
                 }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(colors.surfaceElevated)
+                )
             } else {
-                Text("URL pairing non ancora disponibile: avvia il server.")
-                    .font(DesignSystem.Fonts.sans(12, weight: .medium))
-                    .foregroundStyle(colors.textSecondary)
+                callout(
+                    "Pairing URL not available yet. Start the device server to generate the QR code.",
+                    icon: "hourglass",
+                    tint: colors.warning
+                )
             }
 
-            Text("Il profilo configura il proxy solo per questa rete Wi‑Fi. Cambia rete → rigenera il QR.")
+            Text("Profiles are tied to the current SSID. If you switch network, restart the server to regenerate the QR code.")
                 .font(DesignSystem.Fonts.sans(11, weight: .medium))
                 .foregroundStyle(colors.textSecondary)
-        }
-        .padding(18)
-        .surfaceCard(fill: colors.surface, stroke: colors.border.opacity(0.9), shadowOpacity: 0.12)
-        .frame(maxWidth: .infinity)
-    }
 
-    private var connectionCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Stato connessione")
-                .font(DesignSystem.Fonts.mono(16, weight: .bold))
-                .foregroundStyle(colors.textPrimary)
-            Text("Monitor Wi‑Fi, IP e porta proxy utilizzati dal profilo.")
-                .font(DesignSystem.Fonts.sans(12, weight: .medium))
-                .foregroundStyle(colors.textSecondary)
-
-            VStack(spacing: 12) {
-                infoRow(icon: "wifi", title: "Wi‑Fi", value: wifiDisplay)
-                infoRow(icon: "dot.radiowaves.left.and.right", title: "Mac IP", value: model.ipAddress)
-                infoRow(icon: "rectangle.connected.to.line.below", title: "Proxy port", value: "\(proxyPort)")
-            }
-
-            if shouldShowSSIDOverride {
+            if needsSSIDOverride {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("SSID non rilevato — override manuale")
+                    Text("SSID not detected — set it manually")
                         .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                         .foregroundStyle(colors.warning)
-                    TextField("Inserisci SSID", text: $model.ssidOverride)
+                    TextField("Enter SSID", text: $model.ssidOverride)
                         .textFieldStyle(ProxyTextFieldStyle(palette: colors))
                         .onChange(of: model.ssidOverride) { _, newValue in
                             model.setSSIDOverride(newValue)
                         }
                 }
             }
+        }
+    }
 
+    private var serverControlsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                ControlButton(
+                    title: model.isRunning ? "Restart server" : "Start server",
+                    systemImage: "bolt.fill",
+                    style: .filled(colors),
+                    disabled: proxyPort < 1
+                ) {
+                    model.stop()
+                    model.start()
+                }
+
+                ControlButton(
+                    title: "Stop",
+                    systemImage: "stop.fill",
+                    style: .destructive(colors),
+                    disabled: !model.isRunning
+                ) {
+                    model.stop()
+                }
+            }
+
+            HStack(spacing: 10) {
+                ControlButton(
+                    title: "Refresh Wi‑Fi SSID",
+                    systemImage: "wifi",
+                    style: .ghost(colors)
+                ) {
+                    model.refreshWiFiSSID()
+                }
+
+                ControlButton(
+                    title: "Copy URL",
+                    systemImage: "link",
+                    style: .ghost(colors),
+                    disabled: model.connectionURL == nil
+                ) {
+                    model.copyConnectionURLToClipboard()
+                }
+            }
+        }
+    }
+
+    private var warningsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
             if !locationPermission.locationServicesEnabled || !locationPermission.hasWiFiSSIDAccess {
                 callout(
-                    "Permesso localizzazione richiesto per leggere SSID su macOS 15.3+. Abilita FRTMProxy in Impostazioni di Sistema → Privacy e sicurezza → Servizi di localizzazione.",
+                    "Location permission is required on macOS 15.3+ to read the Wi‑Fi SSID. Enable FRTMProxy under System Settings → Privacy & Security → Location Services.",
                     icon: "location.slash",
                     tint: colors.warning
                 )
@@ -330,7 +369,7 @@ struct DeviceConnectView: View {
 
             if !proxyIsRunning {
                 callout(
-                    "Il proxy principale è fermo: avvialo prima di testare il traffico dal device.",
+                    "The main proxy is currently stopped. Start it before redirecting traffic from the device.",
                     icon: "exclamationmark.triangle.fill",
                     tint: colors.warning
                 )
@@ -343,52 +382,7 @@ struct DeviceConnectView: View {
                     tint: colors.danger
                 )
             }
-
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 10) {
-                    ControlButton(
-                        title: model.isRunning ? "Restart server" : "Start server",
-                        systemImage: "bolt.fill",
-                        style: .filled(colors),
-                        disabled: proxyPort < 1
-                    ) {
-                        model.stop()
-                        model.start()
-                    }
-
-                    ControlButton(
-                        title: "Stop",
-                        systemImage: "stop.fill",
-                        style: .destructive(colors),
-                        disabled: !model.isRunning
-                    ) {
-                        model.stop()
-                    }
-                }
-
-                HStack(spacing: 10) {
-                    ControlButton(
-                        title: "Re-detect Wi‑Fi",
-                        systemImage: "wifi",
-                        style: .ghost(colors)
-                    ) {
-                        model.refreshWiFiSSID()
-                    }
-
-                    ControlButton(
-                        title: "Copy URL",
-                        systemImage: "link",
-                        style: .ghost(colors),
-                        disabled: model.connectionURL == nil
-                    ) {
-                        model.copyConnectionURLToClipboard()
-                    }
-                }
-            }
         }
-        .padding(18)
-        .surfaceCard(fill: colors.surface, stroke: colors.border.opacity(0.9), shadowOpacity: 0.12)
-        .frame(maxWidth: .infinity)
     }
 
     private func instructionRow(index: Int, text: String) -> some View {
@@ -422,36 +416,43 @@ struct DeviceConnectView: View {
         )
     }
 
-    private func infoRow(icon: String, title: String, value: String) -> some View {
-        HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(colors.surfaceElevated)
-                .frame(width: 38, height: 38)
-                .overlay(
-                    Image(systemName: icon)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(colors.accent)
-                )
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(DesignSystem.Fonts.sans(11, weight: .medium))
-                    .foregroundStyle(colors.textSecondary)
-                Text(value.isEmpty ? "—" : value)
-                    .font(DesignSystem.Fonts.mono(13, weight: .semibold))
-                    .foregroundStyle(colors.textPrimary)
-                    .lineLimit(1)
-                    .textSelection(.enabled)
-            }
-            Spacer()
-        }
-    }
-
-    private var wifiDisplay: String {
-        let trimmed = model.detectedWiFiSSID.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "—" : trimmed
-    }
-
-    private var shouldShowSSIDOverride: Bool {
+    private var needsSSIDOverride: Bool {
         model.detectedWiFiSSID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func tabButton(for tab: ConnectTab) -> some View {
+        let isSelected = tab == selectedTab
+        return Button {
+            selectedTab = tab
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: tab.iconName)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(isSelected ? colors.accent : colors.textSecondary)
+                    .frame(width: 24)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(tab.title)
+                        .font(DesignSystem.Fonts.sans(13, weight: .semibold))
+                        .foregroundStyle(isSelected ? colors.textPrimary : colors.textSecondary)
+                    Text(tab.subtitle)
+                        .font(DesignSystem.Fonts.sans(11, weight: .medium))
+                        .foregroundStyle(isSelected ? colors.accent : colors.textSecondary.opacity(0.8))
+                }
+                Spacer()
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isSelected ? colors.accent : colors.border)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(isSelected ? colors.surface : colors.surfaceElevated)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(isSelected ? colors.accent.opacity(0.6) : colors.border.opacity(0.7), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }

@@ -35,6 +35,7 @@ struct InspectorScreen: View {
         let availableClientIPs = Array(
             Set(viewModel.flows.map(\.clientIP).filter { !$0.isEmpty })
         ).sorted()
+        let trafficProfiles = TrafficProfileLibrary.presets
 
         let content = VStack(spacing: 16) {
             InspectorHeaderBar(
@@ -45,6 +46,12 @@ struct InspectorScreen: View {
                 onShowBreakpoints: { showBreakpointsManager = true },
                 onShowCollections: { showCollectionsSheet = true },
                 onShowDeviceConnect: { showDeviceConnectSheet = true },
+                trafficProfiles: trafficProfiles,
+                activeTrafficProfile: viewModel.activeTrafficProfile,
+                onSelectTrafficProfile: { profile in
+                    viewModel.selectTrafficProfile(profile)
+                    settings.selectedTrafficProfileID = profile.id
+                },
                 onStart: { viewModel.startProxy() },
                 onStop: viewModel.stopProxy
             )
@@ -295,6 +302,7 @@ struct InspectorScreen: View {
                 viewModel: retryEditorViewModel,
                 colors: colors,
                 allowRequestEditing: true,
+                showsResponseEditor: false,
                 actions: MapEditorActions(
                     saveLabel: "Retry",
                     saveIcon: "arrow.clockwise",
@@ -302,6 +310,7 @@ struct InspectorScreen: View {
                         guard let payload = retryEditorViewModel.retryPayload() else { return }
                         viewModel.retryFlow(with: payload)
                         retryEditorViewModel.markSynced()
+                        showRetrySheet = false
                     },
                     closeLabel: "Close",
                     closeIcon: "xmark",
@@ -378,6 +387,9 @@ private struct InspectorHeaderBar: View {
     let onShowBreakpoints: () -> Void
     let onShowCollections: () -> Void
     let onShowDeviceConnect: () -> Void
+    let trafficProfiles: [TrafficProfile]
+    let activeTrafficProfile: TrafficProfile
+    let onSelectTrafficProfile: (TrafficProfile) -> Void
     let onStart: () -> Void
     let onStop: () -> Void
 
@@ -402,6 +414,9 @@ private struct InspectorHeaderBar: View {
                 }
                 ManageMenuButton(
                     colors: colors,
+                    trafficProfiles: trafficProfiles,
+                    activeTrafficProfile: activeTrafficProfile,
+                    onSelectTrafficProfile: onSelectTrafficProfile,
                     onShowRules: onShowRules,
                     onShowBreakpoints: onShowBreakpoints,
                     onShowCollections: onShowCollections,
@@ -421,6 +436,9 @@ private struct InspectorHeaderBar: View {
 
 private struct ManageMenuButton: View {
     let colors: DesignSystem.ColorPalette
+    let trafficProfiles: [TrafficProfile]
+    let activeTrafficProfile: TrafficProfile
+    let onSelectTrafficProfile: (TrafficProfile) -> Void
     let onShowRules: () -> Void
     let onShowBreakpoints: () -> Void
     let onShowCollections: () -> Void
@@ -446,7 +464,7 @@ private struct ManageMenuButton: View {
         }
         .buttonStyle(.plain)
         .popover(isPresented: $isPresented, arrowEdge: .bottom) {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 14) {
                 Text("Quick actions")
                     .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                     .foregroundStyle(colors.textSecondary)
@@ -466,9 +484,22 @@ private struct ManageMenuButton: View {
                     isPresented = false
                     onShowDeviceConnect()
                 })
+
+                Divider()
+                    .padding(.vertical, 4)
+
+                TrafficProfileSection(
+                    colors: colors,
+                    profiles: trafficProfiles,
+                    activeProfile: activeTrafficProfile,
+                    onSelect: { profile in
+                        isPresented = false
+                        onSelectTrafficProfile(profile)
+                    }
+                )
             }
             .padding(16)
-            .frame(width: 220)
+            .frame(width: 280)
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(colors.surface)
@@ -487,6 +518,71 @@ private struct ManageMenuButton: View {
             }
             .foregroundStyle(colors.textPrimary)
             .padding(.vertical, 6)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct TrafficProfileSection: View {
+    let colors: DesignSystem.ColorPalette
+    let profiles: [TrafficProfile]
+    let activeProfile: TrafficProfile
+    let onSelect: (TrafficProfile) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Traffic profiles")
+                    .font(DesignSystem.Fonts.sans(12, weight: .semibold))
+                    .foregroundStyle(colors.textSecondary)
+                Text("Simulate degraded networks directly on the proxy.")
+                    .font(DesignSystem.Fonts.sans(11, weight: .medium))
+                    .foregroundStyle(colors.textSecondary.opacity(0.8))
+            }
+
+            VStack(spacing: 8) {
+                ForEach(profiles) { profile in
+                    profileButton(profile)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func profileButton(_ profile: TrafficProfile) -> some View {
+        let isActive = profile.id == activeProfile.id
+        Button {
+            onSelect(profile)
+        } label: {
+            HStack(alignment: .center, spacing: 12) {
+                Image(systemName: profile.systemImageName)
+                    .foregroundStyle(isActive ? colors.accent : colors.textSecondary)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(profile.name)
+                        .font(DesignSystem.Fonts.sans(13, weight: .semibold))
+                        .foregroundStyle(colors.textPrimary)
+                    Text(profile.summary)
+                        .font(DesignSystem.Fonts.sans(11, weight: .regular))
+                        .foregroundStyle(colors.textSecondary)
+                }
+                Spacer()
+                if isActive {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(colors.accent)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isActive ? colors.accent.opacity(0.12) : colors.surfaceElevated)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isActive ? colors.accent.opacity(0.6) : colors.border.opacity(0.8), lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
     }

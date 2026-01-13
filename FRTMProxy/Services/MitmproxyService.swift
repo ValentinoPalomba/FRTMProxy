@@ -67,6 +67,8 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         if isRunning {
             return
         }
+
+        terminateStaleMitmProcesses()
         
         let executableURL = try bundledMitmdumpExecutableURL()
         let scriptURL = try bridgeScriptURL()
@@ -142,6 +144,33 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             onLog?("mitmdump started on port \(selectedPort)\n")
         } catch {
             throw MitmproxyServiceError.failedToRun(error.localizedDescription)
+        }
+    }
+    
+    private func terminateStaleMitmProcesses() {
+        let commands: [(path: String, args: [String])] = [
+            ("/usr/bin/pkill", ["-TERM", "-f", "mitmdump"]),
+            ("/usr/bin/pkill", ["-TERM", "-f", "mitmproxy"]),
+            ("/usr/bin/killall", ["mitmdump"])
+        ]
+
+        for command in commands {
+            guard FileManager.default.isExecutableFile(atPath: command.path) else { continue }
+            let killer = Process()
+            killer.executableURL = URL(fileURLWithPath: command.path)
+            killer.arguments = command.args
+            killer.standardOutput = Pipe()
+            killer.standardError = Pipe()
+            do {
+                try killer.run()
+                killer.waitUntilExit()
+                if killer.terminationStatus == 0 {
+                    onLog?("[PROXY] terminated stale mitm processes via \(command.path)\n")
+                    break
+                }
+            } catch {
+                continue
+            }
         }
     }
     
@@ -287,6 +316,24 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     func mockResponse(for flowID: String, body: String) {
         mockResponse(for: flowID, body: body, status: nil, headers: nil)
     }
+
+    func applyTrafficProfile(_ profile: TrafficProfile) {
+        let payload: [String: Any] = [
+            "type": "traffic_profile",
+            "profile": [
+                "id": profile.id,
+                "name": profile.name,
+                "description": profile.description,
+                "latency_ms": profile.latencyMs,
+                "jitter_ms": profile.jitterMs,
+                "downstream_kbps": profile.downstreamKbps,
+                "upstream_kbps": profile.upstreamKbps,
+                "packet_loss": profile.packetLoss
+            ]
+        ]
+
+        sendCommand(payload, successLog: "[TRAFFIC] profilo \(profile.name) attivato\n")
+    }
     
     func mockRequest(for flowID: String, body: String, headers: [String: String]?) {
         let payload: [String: Any] = [
@@ -343,7 +390,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     private func sendCommand(_ payload: [String: Any], successLog: String) {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let handle = commandHandle else {
-            onLog?("[MAP LOCAL] impossibile inviare comando: handle o JSON non valido\n")
+            onLog?("[PROXY CMD] impossibile inviare comando: handle o JSON non valido\n")
             return
         }
 

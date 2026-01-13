@@ -25,6 +25,7 @@ struct FRTMProxyApp: App {
     @State private var deviceAlert: DeviceAlert?
     @State private var isInstallingSimulatorCertificate = false
     private let certificateInstaller = SimulatorCertificateInstaller()
+    @Environment(\.openWindow) private var openWindow
     
     var body: some Scene {
         WindowGroup {
@@ -45,7 +46,14 @@ struct FRTMProxyApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
+        
         .commands {
+            CommandGroup(replacing: .appInfo) {
+                Button("About FRTMTools") {
+                    openWindow(id: "about-ftrmtools")
+                }
+                .presentedWindowStyle(.hiddenTitleBar)
+            }
             CommandGroup(replacing: .help) {
                 Button("Find in Editor") {
                     CodeMirrorShortcutCenter.shared.focusSearchInActiveEditor()
@@ -71,6 +79,12 @@ struct FRTMProxyApp: App {
                 .frame(minWidth: 480, maxWidth: 1280, minHeight: 480, maxHeight: 720)
         }
         
+        Window("About FRTMTools", id: "about-ftrmtools") {
+            AboutFRTMToolsView()
+                .environmentObject(settingsStore)
+        }
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unifiedCompact)
     }
 
     private func installMitmproxyCertificateOnSimulator() {
