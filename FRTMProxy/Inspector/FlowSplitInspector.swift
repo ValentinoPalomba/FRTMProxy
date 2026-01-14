@@ -55,6 +55,16 @@ struct FlowSplitInspector: View {
                 .id("\(flow.id)-response")
                 .frame(maxWidth: .infinity)
             }
+
+            if !flow.webSocketMessages.isEmpty || !flow.grpcMessages.isEmpty {
+                MessagesPanel(
+                    title: "WebSocket / gRPC Messages",
+                    flow: flow,
+                    colors: colors
+                )
+                .id("\(flow.id)-messages")
+                .frame(maxWidth: .infinity)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
