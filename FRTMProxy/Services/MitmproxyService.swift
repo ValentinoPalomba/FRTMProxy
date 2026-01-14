@@ -213,12 +213,41 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     
     private nonisolated func handleIncomingLine(_ line: String) {
         guard let data = line.data(using: .utf8) else { return }
-        
-        if let flow = try? JSONDecoder().decode(MitmFlow.self, from: data) {
+
+        do {
+            let genericMessage = try JSONDecoder().decode(GenericMessage.self, from: data)
             DispatchQueue.main.async {
-                self.mergeFlow(flow)
+                switch genericMessage.event {
+                case "websocket_message":
+                    do {
+                        let wsMessage = try JSONDecoder().decode(WebSocketMessageWrapper.self, from: data)
+                        if var flow = self.flows[wsMessage.id] {
+                            flow.webSocketMessages.append(wsMessage.message)
+                            self.flows[wsMessage.id] = flow
+                        }
+                    } catch {
+                        self.onLog?("[DECODE ERR] WebSocket: \(error.localizedDescription)")
+                    }
+                case "grpc_message":
+                    do {
+                        let grpcMessage = try JSONDecoder().decode(GRPCMessageWrapper.self, from: data)
+                        if var flow = self.flows[grpcMessage.id] {
+                            flow.grpcMessages.append(grpcMessage.message)
+                            self.flows[grpcMessage.id] = flow
+                        }
+                    } catch {
+                        self.onLog?("[DECODE ERR] gRPC: \(error.localizedDescription)")
+                    }
+                default:
+                    do {
+                        let flow = try JSONDecoder().decode(MitmFlow.self, from: data)
+                        self.mergeFlow(flow)
+                    } catch {
+                        self.onLog?(line)
+                    }
+                }
             }
-        } else {
+        } catch {
             DispatchQueue.main.async {
                 self.onLog?(line)
             }
