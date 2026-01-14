@@ -9,6 +9,9 @@ struct MitmFlow: Identifiable, Codable, Equatable {
     var timestamp: TimeInterval?
     var client: Client?
     var breakpoint: FlowBreakpointMetadata?
+
+    var webSocketMessages: [WebSocketMessage] = []
+    var grpcMessages: [GRPCMessage] = []
     
     struct Client: Codable, Equatable {
         let ip: String
@@ -146,4 +149,35 @@ struct FlowBreakpointHit: Identifiable, Equatable {
     var id: String {
         "\(flowID)-\(phase.rawValue)"
     }
+}
+
+struct WebSocketMessage: Codable, Hashable {
+    let type: String
+    let fromClient: Bool
+    let content: String
+    let contentType: String?
+    let timestamp: TimeInterval
+}
+
+struct GRPCMessage: Codable, Hashable {
+    let type: String
+    let fromClient: Bool
+    let content: String
+    let timestamp: TimeInterval
+}
+
+struct GenericMessage: Decodable {
+    let event: String
+}
+
+struct WebSocketMessageWrapper: Decodable {
+    let id: String
+    let event: String
+    let message: WebSocketMessage
+}
+
+struct GRPCMessageWrapper: Decodable {
+    let id: String
+    let event: String
+    let message: GRPCMessage
 }

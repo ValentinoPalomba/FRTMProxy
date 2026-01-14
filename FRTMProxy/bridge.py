@@ -74,6 +74,10 @@ def serialize_message_body(message) -> str:
         data = message.content or b""
         return _as_data_url(mime, data)
 
+    if "application/grpc" in content_type:
+        data = message.content or b""
+        return f"data:application/grpc;base64,{base64.b64encode(data).decode('ascii')}"
+
     return message.get_text()
 
 def traffic_profile_enabled() -> bool:
@@ -480,6 +484,7 @@ def request(flow: http.HTTPFlow):
     else:
         debug_log(f"nessuna regola trovata per {flow_key(flow)}")
 
+    send_grpc_message_if_needed(flow, from_client=True)
     bp_meta = breakpoint_snapshot(flow, "request", "waiting") if waiting_request else None
     send_flow_event(flow, "request", bp_meta)
 
@@ -497,5 +502,53 @@ def response(flow: http.HTTPFlow):
     if waiting_response:
         flow.intercept()
 
+    send_grpc_message_if_needed(flow, from_client=False)
     bp_meta = breakpoint_snapshot(flow, "response", "waiting") if waiting_response else None
     send_flow_event(flow, "response", bp_meta)
+
+
+def websocket_message(flow: http.HTTPFlow, message: http.WebSocketMessage):
+    """Sends a websocket message to the app."""
+    try:
+        is_text = message.text is not None
+        content = message.text if is_text else base64.b64encode(message.content).decode("ascii")
+        content_type = "text" if is_text else "binary"
+
+        payload = {
+            "event": "websocket_message",
+            "id": flow.id,
+            "message": {
+                "type": "websocket",
+                "from_client": message.from_client,
+                "content": content,
+                "content_type": content_type,
+                "timestamp": message.timestamp,
+            }
+        }
+        send(payload)
+    except Exception as e:
+        debug_log(f"error in websocket_message: {e}")
+
+
+def send_grpc_message_if_needed(flow: http.HTTPFlow, from_client: bool):
+    """Checks for gRPC content type and sends a message to the app if found."""
+    message = flow.request if from_client else flow.response
+    if not message:
+        return
+
+    content_type = (message.headers.get("content-type") or "").lower()
+    if "application/grpc" in content_type:
+        try:
+            payload = {
+                "event": "grpc_message",
+                "id": flow.id,
+                "message": {
+                    "type": "grpc",
+                    "from_client": from_client,
+                    "content": serialize_message_body(message),
+                    "timestamp": time.time(),
+                }
+            }
+            send(payload)
+        except Exception as e:
+            debug_log(f"error in send_grpc_message: {e}")
