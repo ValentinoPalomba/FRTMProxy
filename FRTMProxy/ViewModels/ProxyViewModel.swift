@@ -1,8 +1,62 @@
 import Combine
 import Foundation
+import CoreData
+
+extension CDFlow {
+    func toMitmFlow() -> MitmFlow {
+        var breakpoint: FlowBreakpointMetadata?
+        if let stateRaw = self.breakpointState,
+           let state = FlowBreakpointState(rawValue: stateRaw),
+           let phaseRaw = self.breakpointPhase,
+           let phase = FlowBreakpointPhase(rawValue: phaseRaw),
+           let key = self.breakpointKey {
+            breakpoint = FlowBreakpointMetadata(phase: phase, state: state, key: key)
+        }
+
+        return MitmFlow(
+            id: self.id ?? "",
+            request: self.request?.toRequest(),
+            response: self.response?.toResponse(),
+            event: self.event ?? "",
+            timestamp: self.timestamp?.timeIntervalSince1970,
+            client: self.client?.toClient(),
+            breakpoint: breakpoint
+        )
+    }
+}
+
+extension CDRequest {
+    func toRequest() -> MitmFlow.Request {
+        MitmFlow.Request(
+            method: self.method ?? "",
+            url: self.url ?? "",
+            headers: self.headers as? [String: String] ?? [:],
+            body: self.body
+        )
+    }
+}
+
+extension CDResponse {
+    func toResponse() -> MitmFlow.Response {
+        MitmFlow.Response(
+            status: Int(self.status),
+            headers: self.headers as? [String: String] ?? [:],
+            body: self.body
+        )
+    }
+}
+
+extension CDClient {
+    func toClient() -> MitmFlow.Client {
+        MitmFlow.Client(
+            ip: self.ip ?? "",
+            port: Int(self.port)
+        )
+    }
+}
 
 
-final class ProxyViewModel: ObservableObject {
+final class ProxyViewModel: NSObject, ObservableObject, NSFetchedResultsControllerDelegate {
     @Published var flows: [MitmFlow] = []
     @Published var selectedFlowID: String?
     @Published var logText: String = ""
@@ -22,6 +76,7 @@ final class ProxyViewModel: ObservableObject {
     private let breakpointStore: BreakpointStoreProtocol
     private let collectionRecorder = CollectionRecorder()
     private var cancellables: Set<AnyCancellable> = []
+    private let fetchedResultsController: NSFetchedResultsController<CDFlow>
     private var settingsCancellables: Set<AnyCancellable> = []
     private var defaultPort: Int
     private var autoClearOnStart = false
@@ -38,7 +93,8 @@ final class ProxyViewModel: ObservableObject {
         ruleStore: MapRuleStoreProtocol = MapRuleStore(),
         collectionStore: MapCollectionStoreProtocol = MapCollectionStore(),
         breakpointStore: BreakpointStoreProtocol = FlowBreakpointStore(),
-        defaultPort: Int = 8080
+        defaultPort: Int = 8080,
+        context: NSManagedObjectContext = PersistenceController.shared.container.viewContext
     ) {
         self.service = service
         self.ruleStore = ruleStore
@@ -46,6 +102,28 @@ final class ProxyViewModel: ObservableObject {
         self.breakpointStore = breakpointStore
         self.defaultPort = defaultPort
         self.activePort = defaultPort
+
+        let fetchRequest: NSFetchRequest<CDFlow> = CDFlow.fetchRequest()
+        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \CDFlow.timestamp, ascending: false)]
+
+        fetchedResultsController = NSFetchedResultsController(
+            fetchRequest: fetchRequest,
+            managedObjectContext: context,
+            sectionNameKeyPath: nil,
+            cacheName: nil
+        )
+
+        super.init()
+
+        fetchedResultsController.delegate = self
+
+        do {
+            try fetchedResultsController.performFetch()
+            self.flows = fetchedResultsController.fetchedObjects?.map { $0.toMitmFlow() } ?? []
+        } catch {
+            print("Failed to fetch flows: \(error)")
+        }
+
         bind()
         loadPersistedRules()
         loadPersistedCollections()
@@ -86,9 +164,8 @@ final class ProxyViewModel: ObservableObject {
     }
     
     func clear() {
-        flows.removeAll()
-        selectedFlowID = nil
         service.clearFlows()
+        selectedFlowID = nil
     }
 
     func selectTrafficProfile(_ profile: TrafficProfile) {
@@ -553,22 +630,20 @@ final class ProxyViewModel: ObservableObject {
         return (key: host + path, host: host, path: path.isEmpty ? "/" : path, scheme: url.scheme)
     }
     
-    private func bind() {
-        service.flowsPublisher
-            .map { map in
-                map.values.sorted(by: { ($0.timestamp ?? 0) > ($1.timestamp ?? 0) })
-            }
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] sorted in
-                self?.flows = sorted
-                if self?.selectedFlowID == nil {
-                    self?.selectedFlowID = sorted.first?.id
-                }
-                self?.captureRecordingRules(from: sorted)
-                self?.enqueueBreakpointHits(from: sorted)
-            }
-            .store(in: &cancellables)
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        guard let fetchedObjects = controller.fetchedObjects as? [CDFlow] else { return }
+        let newFlows = fetchedObjects.map { $0.toMitmFlow() }
+        self.flows = newFlows
+
+        if selectedFlowID == nil {
+            selectedFlowID = newFlows.first?.id
+        }
         
+        captureRecordingRules(from: newFlows)
+        enqueueBreakpointHits(from: newFlows)
+    }
+
+    private func bind() {
         service.isRunningPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] running in

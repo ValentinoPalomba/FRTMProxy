@@ -19,6 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct FRTMProxyApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    let persistenceController = PersistenceController.shared
     @StateObject private var proxyViewModel = ProxyViewModel()
     @StateObject private var rulesViewModel = MapRuleViewModel()
     @StateObject private var settingsStore = SettingsStore()
@@ -30,6 +31,7 @@ struct FRTMProxyApp: App {
     var body: some Scene {
         WindowGroup {
             AppRootView(viewModel: proxyViewModel, rulesViewModel: rulesViewModel)
+                .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 .environmentObject(settingsStore)
                 .preferredColorScheme(settingsStore.activeTheme.preferredColorScheme)
                 .task {
