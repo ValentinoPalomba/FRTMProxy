@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model name="" userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22618" systemVersion="23E214" minimumToolsVersion="11.0">
+    <entity name="CDFlow" representedClassName="CDFlow" syncable="YES">
+        <attribute name="id" attributeType="String" usesScalarValueType="NO" isOptional="YES"/>
+        <attribute name="event" attributeType="String" usesScalarValueType="NO" isOptional="YES"/>
+        <attribute name="timestamp" attributeType="Date" usesScalarValueType="NO" isOptional="YES"/>
+        <attribute name="breakpointState" attributeType="String" usesScalarValueType="NO" isOptional="YES"/>
+        <attribute name="breakpointPhase" attributeType="String" usesScalarValueType="NO" isOptional="YES"/>
+        <attribute name="breakpointKey" attributeType="String" usesScalarValueType="NO" isOptional="YES"/>
+        <relationship name="request" destinationEntity="CDRequest" toMany="NO" deletionRule="Cascade" inverseName="flow"/>
+        <relationship name="response" destinationEntity="CDResponse" toMany="NO" deletionRule="Cascade" inverseName="flow"/>
+        <relationship name="client" destinationEntity="CDClient" toMany="NO" deletionRule="Cascade" inverseName="flow"/>
+    </entity>
+    <entity name="CDRequest" representedClassName="CDRequest" syncable="YES">
+        <attribute name="method" attributeType="String" usesScalarValueType="NO" isOptional="YES"/>
+        <attribute name="url" attributeType="String" usesScalarValueType="NO" isOptional="YES"/>
+        <attribute name="headers" attributeType="Transformable" usesScalarValueType="NO" isOptional="YES" attributeValueClassName="[String: String]"/>
+        <attribute name="body" attributeType="String" usesScalarValueType="NO" isOptional="YES"/>
+        <relationship name="flow" destinationEntity="CDFlow" toMany="NO" deletionRule="Nullify" inverseName="request"/>
+    </entity>
+    <entity name="CDResponse" representedClassName="CDResponse" syncable="YES">
+        <attribute name="status" attributeType="Integer 32" usesScalarValueType="YES" isOptional="YES"/>
+        <attribute name="headers" attributeType="Transformable" usesScalarValueType="NO" isOptional="YES" attributeValueClassName="[String: String]"/>
+        <attribute name="body" attributeType="String" usesScalarValueType="NO" isOptional="YES"/>
+        <relationship name="flow" destinationEntity="CDFlow" toMany="NO" deletionRule="Nullify" inverseName="response"/>
+    </entity>
+    <entity name="CDClient" representedClassName="CDClient" syncable="YES">
+        <attribute name="ip" attributeType="String" usesScalarValueType="NO" isOptional="YES"/>
+        <attribute name="port" attributeType="Integer 32" usesScalarValueType="YES" isOptional="YES"/>
+        <relationship name="flow" destinationEntity="CDFlow" toMany="NO" deletionRule="Nullify" inverseName="client"/>
+    </entity>
+</model>
