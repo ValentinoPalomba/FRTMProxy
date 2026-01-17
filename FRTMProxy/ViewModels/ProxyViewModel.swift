@@ -1,9 +1,9 @@
 import Combine
 import Foundation
+import CoreData
 
-
-final class ProxyViewModel: ObservableObject {
-    @Published var flows: [MitmFlow] = []
+final class ProxyViewModel: NSObject, ObservableObject, NSFetchedResultsControllerDelegate {
+    @Published var flows: [CDFlow] = []
     @Published var selectedFlowID: String?
     @Published var logText: String = ""
     @Published private(set) var isRunning: Bool = false
@@ -32,13 +32,16 @@ final class ProxyViewModel: ObservableObject {
     private var restrictInterceptionToHosts = false
     private var interceptionHosts: [String] = []
     private var lastInterceptionConfigHash: Int?
+    private let fetchedResultsController: NSFetchedResultsController<CDFlow>
+    private let moc: NSManagedObjectContext
     
     init(
         service: ProxyServiceProtocol = MitmproxyService(config: MitmproxyConfig()),
         ruleStore: MapRuleStoreProtocol = MapRuleStore(),
         collectionStore: MapCollectionStoreProtocol = MapCollectionStore(),
         breakpointStore: BreakpointStoreProtocol = FlowBreakpointStore(),
-        defaultPort: Int = 8080
+        defaultPort: Int = 8080,
+        moc: NSManagedObjectContext = StorageService.shared.viewContext
     ) {
         self.service = service
         self.ruleStore = ruleStore
@@ -46,6 +49,28 @@ final class ProxyViewModel: ObservableObject {
         self.breakpointStore = breakpointStore
         self.defaultPort = defaultPort
         self.activePort = defaultPort
+        self.moc = moc
+
+        let fetchRequest: NSFetchRequest<CDFlow> = CDFlow.fetchRequest()
+        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \CDFlow.timestamp, ascending: false)]
+        self.fetchedResultsController = NSFetchedResultsController(
+            fetchRequest: fetchRequest,
+            managedObjectContext: moc,
+            sectionNameKeyPath: nil,
+            cacheName: nil
+        )
+
+        super.init()
+
+        self.fetchedResultsController.delegate = self
+
+        do {
+            try fetchedResultsController.performFetch()
+            self.flows = fetchedResultsController.fetchedObjects ?? []
+        } catch {
+            logText.append("\n[DB] Failed to fetch flows: \(error.localizedDescription)")
+        }
+
         bind()
         loadPersistedRules()
         loadPersistedCollections()
@@ -54,8 +79,9 @@ final class ProxyViewModel: ObservableObject {
         syncBreakpointRules()
     }
     
-    var selectedFlow: MitmFlow? {
-        flows.first(where: { $0.id == selectedFlowID })
+    var selectedFlow: CDFlow? {
+        guard let selectedFlowID = selectedFlowID else { return nil }
+        return flows.first(where: { $0.id == selectedFlowID })
     }
 
     var orderedBreakpointRules: [FlowBreakpointRule] {
@@ -104,8 +130,8 @@ final class ProxyViewModel: ObservableObject {
             path: ruleKey.path,
             scheme: ruleKey.scheme,
             body: body,
-            status: status ?? flow.response?.status ?? 200,
-            headers: headers ?? flow.response?.headers ?? [:]
+            status: status ?? Int(flow.responseStatus),
+            headers: headers ?? decodeResponseHeaders(from: flow)
         )
         rules[rule.key] = rule
         persistRules()
@@ -181,9 +207,9 @@ final class ProxyViewModel: ObservableObject {
     
     // MARK: - Breakpoints
 
-    func isBreakpointEnabled(for flow: MitmFlow, phase: FlowBreakpointPhase) -> Bool {
-        guard let info = mapKey(for: flow) else { return false }
-        guard let rule = breakpointRules[info.key], rule.isEnabled else { return false }
+    func isBreakpointEnabled(for flow: CDFlow, phase: FlowBreakpointPhase) -> Bool {
+        guard let info = mapKey(for: flow),
+              let rule = breakpointRules[info.key], rule.isEnabled else { return false }
         switch phase {
         case .request:
             return rule.interceptRequest
@@ -192,7 +218,7 @@ final class ProxyViewModel: ObservableObject {
         }
     }
 
-    func setBreakpoint(for flow: MitmFlow, phase: FlowBreakpointPhase, enabled: Bool) {
+    func setBreakpoint(for flow: CDFlow, phase: FlowBreakpointPhase, enabled: Bool) {
         guard let info = mapKey(for: flow) else { return }
         var rule = breakpointRules[info.key] ?? FlowBreakpointRule(
             key: info.key,
@@ -218,7 +244,7 @@ final class ProxyViewModel: ObservableObject {
         saveBreakpointRule(rule)
     }
 
-    func removeBreakpoint(for flow: MitmFlow) {
+    func removeBreakpoint(for flow: CDFlow) {
         guard let info = mapKey(for: flow) else { return }
         deleteBreakpoint(key: info.key)
     }
@@ -276,7 +302,7 @@ final class ProxyViewModel: ObservableObject {
         syncBreakpointRules()
     }
 
-    func flow(withID id: String) -> MitmFlow? {
+    func flow(withID id: String) -> CDFlow? {
         flows.first(where: { $0.id == id })
     }
 
@@ -300,7 +326,7 @@ final class ProxyViewModel: ObservableObject {
                 responsePayload: nil
             )
         case .response:
-            let defaultStatus = flow.response?.status ?? 200
+            let defaultStatus = Int(flow.responseStatus)
             guard let payload = editor.payload(defaultStatus: defaultStatus) else { return }
             let responsePayload = BreakpointResponsePayload(
                 status: payload.responseStatus,
@@ -323,12 +349,11 @@ final class ProxyViewModel: ObservableObject {
               let flow = flow(withID: hit.flowID) else { return }
         switch hit.phase {
         case .request:
-            guard let request = flow.request else { return }
             let payload = BreakpointRequestPayload(
-                method: request.method,
-                url: request.url,
-                headers: request.headers,
-                body: request.body
+                method: flow.requestMethod ?? "",
+                url: flow.requestURL ?? "",
+                headers: decodeRequestHeaders(from: flow),
+                body: flow.requestBody
             )
             service.resumeBreakpoint(
                 flowID: hit.flowID,
@@ -337,11 +362,10 @@ final class ProxyViewModel: ObservableObject {
                 responsePayload: nil
             )
         case .response:
-            guard let response = flow.response else { return }
             let payload = BreakpointResponsePayload(
-                status: response.status ?? 200,
-                headers: response.headers ?? [:],
-                body: response.body ?? ""
+                status: Int(flow.responseStatus),
+                headers: decodeResponseHeaders(from: flow),
+                body: flow.responseBody ?? ""
             )
             service.resumeBreakpoint(
                 flowID: hit.flowID,
@@ -543,8 +567,8 @@ final class ProxyViewModel: ObservableObject {
         syncAppliedRules()
     }
 
-    private func mapKey(for flow: MitmFlow) -> (key: String, host: String, path: String, scheme: String?)? {
-        guard let urlString = flow.request?.url,
+    private func mapKey(for flow: CDFlow) -> (key: String, host: String, path: String, scheme: String?)? {
+        guard let urlString = flow.requestURL,
               let url = URL(string: urlString),
               let host = url.host else {
             return nil
@@ -552,23 +576,25 @@ final class ProxyViewModel: ObservableObject {
         let path = url.path
         return (key: host + path, host: host, path: path.isEmpty ? "/" : path, scheme: url.scheme)
     }
+
+    private func decodeRequestHeaders(from flow: CDFlow) -> [String: String] {
+        guard let data = flow.requestHeaders else { return [:] }
+        return (try? JSONDecoder().decode([String: String].self, from: data)) ?? [:]
+    }
+
+    private func decodeResponseHeaders(from flow: CDFlow) -> [String: String] {
+        guard let data = flow.responseHeaders else { return [:] }
+        return (try? JSONDecoder().decode([String: String].self, from: data)) ?? [:]
+    }
     
     private func bind() {
         service.flowsPublisher
-            .map { map in
-                map.values.sorted(by: { ($0.timestamp ?? 0) > ($1.timestamp ?? 0) })
-            }
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] sorted in
-                self?.flows = sorted
-                if self?.selectedFlowID == nil {
-                    self?.selectedFlowID = sorted.first?.id
-                }
-                self?.captureRecordingRules(from: sorted)
-                self?.enqueueBreakpointHits(from: sorted)
+            .sink { [weak self] _ in
+                // Handled by NSFetchedResultsControllerDelegate
             }
             .store(in: &cancellables)
-        
+
         service.isRunningPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] running in
@@ -585,6 +611,18 @@ final class ProxyViewModel: ObservableObject {
                 self?.appendLog(text)
             }
         }
+    }
+
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        let newFlows = fetchedResultsController.fetchedObjects ?? []
+        self.flows = newFlows
+
+        if selectedFlowID == nil, let firstID = newFlows.first?.id {
+            selectedFlowID = firstID
+        }
+
+        captureRecordingRules(from: newFlows)
+        enqueueBreakpointHits(from: newFlows)
     }
 
     private func loadPersistedRules() {
@@ -651,11 +689,10 @@ final class ProxyViewModel: ObservableObject {
         recordingRulesPreview = collectionRecorder.currentRules()
     }
 
-    private func captureRecordingRules(from flows: [MitmFlow]) {
+    private func captureRecordingRules(from flows: [CDFlow]) {
         guard collectionRecorder.isRecording else { return }
         for flow in flows {
             guard !recordedFlowIDs.contains(flow.id),
-                  let response = flow.response,
                   let info = mapKey(for: flow) else { continue }
 
             let rule = MapRule(
@@ -663,9 +700,9 @@ final class ProxyViewModel: ObservableObject {
                 host: info.host,
                 path: info.path,
                 scheme: info.scheme,
-                body: response.body ?? "",
-                status: response.status ?? 200,
-                headers: response.headers ?? [:],
+                body: flow.responseBody ?? "",
+                status: Int(flow.responseStatus),
+                headers: decodeResponseHeaders(from: flow),
                 isEnabled: true
             )
             record(rule: rule)
@@ -673,75 +710,20 @@ final class ProxyViewModel: ObservableObject {
         }
     }
 
-    private func syncAppliedRules() {
-        var merged: [String: MapRule] = [:]
-        for rule in rules.values where rule.isEnabled {
-            merged[rule.key] = rule
-        }
-
-        let enabledCollections = collections
-            .filter { $0.isEnabled }
-            .sorted(by: { ($0.enabledAt ?? Date.distantPast) < ($1.enabledAt ?? Date.distantPast) })
-
-        for collection in enabledCollections {
-            for rule in collection.rules where rule.isEnabled {
-                merged[rule.key] = rule
-            }
-        }
-
-        let oldKeys = Set(appliedRules.keys)
-        let newKeys = Set(merged.keys)
-        let removedKeys = oldKeys.subtracting(newKeys)
-        for key in removedKeys {
-            service.deleteRule(forKey: key)
-        }
-
-        for (key, rule) in merged {
-            if let existing = appliedRules[key], existing == rule {
-                continue
-            }
-            service.mockRule(rule)
-        }
-
-        appliedRules = merged
-    }
-
-    private func syncBreakpointRules() {
-        let activeRules = breakpointRules.values.filter { $0.isEnabled && ($0.interceptRequest || $0.interceptResponse) }
-        var merged: [String: FlowBreakpointRule] = [:]
-        for rule in activeRules {
-            merged[rule.key] = rule
-        }
-
-        let oldKeys = Set(appliedBreakpointRules.keys)
-        let newKeys = Set(merged.keys)
-
-        let removedKeys = oldKeys.subtracting(newKeys)
-        for key in removedKeys {
-            service.deleteBreakpointRule(forKey: key)
-        }
-
-        for (key, rule) in merged {
-            if let existing = appliedBreakpointRules[key], existing == rule {
-                continue
-            }
-            service.updateBreakpointRule(rule)
-        }
-
-        appliedBreakpointRules = merged
-    }
-
-    private func enqueueBreakpointHits(from flows: [MitmFlow]) {
+    private func enqueueBreakpointHits(from flows: [CDFlow]) {
         var waitingIDs: Set<String> = []
 
         for flow in flows {
-            guard let breakpoint = flow.breakpoint,
-                  breakpoint.state == .waiting else { continue }
+            guard let state = flow.breakpointState,
+                  state == FlowBreakpointState.waiting.rawValue,
+                  let phaseRaw = flow.breakpointPhase,
+                  let phase = FlowBreakpointPhase(rawValue: phaseRaw),
+                  let key = flow.breakpointKey else { continue }
 
             let hit = FlowBreakpointHit(
                 flowID: flow.id,
-                phase: breakpoint.phase,
-                key: breakpoint.key,
+                phase: phase,
+                key: key,
                 timestamp: flow.timestamp
             )
             waitingIDs.insert(hit.id)
