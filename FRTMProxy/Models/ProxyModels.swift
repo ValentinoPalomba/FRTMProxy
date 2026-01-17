@@ -1,5 +1,29 @@
 
 import Foundation
+import CoreData
+
+@objc(CDFlow)
+public class CDFlow: NSManagedObject {
+    @NSManaged public var id: String
+    @NSManaged public var timestamp: Double
+    @NSManaged public var clientIP: String?
+    @NSManaged public var requestMethod: String?
+    @NSManaged public var requestURL: String?
+    @NSManaged public var requestHeaders: Data?
+    @NSManaged public var requestBody: String?
+    @NSManaged public var responseStatus: Int32
+    @NSManaged public var responseHeaders: Data?
+    @NSManaged public var responseBody: String?
+    @NSManaged public var breakpointPhase: String?
+    @NSManaged public var breakpointState: String?
+    @NSManaged public var breakpointKey: String?
+}
+
+extension CDFlow: Identifiable {
+    static func fetchRequest() -> NSFetchRequest<CDFlow> {
+        return NSFetchRequest<CDFlow>(entityName: "CDFlow")
+    }
+}
 
 struct MitmFlow: Identifiable, Codable, Equatable {
     let id: String
@@ -26,6 +50,34 @@ struct MitmFlow: Identifiable, Codable, Equatable {
         let status: Int?
         let headers: [String: String]?
         let body: String?
+    }
+
+    @discardableResult
+    func populate(cd: CDFlow) -> CDFlow {
+        cd.id = self.id
+        cd.timestamp = self.timestamp ?? 0
+        cd.clientIP = self.client?.ip
+
+        if let request = self.request {
+            cd.requestMethod = request.method
+            cd.requestURL = request.url
+            cd.requestBody = request.body
+            cd.requestHeaders = try? JSONEncoder().encode(request.headers)
+        }
+
+        if let response = self.response {
+            cd.responseStatus = Int32(response.status ?? 0)
+            cd.responseBody = response.body
+            cd.responseHeaders = try? JSONEncoder().encode(response.headers)
+        }
+
+        if let breakpoint = self.breakpoint {
+            cd.breakpointPhase = breakpoint.phase.rawValue
+            cd.breakpointState = breakpoint.state.rawValue
+            cd.breakpointKey = breakpoint.key
+        }
+
+        return cd
     }
 }
 

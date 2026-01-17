@@ -1,16 +1,7 @@
 import Foundation
 import Combine
 import AppKit
-
-struct MitmproxyConfig {
-    var port: Int
-    
-    init(
-        port: Int = 8080
-    ) {
-        self.port = port
-    }
-}
+import CoreData
 
 enum MitmproxyServiceError: LocalizedError {
     case executableNotFound(String)
@@ -29,23 +20,26 @@ enum MitmproxyServiceError: LocalizedError {
 @MainActor
 final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     private let config: MitmproxyConfig
+    private let storage: StorageService
     private var process: Process?
     private var commandHandle: FileHandle?
-    private let maxFlowsStored = 500
     private var appTerminationObserver: NSObjectProtocol?
     private var workspaceTerminationObserver: NSObjectProtocol?
-    
-    nonisolated(unsafe) var onLog: ((String) -> Void)?
-    
-    /// Proxy running?
-    @Published private(set) var isRunning: Bool = false
-    @Published var flows: [String: MitmFlow] = [:]
+    private let flowsSubject = PassthroughSubject<MitmFlow, Never>()
 
-    var flowsPublisher: AnyPublisher<[String: MitmFlow], Never> { $flows.eraseToAnyPublisher() }
+    nonisolated(unsafe) var onLog: ((String) -> Void)?
+
+    @Published private(set) var isRunning: Bool = false
+
+    var flowsPublisher: AnyPublisher<MitmFlow, Never> { flowsSubject.eraseToAnyPublisher() }
     var isRunningPublisher: AnyPublisher<Bool, Never> { $isRunning.eraseToAnyPublisher() }
-    
-    nonisolated init(config: MitmproxyConfig) {
+
+    nonisolated init(
+        config: MitmproxyConfig,
+        storage: StorageService = .shared
+    ) {
         self.config = config
+        self.storage = storage
         Task { @MainActor in
             self.setupTerminationObservers()
         }
@@ -68,6 +62,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             return
         }
 
+        pruneOldFlows()
         terminateStaleMitmProcesses()
         
         let executableURL = try bundledMitmdumpExecutableURL()
@@ -212,58 +207,82 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     }
     
     private nonisolated func handleIncomingLine(_ line: String) {
-        guard let data = line.data(using: .utf8) else { return }
-        
-        if let flow = try? JSONDecoder().decode(MitmFlow.self, from: data) {
-            DispatchQueue.main.async {
-                self.mergeFlow(flow)
-            }
-        } else {
+        guard let data = line.data(using: .utf8),
+              let flow = try? JSONDecoder().decode(MitmFlow.self, from: data) else {
             DispatchQueue.main.async {
                 self.onLog?(line)
             }
+            return
         }
+
+        persistFlow(flow)
     }
     
-    @MainActor
-    private func mergeFlow(_ incoming: MitmFlow) {
-        if var existing = flows[incoming.id] {
-            if incoming.event == "request" {
-                existing.request = incoming.request
-            }
-            if incoming.event == "response" {
-                existing.response = incoming.response
-            }
-            if let breakpoint = incoming.breakpoint {
-                existing.breakpoint = breakpoint
-            } else if existing.breakpoint != nil && incoming.breakpoint == nil {
-                existing.breakpoint = nil
-            }
-            if existing.timestamp == nil {
-                existing.timestamp = incoming.timestamp
-            }
-            flows[incoming.id] = existing
-        } else {
-            flows[incoming.id] = incoming
-        }
+    private func persistFlow(_ flow: MitmFlow) {
+        let context = storage.newBackgroundContext()
+        context.perform {
+            let fetchRequest: NSFetchRequest<CDFlow> = CDFlow.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "id == %@", flow.id)
 
-        if flows.count > maxFlowsStored {
-            trimOldFlows()
+            do {
+                let results = try context.fetch(fetchRequest)
+                let cdFlow = results.first ?? CDFlow(context: context)
+                flow.populate(cd: cdFlow)
+                try context.save()
+
+                // Notify the UI on the main thread
+                DispatchQueue.main.async { [weak self] in
+                    self?.flowsSubject.send(flow)
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.onLog?("[DB] Failed to save flow: \(error.localizedDescription)\n")
+                }
+            }
         }
     }
 
-    private func trimOldFlows() {
-        let ordered = flows.values.sorted { ($0.timestamp ?? 0) > ($1.timestamp ?? 0) }
-        let trimmed = ordered.prefix(maxFlowsStored)
-        var newDict: [String: MitmFlow] = [:]
-        trimmed.forEach { newDict[$0.id] = $0 }
-        flows = newDict
-        onLog?("[PERF] Flussi limitati a \(maxFlowsStored) per evitare uso eccessivo di memoria/cpu\n")
+    private func pruneOldFlows() {
+        let context = storage.newBackgroundContext()
+        context.perform {
+            let cutoff = Date().addingTimeInterval(-7 * 24 * 60 * 60)
+            let fetchRequest: NSFetchRequest<NSFetchRequestResult> = CDFlow.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "timestamp < %lf", cutoff.timeIntervalSince1970)
+
+            let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+
+            do {
+                try context.execute(deleteRequest)
+                try context.save()
+                DispatchQueue.main.async {
+                    self.onLog?("[DB] Old flows pruned.\n")
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.onLog?("[DB] Failed to prune flows: \(error.localizedDescription)\n")
+                }
+            }
+        }
     }
 
     func clearFlows() {
-        flows.removeAll()
-        onLog?("[PROXY] Flussi puliti\n")
+        let context = storage.newBackgroundContext()
+        context.perform {
+            let fetchRequest: NSFetchRequest<NSFetchRequestResult> = CDFlow.fetchRequest()
+            let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+
+            do {
+                try context.execute(deleteRequest)
+                try context.save()
+                DispatchQueue.main.async {
+                    self.onLog?("[PROXY] Flows cleared.\n")
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.onLog?("[DB] Failed to clear flows: \(error.localizedDescription)\n")
+                }
+            }
+        }
     }
 
     func stopProxy() {
