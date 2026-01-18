@@ -21,6 +21,8 @@ class OnboardingManager: ObservableObject {
     func nextStep() {
         switch currentStep {
         case .startProxy:
+            currentStep = .macOSProxyOverride
+        case .macOSProxyOverride:
             currentStep = .viewTraffic
         case .viewTraffic:
             currentStep = .filterResults
@@ -37,8 +39,10 @@ class OnboardingManager: ObservableObject {
         switch currentStep {
         case .startProxy:
             break
-        case .viewTraffic:
+        case .macOSProxyOverride:
             currentStep = .startProxy
+        case .viewTraffic:
+            currentStep = .macOSProxyOverride
         case .filterResults:
             currentStep = .viewTraffic
         case .inspectFlow:
@@ -65,6 +69,7 @@ class OnboardingManager: ObservableObject {
 
 enum OnboardingTarget: Hashable {
     case startProxy
+    case macOSProxyOverride
     case viewTraffic
     case filterResults
     case inspectFlow
@@ -73,6 +78,7 @@ enum OnboardingTarget: Hashable {
 
 enum OnboardingStep: CaseIterable, Hashable {
     case startProxy
+    case macOSProxyOverride
     case viewTraffic
     case filterResults
     case inspectFlow
@@ -82,6 +88,8 @@ enum OnboardingStep: CaseIterable, Hashable {
         switch self {
         case .startProxy:
             return .startProxy
+        case .macOSProxyOverride:
+            return .macOSProxyOverride
         case .viewTraffic:
             return .viewTraffic
         case .filterResults:
@@ -106,6 +114,8 @@ enum OnboardingStep: CaseIterable, Hashable {
         switch self {
         case .startProxy, .mapResponse:
             return 6
+        case .macOSProxyOverride:
+            return 8
         case .filterResults:
             return 10
         case .viewTraffic, .inspectFlow:
@@ -119,6 +129,8 @@ enum OnboardingStep: CaseIterable, Hashable {
             return 18
         case .viewTraffic:
             return 14
+        case .macOSProxyOverride:
+            return 12
         default:
             return 12
         }
@@ -132,6 +144,8 @@ enum OnboardingStep: CaseIterable, Hashable {
         switch self {
         case .startProxy:
             return "Avvia il proxy"
+        case .macOSProxyOverride:
+            return "Override proxy macOS"
         case .viewTraffic:
             return "Monitora il traffico"
         case .filterResults:
@@ -147,6 +161,8 @@ enum OnboardingStep: CaseIterable, Hashable {
         switch self {
         case .startProxy:
             return "Premi Start per avviare il proxy e iniziare a intercettare il traffico dal tuo dispositivo."
+        case .macOSProxyOverride:
+            return "In Impostazioni > Proxy Behavior abilita \"Override macOS proxy\" per instradare il traffico del Mac su localhost e la porta del proxy."
         case .viewTraffic:
             return "La tabella del traffico si popola qui con tutte le richieste HTTP/HTTPS in tempo reale."
         case .filterResults:
@@ -165,6 +181,12 @@ enum OnboardingStep: CaseIterable, Hashable {
                 anchor: .topTrailing,
                 offset: CGPoint(x: -20, y: 80),
                 highlightSize: CGSize(width: 80, height: 40)
+            )
+        case .macOSProxyOverride:
+            return OnboardingPosition(
+                anchor: .topTrailing,
+                offset: CGPoint(x: -180, y: 90),
+                highlightSize: CGSize(width: 220, height: 48)
             )
         case .viewTraffic:
             return OnboardingPosition(

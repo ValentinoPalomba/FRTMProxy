@@ -69,6 +69,8 @@ struct FRTMProxyApp: App {
                     }
                 }
                 .disabled(isInstallingSimulatorCertificate)
+                Divider()
+                Toggle("Override macOS proxy", isOn: $settingsStore.overrideMacOSProxy)
             }
         }
         

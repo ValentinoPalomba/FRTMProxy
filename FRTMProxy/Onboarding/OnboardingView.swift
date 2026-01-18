@@ -223,6 +223,8 @@ struct OnboardingOverlay: View {
         switch step {
         case .startProxy:
             return "play.circle.fill"
+        case .macOSProxyOverride:
+            return "globe"
         case .viewTraffic:
             return "list.bullet.rectangle.fill"
         case .filterResults:

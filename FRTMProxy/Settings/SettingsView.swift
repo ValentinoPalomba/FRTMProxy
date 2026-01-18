@@ -33,6 +33,7 @@ struct SettingsView: View {
                 Toggle("Clear captured flows on start", isOn: $settings.autoClearOnStart)
                 Toggle("Intercept only active pinned hosts", isOn: $settings.restrictInterceptionToActivePinnedHosts)
                 Toggle("Override macOS proxy", isOn: $settings.overrideMacOSProxy)
+                    .onboardingTarget(.macOSProxyOverride)
                 HStack {
                     Text("Default port")
                     Spacer()
