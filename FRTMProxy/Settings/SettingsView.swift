@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var settings: SettingsStore
+    @EnvironmentObject var onboardingManager: OnboardingManager
     @Environment(\.colorScheme) private var scheme
     private var colors: DesignSystem.ColorPalette {
         DesignSystem.Colors.palette(for: settings.activeTheme, interfaceStyle: scheme)
@@ -31,6 +32,7 @@ struct SettingsView: View {
                 Toggle("Start proxy automatically", isOn: $settings.autoStartProxy)
                 Toggle("Clear captured flows on start", isOn: $settings.autoClearOnStart)
                 Toggle("Intercept only active pinned hosts", isOn: $settings.restrictInterceptionToActivePinnedHosts)
+                Toggle("Override macOS proxy", isOn: $settings.overrideMacOSProxy)
                 HStack {
                     Text("Default port")
                     Spacer()
@@ -46,6 +48,9 @@ struct SettingsView: View {
                     }
                 }
                 Text("Port used when starting the embedded mitmproxy. Range 1024-65535.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                Text("When enabled, macOS will route HTTP and HTTPS traffic to localhost on the selected port.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 Text("When enabled, mitmproxy will only MITM active pinned hosts; all other HTTPS traffic is tunneled to avoid interfering with other apps. Restart the proxy to apply changes.")
@@ -64,6 +69,16 @@ struct SettingsView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 Text("Presets inject latency, bandwidth caps and packet loss on intercepted traffic. Switching profile while the proxy runs takes effect immediately.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section(header: Text("Onboarding")) {
+                Button("Riavvia tutorial guidato") {
+                    onboardingManager.resetOnboarding()
+                }
+                .foregroundColor(.red)
+                Text("Mostra nuovamente il tour interattivo delle funzionalità principali dell'app.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

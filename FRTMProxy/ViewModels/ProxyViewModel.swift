@@ -25,6 +25,7 @@ final class ProxyViewModel: ObservableObject {
     private var settingsCancellables: Set<AnyCancellable> = []
     private var defaultPort: Int
     private var autoClearOnStart = false
+    private var overrideMacOSProxy = false
     private var appliedRules: [String: MapRule] = [:]
     private var recordedFlowIDs: Set<String> = []
     private var appliedBreakpointRules: [String: FlowBreakpointRule] = [:]
@@ -74,6 +75,7 @@ final class ProxyViewModel: ObservableObject {
                 hosts: interceptionHosts
             )
             activePort = selectedPort
+            updateMacOSProxyOverridePort()
             reapplyStoredRules()
             reapplyBreakpointRules()
         } catch {
@@ -359,7 +361,12 @@ final class ProxyViewModel: ObservableObject {
         settings.$defaultPort
             .receive(on: DispatchQueue.main)
             .sink { [weak self] newPort in
-                self?.defaultPort = newPort
+                guard let self else { return }
+                self.defaultPort = newPort
+                if !self.isRunning {
+                    self.activePort = newPort
+                }
+                self.updateMacOSProxyOverridePort()
             }
             .store(in: &settingsCancellables)
 
@@ -408,11 +415,26 @@ final class ProxyViewModel: ObservableObject {
             }
             .store(in: &settingsCancellables)
 
+        settings.$overrideMacOSProxy
+            .dropFirst()
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isEnabled in
+                guard let self else { return }
+                self.overrideMacOSProxy = isEnabled
+                self.syncMacOSProxyOverride()
+            }
+            .store(in: &settingsCancellables)
+
         defaultPort = settings.defaultPort
         autoClearOnStart = settings.autoClearOnStart
         restrictInterceptionToHosts = settings.restrictInterceptionToActivePinnedHosts
         interceptionHosts = settings.pinnedHosts.filter(\.isActive).map(\.host)
         setTrafficProfile(settings.activeTrafficProfile, force: true)
+        overrideMacOSProxy = settings.overrideMacOSProxy
+        if overrideMacOSProxy {
+            applyMacOSProxyOverride(port: activePort)
+        }
 
         if settings.autoStartProxy && !isRunning {
             startProxy()
@@ -425,6 +447,39 @@ final class ProxyViewModel: ObservableObject {
         lastInterceptionConfigHash = configHash
         guard isRunning else { return }
         logText.append("\n[PROXY] Domain filter changed. Restart the proxy to apply.")
+    }
+
+    private func syncMacOSProxyOverride() {
+        if overrideMacOSProxy {
+            applyMacOSProxyOverride(port: activePort)
+        } else {
+            clearMacOSProxyOverride()
+        }
+    }
+
+    private func updateMacOSProxyOverridePort() {
+        guard overrideMacOSProxy else { return }
+        applyMacOSProxyOverride(port: activePort)
+    }
+
+    private func applyMacOSProxyOverride(port: Int) {
+        Task { @MainActor [weak self] in
+            do {
+                try await MacOSProxyOverrideManager.shared.enableProxy(host: "localhost", port: port)
+            } catch {
+                self?.appendLog("\n[SYSTEM] \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func clearMacOSProxyOverride() {
+        Task { @MainActor [weak self] in
+            do {
+                try await MacOSProxyOverrideManager.shared.disableProxy()
+            } catch {
+                self?.appendLog("\n[SYSTEM] \(error.localizedDescription)")
+            }
+        }
     }
 
     func updateRule(

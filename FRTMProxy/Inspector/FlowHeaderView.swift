@@ -76,6 +76,7 @@ struct FlowHeaderView: View {
                     ControlButton(title: "Body", systemImage: "doc.on.doc", style: .ghost(colors), disabled: onCopyBody == nil) { onCopyBody?() }
                     if let onMapLocal {
                         ControlButton(title: "Map Local", systemImage: "pencil.and.outline", style: .filled(colors)) { onMapLocal() }
+                            .onboardingTarget(.mapResponse)
                     }
                     if let toggle = onToggleBreakpoint {
                         BreakpointSelectorButton(

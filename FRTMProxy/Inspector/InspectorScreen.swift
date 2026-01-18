@@ -104,6 +104,7 @@ struct InspectorScreen: View {
                                 viewModel.setBreakpoint(for: flow, phase: phase, enabled: enabled)
                             }
                         )
+                        .onboardingTarget(.inspectFlow)
                         .gesture(inspectorDragGesture(maxHeight: maxHeight))
                     }
                 }
@@ -425,6 +426,7 @@ private struct InspectorHeaderBar: View {
                 ControlButton(title: "Start", systemImage: "play.fill", style: .filled(colors), disabled: isRunning) {
                     onStart()
                 }
+                .onboardingTarget(.startProxy)
                 ControlButton(title: "Stop", systemImage: "stop.fill", style: .destructive(colors), disabled: !isRunning) {
                     onStop()
                 }
@@ -618,6 +620,7 @@ private struct FlowExplorerSection: View {
                 onTogglePinnedHost: onTogglePinnedHost,
                 onRemovePinnedHost: onRemovePinnedHost
             )
+            .onboardingTarget(.filterResults)
             FlowTableView(
                 flows: flows,
                 selection: $selection,
@@ -631,6 +634,7 @@ private struct FlowExplorerSection: View {
                 onFilterDevice: onFilterDevice
             )
             .frame(minHeight: 120, idealHeight: 360, maxHeight: .infinity)
+            .onboardingTarget(.viewTraffic)
         }
     }
 }

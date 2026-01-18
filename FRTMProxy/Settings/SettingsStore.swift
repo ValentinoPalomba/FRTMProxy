@@ -18,6 +18,10 @@ final class SettingsStore: ObservableObject {
         didSet { defaults.set(autoClearOnStart, forKey: autoClearKey) }
     }
 
+    @Published var overrideMacOSProxy: Bool {
+        didSet { defaults.set(overrideMacOSProxy, forKey: macOSProxyOverrideKey) }
+    }
+
     @Published var pinnedHosts: [PinnedHost] {
         didSet { persistPinnedHosts() }
     }
@@ -35,6 +39,7 @@ final class SettingsStore: ObservableObject {
     private let portKey = "settings.defaultPort"
     private let autoStartKey = "settings.autoStart"
     private let autoClearKey = "settings.autoClear"
+    private let macOSProxyOverrideKey = "settings.macosProxyOverride"
     private let pinnedHostsKey = "settings.pinnedHosts"
     private let restrictInterceptionKey = "settings.restrictInterceptionToActivePinnedHosts"
     private let trafficProfileKey = "settings.trafficProfile"
@@ -55,6 +60,7 @@ final class SettingsStore: ObservableObject {
         self.defaultPort = (storedPort >= 1024 && storedPort <= 65535) ? storedPort : 8080
         self.autoStartProxy = defaults.bool(forKey: autoStartKey)
         self.autoClearOnStart = defaults.bool(forKey: autoClearKey)
+        self.overrideMacOSProxy = defaults.bool(forKey: macOSProxyOverrideKey)
         self.pinnedHosts = SettingsStore.loadPinnedHosts(from: defaults, key: pinnedHostsKey)
         self.restrictInterceptionToActivePinnedHosts = defaults.bool(forKey: restrictInterceptionKey)
         let storedProfileID = defaults.string(forKey: trafficProfileKey)

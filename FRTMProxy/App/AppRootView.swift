@@ -3,6 +3,7 @@ import SwiftUI
 struct AppRootView: View {
     private var viewModel: ProxyViewModel
     @StateObject private var rulesViewModel: MapRuleViewModel
+    @StateObject private var onboardingManager = OnboardingManager()
 
     init(
         viewModel: ProxyViewModel,
@@ -13,9 +14,12 @@ struct AppRootView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            InspectorScreen(viewModel: viewModel, rulesViewModel: rulesViewModel)
-                .navigationTitle("FRTMProxy Inspector")
+        OnboardingContainer {
+            NavigationStack {
+                InspectorScreen(viewModel: viewModel, rulesViewModel: rulesViewModel)
+                    .navigationTitle("FRTMProxy Inspector")
+            }
         }
+        .environmentObject(onboardingManager)
     }
 }
