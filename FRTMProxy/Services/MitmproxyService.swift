@@ -31,7 +31,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     private let config: MitmproxyConfig
     private var process: Process?
     private var commandHandle: FileHandle?
-    private let maxFlowsStored = 500
+    private let dataStack = CoreDataStack.shared
     private var appTerminationObserver: NSObjectProtocol?
     private var workspaceTerminationObserver: NSObjectProtocol?
     
@@ -39,15 +39,14 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     
     /// Proxy running?
     @Published private(set) var isRunning: Bool = false
-    @Published var flows: [String: MitmFlow] = [:]
 
-    var flowsPublisher: AnyPublisher<[String: MitmFlow], Never> { $flows.eraseToAnyPublisher() }
     var isRunningPublisher: AnyPublisher<Bool, Never> { $isRunning.eraseToAnyPublisher() }
     
     nonisolated init(config: MitmproxyConfig) {
         self.config = config
         Task { @MainActor in
             self.setupTerminationObservers()
+            pruneOldFlows()
         }
     }
     
@@ -215,9 +214,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         guard let data = line.data(using: .utf8) else { return }
         
         if let flow = try? JSONDecoder().decode(MitmFlow.self, from: data) {
-            DispatchQueue.main.async {
-                self.mergeFlow(flow)
-            }
+            mergeFlow(flow)
         } else {
             DispatchQueue.main.async {
                 self.onLog?(line)
@@ -225,45 +222,74 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         }
     }
     
-    @MainActor
     private func mergeFlow(_ incoming: MitmFlow) {
-        if var existing = flows[incoming.id] {
-            if incoming.event == "request" {
-                existing.request = incoming.request
-            }
-            if incoming.event == "response" {
-                existing.response = incoming.response
-            }
-            if let breakpoint = incoming.breakpoint {
-                existing.breakpoint = breakpoint
-            } else if existing.breakpoint != nil && incoming.breakpoint == nil {
-                existing.breakpoint = nil
-            }
-            if existing.timestamp == nil {
-                existing.timestamp = incoming.timestamp
-            }
-            flows[incoming.id] = existing
-        } else {
-            flows[incoming.id] = incoming
-        }
+        let context = dataStack.newBackgroundContext()
+        context.perform {
+            let fetchRequest: NSFetchRequest<MitmFlowEntity> = MitmFlowEntity.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "id == %@", incoming.id)
 
-        if flows.count > maxFlowsStored {
-            trimOldFlows()
+            do {
+                let results = try context.fetch(fetchRequest)
+                let entity: MitmFlowEntity
+
+                if let existing = results.first {
+                    entity = existing
+                } else {
+                    entity = MitmFlowEntity(context: context)
+                }
+
+                entity.update(from: incoming)
+
+                try context.save()
+            } catch {
+                DispatchQueue.main.async {
+                    self.onLog?("[DB] Failed to save flow: \(error.localizedDescription)\n")
+                }
+            }
         }
     }
 
-    private func trimOldFlows() {
-        let ordered = flows.values.sorted { ($0.timestamp ?? 0) > ($1.timestamp ?? 0) }
-        let trimmed = ordered.prefix(maxFlowsStored)
-        var newDict: [String: MitmFlow] = [:]
-        trimmed.forEach { newDict[$0.id] = $0 }
-        flows = newDict
-        onLog?("[PERF] Flussi limitati a \(maxFlowsStored) per evitare uso eccessivo di memoria/cpu\n")
+    private func pruneOldFlows() {
+        let context = dataStack.newBackgroundContext()
+        context.perform {
+            let fetchRequest: NSFetchRequest<NSFetchRequestResult> = MitmFlowEntity.fetchRequest()
+            let sevenDaysAgo = Date().addingTimeInterval(-7 * 24 * 60 * 60)
+            fetchRequest.predicate = NSPredicate(format: "timestamp < %@", sevenDaysAgo as NSDate)
+
+            let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+
+            do {
+                try context.execute(deleteRequest)
+                try context.save()
+                DispatchQueue.main.async {
+                    self.onLog?("[DB] Pruned flows older than 7 days\n")
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.onLog?("[DB] Failed to prune old flows: \(error.localizedDescription)\n")
+                }
+            }
+        }
     }
 
     func clearFlows() {
-        flows.removeAll()
-        onLog?("[PROXY] Flussi puliti\n")
+        let context = dataStack.newBackgroundContext()
+        context.perform {
+            let fetchRequest: NSFetchRequest<NSFetchRequestResult> = MitmFlowEntity.fetchRequest()
+            let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+
+            do {
+                try context.execute(deleteRequest)
+                try context.save()
+                DispatchQueue.main.async {
+                    self.onLog?("[DB] Cleared all flows\n")
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.onLog?("[DB] Failed to clear flows: \(error.localizedDescription)\n")
+                }
+            }
+        }
     }
 
     func stopProxy() {

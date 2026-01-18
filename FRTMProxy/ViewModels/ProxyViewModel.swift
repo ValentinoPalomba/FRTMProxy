@@ -1,8 +1,8 @@
 import Combine
 import Foundation
+import CoreData
 
-
-final class ProxyViewModel: ObservableObject {
+final class ProxyViewModel: NSObject, ObservableObject, NSFetchedResultsControllerDelegate {
     @Published var flows: [MitmFlow] = []
     @Published var selectedFlowID: String?
     @Published var logText: String = ""
@@ -21,6 +21,7 @@ final class ProxyViewModel: ObservableObject {
     private let collectionStore: MapCollectionStoreProtocol
     private let breakpointStore: BreakpointStoreProtocol
     private let collectionRecorder = CollectionRecorder()
+    private let viewContext = CoreDataStack.shared.viewContext
     private var cancellables: Set<AnyCancellable> = []
     private var settingsCancellables: Set<AnyCancellable> = []
     private var defaultPort: Int
@@ -33,6 +34,8 @@ final class ProxyViewModel: ObservableObject {
     private var interceptionHosts: [String] = []
     private var lastInterceptionConfigHash: Int?
     
+    private var fetchedResultsController: NSFetchedResultsController<MitmFlowEntity>!
+
     init(
         service: ProxyServiceProtocol = MitmproxyService(config: MitmproxyConfig()),
         ruleStore: MapRuleStoreProtocol = MapRuleStore(),
@@ -46,6 +49,8 @@ final class ProxyViewModel: ObservableObject {
         self.breakpointStore = breakpointStore
         self.defaultPort = defaultPort
         self.activePort = defaultPort
+        super.init()
+        setupFetchedResultsController()
         bind()
         loadPersistedRules()
         loadPersistedCollections()
@@ -277,7 +282,10 @@ final class ProxyViewModel: ObservableObject {
     }
 
     func flow(withID id: String) -> MitmFlow? {
-        flows.first(where: { $0.id == id })
+        guard let entity = fetchedResultsController.fetchedObjects?.first(where: { $0.id == id }) else {
+            return nil
+        }
+        return entity.toMitmFlow()
     }
 
     func continueActiveBreakpoint(using editor: MapEditorViewModel) {
@@ -463,7 +471,7 @@ final class ProxyViewModel: ObservableObject {
         collectionRecorder.start(name: trimmed)
         recordingCollectionName = trimmed
         recordingRulesPreview = []
-        recordedFlowIDs = Set(flows.map { $0.id })
+        recordedFlowIDs = Set(fetchedResultsController.fetchedObjects?.map { $0.id } ?? [])
     }
 
     func stopCollectionRecording(save: Bool) {
@@ -553,22 +561,45 @@ final class ProxyViewModel: ObservableObject {
         return (key: host + path, host: host, path: path.isEmpty ? "/" : path, scheme: url.scheme)
     }
     
-    private func bind() {
-        service.flowsPublisher
-            .map { map in
-                map.values.sorted(by: { ($0.timestamp ?? 0) > ($1.timestamp ?? 0) })
-            }
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] sorted in
-                self?.flows = sorted
-                if self?.selectedFlowID == nil {
-                    self?.selectedFlowID = sorted.first?.id
-                }
-                self?.captureRecordingRules(from: sorted)
-                self?.enqueueBreakpointHits(from: sorted)
-            }
-            .store(in: &cancellables)
+    private func setupFetchedResultsController() {
+        let request: NSFetchRequest<MitmFlowEntity> = MitmFlowEntity.fetchRequest()
+        request.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
+        request.fetchBatchSize = 20
         
+        fetchedResultsController = NSFetchedResultsController(
+            fetchRequest: request,
+            managedObjectContext: viewContext,
+            sectionNameKeyPath: nil,
+            cacheName: nil
+        )
+        fetchedResultsController.delegate = self
+
+        do {
+            try fetchedResultsController.performFetch()
+            updateFlows(from: fetchedResultsController.fetchedObjects)
+        } catch {
+            logText.append("\n[DB] Failed to fetch flows: \(error.localizedDescription)")
+        }
+    }
+
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        guard let entities = controller.fetchedObjects as? [MitmFlowEntity] else { return }
+        updateFlows(from: entities)
+    }
+
+    private func updateFlows(from entities: [MitmFlowEntity]?) {
+        let newFlows = entities?.map { $0.toMitmFlow() } ?? []
+        self.flows = newFlows
+
+        if selectedFlowID == nil, let first = newFlows.first {
+            selectedFlowID = first.id
+        }
+
+        captureRecordingRules(from: newFlows)
+        enqueueBreakpointHits(from: newFlows)
+    }
+
+    private func bind() {
         service.isRunningPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] running in

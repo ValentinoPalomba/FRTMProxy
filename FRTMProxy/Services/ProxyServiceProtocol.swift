@@ -2,7 +2,6 @@ import Combine
 import Foundation
 
 protocol ProxyServiceProtocol: AnyObject {
-    var flowsPublisher: AnyPublisher<[String: MitmFlow], Never> { get }
     var isRunningPublisher: AnyPublisher<Bool, Never> { get }
     var onLog: ((String) -> Void)? { get set }
 
