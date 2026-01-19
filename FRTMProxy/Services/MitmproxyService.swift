@@ -26,6 +26,13 @@ enum MitmproxyServiceError: LocalizedError {
     }
 }
 
+private enum MitmdumpWarmupState: Equatable {
+    case idle
+    case warming
+    case ready
+    case failed(String)
+}
+
 @MainActor
 final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     private let config: MitmproxyConfig
@@ -34,6 +41,9 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     private let maxFlowsStored = 500
     private var appTerminationObserver: NSObjectProtocol?
     private var workspaceTerminationObserver: NSObjectProtocol?
+    private var warmupState: MitmdumpWarmupState = .idle
+    private var warmupProcess: Process?
+    private var cachedMitmdumpURL: URL?
     
     nonisolated(unsafe) var onLog: ((String) -> Void)?
     
@@ -48,6 +58,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         self.config = config
         Task { @MainActor in
             self.setupTerminationObservers()
+            self.prewarmMitmdumpExecutableIfNeeded()
         }
     }
     
@@ -60,6 +71,8 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         }
         Task { @MainActor [weak self]  in
             self?.stopProxy()
+            self?.warmupProcess?.terminate()
+            self?.warmupProcess = nil
         }
     }
     
@@ -175,12 +188,17 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     }
     
     private func bundledMitmdumpExecutableURL() throws -> URL {
+        if let cachedMitmdumpURL {
+            return cachedMitmdumpURL
+        }
+        
         guard let url = Bundle.main.url(forResource: "mitmdump", withExtension: nil) else {
             print("NOT FOUND")
             throw MitmproxyServiceError.executableNotFound("Resources/mitmdump")
         }
         
         try ensureExecutablePermission(for: url)
+        cachedMitmdumpURL = url
         return url
     }
     
@@ -196,6 +214,39 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         
         guard fileManager.isExecutableFile(atPath: path) else {
             throw MitmproxyServiceError.failedToRun("Impossibile rendere eseguibile \(path)")
+        }
+    }
+
+    /// Launches a lightweight `mitmdump --version` to force the bundled binary to unpack/cache itself before the user presses Start.
+    private func prewarmMitmdumpExecutableIfNeeded() {
+        guard warmupState == .idle else { return }
+        warmupState = .warming
+        
+        do {
+            let executableURL = try bundledMitmdumpExecutableURL()
+            let warmupProcess = Process()
+            warmupProcess.executableURL = executableURL
+            warmupProcess.arguments = ["--version"]
+            warmupProcess.standardOutput = Pipe()
+            warmupProcess.standardError = Pipe()
+            warmupProcess.terminationHandler = { [weak self] proc in
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.warmupProcess = nil
+                    if proc.terminationStatus == 0 {
+                        self.warmupState = .ready
+                        self.onLog?("[PROXY] mitmdump pronto all'avvio\n")
+                    } else {
+                        self.warmupState = .failed("uscita con codice \(proc.terminationStatus)")
+                        self.onLog?("[PROXY] warmup mitmdump fallito (codice \(proc.terminationStatus))\n")
+                    }
+                }
+            }
+            try warmupProcess.run()
+            self.warmupProcess = warmupProcess
+        } catch {
+            warmupState = .failed(error.localizedDescription)
+            onLog?("[PROXY] impossibile pre-avviare mitmdump: \(error.localizedDescription)\n")
         }
     }
     
