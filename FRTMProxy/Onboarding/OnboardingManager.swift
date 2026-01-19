@@ -9,7 +9,7 @@ class OnboardingManager: ObservableObject {
     private let hasCompletedOnboardingKey = "hasCompletedOnboarding"
     
     var shouldShowOnboarding: Bool {
-        true
+        !userDefaults.bool(forKey: hasCompletedOnboardingKey)
     }
     
     func startOnboarding() {
