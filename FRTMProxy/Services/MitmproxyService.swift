@@ -50,7 +50,6 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     /// Proxy running?
     @Published private(set) var isRunning: Bool = false
     @Published var flows: [String: MitmFlow] = [:]
-
     var flowsPublisher: AnyPublisher<[String: MitmFlow], Never> { $flows.eraseToAnyPublisher() }
     var isRunningPublisher: AnyPublisher<Bool, Never> { $isRunning.eraseToAnyPublisher() }
     
@@ -66,7 +65,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         if let observer = appTerminationObserver {
             NotificationCenter.default.removeObserver(observer)
         }
-        if let observer = workspaceTerminationObserver {
+        if let observer: any NSObjectProtocol = workspaceTerminationObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(observer)
         }
         Task { @MainActor [weak self]  in

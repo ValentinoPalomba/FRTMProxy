@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "sweetpad-lldb",
+      "request": "attach",
+      "name": "SweetPad: Build and Run (Wait for debugger)",
+      "preLaunchTask": "sweetpad: debugging-launch"
+    },
+    {
+      "type": "sweetpad-lldb",
+      "request": "attach",
+      "name": "Attach to running app (SweetPad)",
+      "preLaunchTask": "sweetpad: launch"
+    }
+  ]
+}
