@@ -1,11 +1,22 @@
 import Foundation
-import Compression
 
 protocol MapCollectionStoreProtocol {
     func loadCollections() -> [MapCollection]
     func save(collections: [MapCollection])
     func export(collection: MapCollection, to destinationURL: URL) throws
     func importCollection(at url: URL) throws -> MapCollection
+    func loadGitSources() -> [GitCollectionSource]
+    func saveGitSources(_ sources: [GitCollectionSource])
+    func syncGitSource(_ source: GitCollectionSource) async throws -> GitCollectionsSyncResult
+    func pushCollectionToGit(
+        _ collection: MapCollection,
+        source: GitCollectionSource,
+        branch: String,
+        relativePath: String,
+        commitMessage: String,
+        tagName: String?,
+        author: GitCommitIdentity
+    ) async throws -> GitCollectionsPublishResult
 }
 
 final class MapCollectionStore: MapCollectionStoreProtocol {
@@ -13,6 +24,8 @@ final class MapCollectionStore: MapCollectionStoreProtocol {
     private let decoder = JSONDecoder()
     private let collectionsDirectory: URL
     private let storageURL: URL
+    private let gitSourcesURL: URL
+    private let gitRepositoriesDirectory: URL
 
     init(filename: String = "collections.json") {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first ?? URL(fileURLWithPath: NSTemporaryDirectory())
@@ -22,6 +35,10 @@ final class MapCollectionStore: MapCollectionStoreProtocol {
         try? FileManager.default.createDirectory(at: collectionsDir, withIntermediateDirectories: true)
         self.collectionsDirectory = collectionsDir
         self.storageURL = collectionsDir.appendingPathComponent(filename)
+        self.gitSourcesURL = directory.appendingPathComponent("git-sources.json")
+        let reposDir = directory.appendingPathComponent("GitRepositories", isDirectory: true)
+        try? FileManager.default.createDirectory(at: reposDir, withIntermediateDirectories: true)
+        self.gitRepositoriesDirectory = reposDir
         encoder.outputFormatting = [.prettyPrinted]
     }
 
@@ -46,6 +63,11 @@ final class MapCollectionStore: MapCollectionStoreProtocol {
     }
 
     func export(collection: MapCollection, to destinationURL: URL) throws {
+        if destinationURL.pathExtension.lowercased() == "har" {
+            try exportHAR(collection: collection, to: destinationURL)
+            return
+        }
+
         let tempRoot = FileManager.default.temporaryDirectory
             .appendingPathComponent("FRTMCollection-\(collection.id.uuidString)", isDirectory: true)
 
@@ -63,7 +85,7 @@ final class MapCollectionStore: MapCollectionStoreProtocol {
         try FileManager.default.createDirectory(at: rulesDirectory, withIntermediateDirectories: true)
 
         for rule in collection.rules {
-            let filename = rule.displayURL.proxySanitizedFilename()
+            let filename = rule.key.proxySanitizedFilename()
             let fileURL = rulesDirectory.appendingPathComponent(filename).appendingPathExtension("json")
             let data = try encoder.encode(rule)
             try data.write(to: fileURL)
@@ -75,11 +97,77 @@ final class MapCollectionStore: MapCollectionStoreProtocol {
     }
 
     func importCollection(at url: URL) throws -> MapCollection {
+        if url.pathExtension.lowercased() == "har" {
+            return try importFromHAR(url)
+        }
         if url.pathExtension.lowercased() == "zip" {
             return try importFromArchive(url)
         } else {
             return try loadCollection(fromDirectory: url)
         }
+    }
+
+    func loadGitSources() -> [GitCollectionSource] {
+        guard FileManager.default.fileExists(atPath: gitSourcesURL.path) else { return [] }
+        do {
+            let data = try Data(contentsOf: gitSourcesURL)
+            return try decoder.decode([GitCollectionSource].self, from: data)
+        } catch {
+            NSLog("Failed to load git sources: \(error)")
+            return []
+        }
+    }
+
+    func saveGitSources(_ sources: [GitCollectionSource]) {
+        do {
+            let data = try encoder.encode(sources)
+            try data.write(to: gitSourcesURL, options: .atomic)
+        } catch {
+            NSLog("Failed to save git sources: \(error)")
+        }
+    }
+
+    func syncGitSource(_ source: GitCollectionSource) async throws -> GitCollectionsSyncResult {
+        let cloneDirectory = gitRepositoriesDirectory.appendingPathComponent(source.id.uuidString, isDirectory: true)
+        return try await GitCollectionsSyncer.sync(
+            source: source,
+            cloneDirectory: cloneDirectory
+        )
+    }
+
+    func pushCollectionToGit(
+        _ collection: MapCollection,
+        source: GitCollectionSource,
+        branch: String,
+        relativePath: String,
+        commitMessage: String,
+        tagName: String?,
+        author: GitCommitIdentity
+    ) async throws -> GitCollectionsPublishResult {
+        let cloneDirectory = gitRepositoriesDirectory.appendingPathComponent(source.id.uuidString, isDirectory: true)
+        return try await GitCollectionsPublisher.pushCollection(
+            collection,
+            source: source,
+            branch: branch,
+            relativePath: relativePath,
+            commitMessage: commitMessage,
+            tagName: tagName,
+            author: author,
+            cloneDirectory: cloneDirectory
+        )
+    }
+
+    private func exportHAR(collection: MapCollection, to destinationURL: URL) throws {
+        let har = HARCollectionConverter.exportHAR(collection: collection)
+        let encoder = HARCollectionConverter.harEncoder(prettyPrinted: true)
+        let data = try encoder.encode(har)
+        try data.write(to: destinationURL, options: .atomic)
+    }
+
+    private func importFromHAR(_ harURL: URL) throws -> MapCollection {
+        let data = try Data(contentsOf: harURL)
+        let name = harURL.deletingPathExtension().lastPathComponent
+        return try HARCollectionConverter.importCollection(from: data, name: name)
     }
 
     private func importFromArchive(_ archiveURL: URL) throws -> MapCollection {

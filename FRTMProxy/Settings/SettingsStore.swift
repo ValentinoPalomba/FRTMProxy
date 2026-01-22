@@ -6,6 +6,14 @@ final class SettingsStore: ObservableObject {
         didSet { defaults.set(selectedThemeID, forKey: themeKey) }
     }
 
+    @Published var gitAuthorName: String {
+        didSet { defaults.set(gitAuthorName, forKey: gitAuthorNameKey) }
+    }
+
+    @Published var gitAuthorEmail: String {
+        didSet { defaults.set(gitAuthorEmail, forKey: gitAuthorEmailKey) }
+    }
+
     @Published var defaultPort: Int {
         didSet { defaults.set(defaultPort, forKey: portKey) }
     }
@@ -36,6 +44,8 @@ final class SettingsStore: ObservableObject {
 
     private let defaults = UserDefaults.standard
     private let themeKey = "settings.theme"
+    private let gitAuthorNameKey = "settings.gitAuthorName"
+    private let gitAuthorEmailKey = "settings.gitAuthorEmail"
     private let portKey = "settings.defaultPort"
     private let autoStartKey = "settings.autoStart"
     private let autoClearKey = "settings.autoClear"
@@ -55,6 +65,8 @@ final class SettingsStore: ObservableObject {
     init() {
         let storedThemeID = defaults.string(forKey: themeKey)
         self.selectedThemeID = ThemeLibrary.theme(with: storedThemeID).id
+        self.gitAuthorName = defaults.string(forKey: gitAuthorNameKey) ?? ""
+        self.gitAuthorEmail = defaults.string(forKey: gitAuthorEmailKey) ?? ""
 
         let storedPort = defaults.integer(forKey: portKey)
         self.defaultPort = (storedPort >= 1024 && storedPort <= 65535) ? storedPort : 8080

@@ -17,6 +17,8 @@ struct CollectionsManagerView: View {
     @State private var confirmStopRecording = false
     @State private var editingRuleContext: RuleEditorContext?
     @State private var alertMessage: String?
+    @State private var showGitSheet = false
+    @State private var publishContext: GitPublishContext?
 
     private var colors: DesignSystem.ColorPalette {
         DesignSystem.Colors.palette(for: settings.activeTheme, interfaceStyle: colorScheme)
@@ -74,6 +76,17 @@ struct CollectionsManagerView: View {
                 },
                 onClose: { editingRuleContext = nil }
             )
+        }
+        .sheet(isPresented: $showGitSheet) {
+            GitCollectionsSheet(viewModel: viewModel, colors: colors)
+        }
+        .sheet(item: $publishContext) { context in
+            if let collection = viewModel.collections.first(where: { $0.id == context.collectionID }) {
+                GitPublishCollectionSheet(viewModel: viewModel, collection: collection, colors: colors)
+            } else {
+                Text("Collection non trovata.")
+                    .padding(24)
+            }
         }
         .alert(
             "Operazione non riuscita",
@@ -158,6 +171,14 @@ struct CollectionsManagerView: View {
             }
 
             ControlButton(
+                title: "Git",
+                systemImage: "arrow.triangle.branch",
+                style: .ghost(colors)
+            ) {
+                showGitSheet = true
+            }
+
+            ControlButton(
                 title: "Export",
                 systemImage: "square.and.arrow.up",
                 style: .ghost(colors),
@@ -195,6 +216,10 @@ struct CollectionsManagerView: View {
                         colors: colors,
                         onToggle: { enabled in
                             viewModel.toggleCollection(collection.id, enabled: enabled)
+                        },
+                        gitPublishDisabled: viewModel.gitCollectionSources.isEmpty,
+                        onGitPublish: {
+                            publishContext = GitPublishContext(collectionID: collection.id)
                         },
                         onRename: {
                             renameInput = collection.name
@@ -338,8 +363,9 @@ struct CollectionsManagerView: View {
     private func exportSelectedCollection() {
         guard let collection = selectedCollection else { return }
         let panel = NSSavePanel()
-        panel.nameFieldStringValue = "\(collection.name.proxySanitizedFilename()).zip"
-        panel.allowedContentTypes = [UTType.zip]
+        panel.nameFieldStringValue = "\(collection.name.proxySanitizedFilename()).har"
+        let harType = UTType(filenameExtension: "har") ?? UTType.json
+        panel.allowedContentTypes = [harType]
         panel.canCreateDirectories = true
         if panel.runModal() == .OK, let url = panel.url {
             do {
@@ -356,6 +382,8 @@ struct CollectionsManagerView: View {
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
         panel.treatsFilePackagesAsDirectories = true
+        let harType = UTType(filenameExtension: "har") ?? UTType.json
+        panel.allowedContentTypes = [harType, UTType.zip, UTType.json]
         if panel.runModal() == .OK, let url = panel.url {
             do {
                 try viewModel.importCollection(from: url)
@@ -477,6 +505,11 @@ private struct RecordingPreviewRuleRow: View {
                 Text(rule.host)
                     .font(DesignSystem.Fonts.sans(13))
                     .foregroundStyle(colors.textSecondary)
+                if let variantLabel {
+                    Text(variantLabel)
+                        .font(DesignSystem.Fonts.mono(10))
+                        .foregroundStyle(colors.textSecondary)
+                }
             }
             Spacer()
             Text("\(rule.status)")
@@ -509,12 +542,26 @@ private struct RecordingPreviewRuleRow: View {
                 .stroke(colors.border.opacity(0.5), lineWidth: 1)
         )
     }
+
+    private var variantLabel: String? {
+        let method = rule.request?.method.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        let tag = MapRuleKeyBuilder.variantTag(from: rule.key)
+        if let method, !method.isEmpty, let tag {
+            return "\(method) • #\(tag)"
+        }
+        if let tag {
+            return "#\(tag)"
+        }
+        return nil
+    }
 }
 
 private struct CollectionDetailView: View {
     let collection: MapCollection
     let colors: DesignSystem.ColorPalette
     let onToggle: (Bool) -> Void
+    let gitPublishDisabled: Bool
+    let onGitPublish: () -> Void
     let onRename: () -> Void
     let onDelete: () -> Void
     let onEditRule: (MapRule) -> Void
@@ -536,6 +583,14 @@ private struct CollectionDetailView: View {
                 }
                 .toggleStyle(.switch)
                 .labelsHidden()
+                ControlButton(
+                    title: collection.origin?.git == nil ? "Publish" : "Push",
+                    systemImage: "arrow.up.circle",
+                    style: .ghost(colors),
+                    disabled: gitPublishDisabled
+                ) {
+                    onGitPublish()
+                }
                 ControlButton(title: "Rename", systemImage: "pencil", style: .ghost(colors)) {
                     onRename()
                 }
@@ -583,6 +638,11 @@ private struct CollectionDetailView: View {
     }
 }
 
+private struct GitPublishContext: Identifiable {
+    let collectionID: UUID
+    var id: UUID { collectionID }
+}
+
 private struct CollectionRuleRow: View {
     let rule: MapRule
     let colors: DesignSystem.ColorPalette
@@ -597,6 +657,11 @@ private struct CollectionRuleRow: View {
                 Text(rule.host)
                     .font(DesignSystem.Fonts.sans(14))
                     .foregroundStyle(colors.textSecondary)
+                if let variantLabel {
+                    Text(variantLabel)
+                        .font(DesignSystem.Fonts.mono(10))
+                        .foregroundStyle(colors.textSecondary)
+                }
             }
             Spacer()
             Text("\(rule.status)")
@@ -642,6 +707,18 @@ private struct CollectionRuleRow: View {
             Divider()
             Button("Delete", role: .destructive) { onDelete() }
         }
+    }
+
+    private var variantLabel: String? {
+        let method = rule.request?.method.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        let tag = MapRuleKeyBuilder.variantTag(from: rule.key)
+        if let method, !method.isEmpty, let tag {
+            return "\(method) • #\(tag)"
+        }
+        if let tag {
+            return "#\(tag)"
+        }
+        return nil
     }
 }
 

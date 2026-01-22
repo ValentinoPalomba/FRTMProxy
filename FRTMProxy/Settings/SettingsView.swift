@@ -28,6 +28,14 @@ struct SettingsView: View {
 
     private var generalTab: some View {
         Form {
+            Section(header: Text("Git")) {
+                TextField("Commit author name", text: $settings.gitAuthorName)
+                TextField("Commit author email", text: $settings.gitAuthorEmail)
+                Text("Used when FRTMProxy creates commits while publishing collections to a Git repository.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
             Section(header: Text("Proxy Behavior")) {
                 Toggle("Start proxy automatically", isOn: $settings.autoStartProxy)
                 Toggle("Clear captured flows on start", isOn: $settings.autoClearOnStart)

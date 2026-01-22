@@ -6,20 +6,25 @@ final class CollectionRecorder {
         let name: String
         let startedAt: Date
         private(set) var rules: [String: MapRule]
+        private(set) var orderedKeys: [String]
 
         init(id: UUID = UUID(), name: String, startedAt: Date = Date()) {
             self.id = id
             self.name = name
             self.startedAt = startedAt
             self.rules = [:]
+            self.orderedKeys = []
         }
 
         mutating func record(rule: MapRule) {
+            if rules[rule.key] == nil {
+                orderedKeys.append(rule.key)
+            }
             rules[rule.key] = rule
         }
 
         var sortedRules: [MapRule] {
-            Array(rules.values).sorted(by: { $0.key < $1.key })
+            orderedKeys.compactMap { rules[$0] }
         }
 
         func makeCollection() -> MapCollection {

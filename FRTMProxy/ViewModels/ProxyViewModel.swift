@@ -9,6 +9,7 @@ final class ProxyViewModel: ObservableObject {
     @Published private(set) var isRunning: Bool = false
     @Published var rules: [String: MapRule] = [:]
     @Published var collections: [MapCollection] = []
+    @Published var gitCollectionSources: [GitCollectionSource] = []
     @Published private(set) var recordingCollectionName: String?
     @Published private(set) var recordingRulesPreview: [MapRule] = []
     @Published private(set) var activePort: Int
@@ -50,6 +51,7 @@ final class ProxyViewModel: ObservableObject {
         bind()
         loadPersistedRules()
         loadPersistedCollections()
+        loadPersistedGitSources()
         loadPersistedBreakpoints()
         syncAppliedRules()
         syncBreakpointRules()
@@ -99,12 +101,15 @@ final class ProxyViewModel: ObservableObject {
     
     func mapResponse(body: String, status: Int? = nil, headers: [String: String]? = nil) {
         guard let flow = selectedFlow,
-              let ruleKey = mapKey(for: flow) else { return }
+              let ruleInfo = mapRuleKey(for: flow) else { return }
+        let preferredKey = ruleInfo.key
+        let key = MapRuleKeyBuilder.disambiguatedKey(preferredKey: preferredKey, existingKeys: Set(rules.keys))
         let rule = MapRule(
-            key: ruleKey.key,
-            host: ruleKey.host,
-            path: ruleKey.path,
-            scheme: ruleKey.scheme,
+            key: key,
+            host: ruleInfo.host,
+            path: ruleInfo.path,
+            scheme: ruleInfo.scheme,
+            request: ruleInfo.request,
             body: body,
             status: status ?? flow.response?.status ?? 200,
             headers: headers ?? flow.response?.headers ?? [:]
@@ -598,6 +603,178 @@ final class ProxyViewModel: ObservableObject {
         syncAppliedRules()
     }
 
+    @MainActor
+    func addGitCollectionSource(remoteURL: String, reference: String, subdirectory: String?) async throws {
+        let trimmedRemote = remoteURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedReference = reference.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedRemote.isEmpty, !trimmedReference.isEmpty else { return }
+
+        let source = GitCollectionSource(remoteURL: trimmedRemote, reference: trimmedReference, subdirectory: subdirectory)
+        let result = try await collectionStore.syncGitSource(source)
+
+        var persistedSource = source
+        persistedSource.lastSyncedAt = result.syncedAt
+        persistedSource.lastSyncedCommit = result.commit
+        gitCollectionSources.append(persistedSource)
+        persistGitSources()
+        applyGitCollections(result.collections)
+    }
+
+    @MainActor
+    func syncGitCollectionSource(_ id: UUID) async throws {
+        guard let source = gitCollectionSources.first(where: { $0.id == id }) else { return }
+        let result = try await collectionStore.syncGitSource(source)
+        var updated = source
+        updated.lastSyncedAt = result.syncedAt
+        updated.lastSyncedCommit = result.commit
+        updateGitSource(updated)
+        applyGitCollections(result.collections)
+    }
+
+    @MainActor
+    func syncAllGitCollectionSources() async throws {
+        for source in gitCollectionSources {
+            let result = try await collectionStore.syncGitSource(source)
+            var updated = source
+            updated.lastSyncedAt = result.syncedAt
+            updated.lastSyncedCommit = result.commit
+            updateGitSource(updated)
+            applyGitCollections(result.collections)
+        }
+    }
+
+    @MainActor
+    func removeGitCollectionSource(_ id: UUID) {
+        gitCollectionSources.removeAll(where: { $0.id == id })
+        persistGitSources()
+    }
+
+    @MainActor
+    func pushCollectionToGit(
+        collectionID: UUID,
+        sourceID: UUID,
+        branch: String,
+        relativePath: String,
+        commitMessage: String,
+        tagName: String?,
+        authorName: String?,
+        authorEmail: String?
+    ) async throws {
+        guard let collectionIndex = collections.firstIndex(where: { $0.id == collectionID }) else { return }
+        guard let baseSource = gitCollectionSources.first(where: { $0.id == sourceID }) else { return }
+
+        let trimmedBranch = branch.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedBranch.isEmpty else { return }
+
+        let normalizedPath = Self.normalizedHarPath(relativePath)
+
+        let targetSource = ensureGitSourceForPush(
+            baseSource: baseSource,
+            branch: trimmedBranch
+        )
+
+        let identity = GitCommitIdentity(
+            name: Self.normalizedGitIdentityValue(authorName, fallback: "FRTMProxy"),
+            email: Self.normalizedGitIdentityValue(authorEmail, fallback: "frtmproxy@localhost")
+        )
+
+        let result = try await collectionStore.pushCollectionToGit(
+            collections[collectionIndex],
+            source: targetSource,
+            branch: trimmedBranch,
+            relativePath: normalizedPath,
+            commitMessage: commitMessage,
+            tagName: tagName,
+            author: identity
+        )
+
+        collections[collectionIndex].origin = MapCollectionOrigin(
+            git: GitCollectionOrigin(
+                sourceID: targetSource.id,
+                remoteURL: targetSource.remoteURL,
+                reference: trimmedBranch,
+                relativePath: normalizedPath,
+                commit: result.commit
+            )
+        )
+        persistCollections()
+
+        var updatedSource = targetSource
+        updatedSource.lastSyncedAt = result.pushedAt
+        updatedSource.lastSyncedCommit = result.commit
+        updateGitSource(updatedSource)
+    }
+
+    @MainActor
+    private func updateGitSource(_ updated: GitCollectionSource) {
+        guard let index = gitCollectionSources.firstIndex(where: { $0.id == updated.id }) else { return }
+        gitCollectionSources[index] = updated
+        persistGitSources()
+    }
+
+    @MainActor
+    private func ensureGitSourceForPush(baseSource: GitCollectionSource, branch: String) -> GitCollectionSource {
+        let trimmedBranch = branch.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedBranch == baseSource.reference {
+            return baseSource
+        }
+
+        if let existing = gitCollectionSources.first(where: {
+            $0.remoteURL.trimmingCharacters(in: .whitespacesAndNewlines) == baseSource.remoteURL.trimmingCharacters(in: .whitespacesAndNewlines)
+                && ($0.subdirectory?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "") == (baseSource.subdirectory?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "")
+                && $0.reference.trimmingCharacters(in: .whitespacesAndNewlines) == trimmedBranch
+        }) {
+            return existing
+        }
+
+        let created = GitCollectionSource(remoteURL: baseSource.remoteURL, reference: trimmedBranch, subdirectory: baseSource.subdirectory)
+        gitCollectionSources.append(created)
+        persistGitSources()
+        return created
+    }
+
+    private static func normalizedHarPath(_ value: String) -> String {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.lowercased().hasSuffix(".har") {
+            return trimmed
+        }
+        return trimmed + ".har"
+    }
+
+    private static func normalizedGitIdentityValue(_ value: String?, fallback: String) -> String {
+        let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? fallback : trimmed
+    }
+
+    @MainActor
+    private func applyGitCollections(_ incoming: [MapCollection]) {
+        for newCollection in incoming {
+            guard let newOrigin = newCollection.origin?.git else { continue }
+            if let existingIndex = collections.firstIndex(where: { $0.origin?.git?.sourceID == newOrigin.sourceID && $0.origin?.git?.relativePath == newOrigin.relativePath }) {
+                let preservedID = collections[existingIndex].id
+                let preservedCreatedAt = collections[existingIndex].createdAt
+                let preservedIsEnabled = collections[existingIndex].isEnabled
+                let preservedEnabledAt = collections[existingIndex].enabledAt
+
+                var updated = newCollection
+                updated = MapCollection(
+                    id: preservedID,
+                    name: updated.name,
+                    createdAt: preservedCreatedAt,
+                    isEnabled: preservedIsEnabled,
+                    enabledAt: preservedEnabledAt,
+                    rules: updated.rules,
+                    origin: updated.origin
+                )
+                collections[existingIndex] = updated
+            } else {
+                collections.append(newCollection)
+            }
+        }
+        persistCollections()
+        syncAppliedRules()
+    }
+
     private func mapKey(for flow: MitmFlow) -> (key: String, host: String, path: String, scheme: String?)? {
         guard let urlString = flow.request?.url,
               let url = URL(string: urlString),
@@ -606,6 +783,26 @@ final class ProxyViewModel: ObservableObject {
         }
         let path = url.path
         return (key: host + path, host: host, path: path.isEmpty ? "/" : path, scheme: url.scheme)
+    }
+
+    private func mapRuleKey(for flow: MitmFlow) -> (key: String, host: String, path: String, scheme: String?, request: MapRuleRequest?)? {
+        guard let base = mapKey(for: flow) else { return nil }
+        guard let request = flow.request else { return nil }
+        let fullKey = MapRuleKeyBuilder.makeKey(
+            host: base.host,
+            path: base.path,
+            method: request.method,
+            url: request.url,
+            headers: request.headers,
+            body: request.body
+        )
+        return (
+            key: fullKey,
+            host: base.host,
+            path: base.path,
+            scheme: base.scheme,
+            request: MapRuleRequest(method: request.method, url: request.url, headers: request.headers, body: request.body)
+        )
     }
     
     private func bind() {
@@ -653,6 +850,10 @@ final class ProxyViewModel: ObservableObject {
         collections = collectionStore.loadCollections()
     }
 
+    private func loadPersistedGitSources() {
+        gitCollectionSources = collectionStore.loadGitSources()
+    }
+
     private func loadPersistedBreakpoints() {
         let stored = breakpointStore.loadBreakpoints()
         stored.forEach { rule in
@@ -667,6 +868,10 @@ final class ProxyViewModel: ObservableObject {
 
     private func persistCollections() {
         collectionStore.save(collections: collections)
+    }
+
+    private func persistGitSources() {
+        collectionStore.saveGitSources(gitCollectionSources)
     }
 
     private func persistBreakpoints() {
@@ -708,16 +913,23 @@ final class ProxyViewModel: ObservableObject {
 
     private func captureRecordingRules(from flows: [MitmFlow]) {
         guard collectionRecorder.isRecording else { return }
-        for flow in flows {
-            guard !recordedFlowIDs.contains(flow.id),
-                  let response = flow.response,
-                  let info = mapKey(for: flow) else { continue }
+        let candidates = flows
+            .filter { !recordedFlowIDs.contains($0.id) && $0.response != nil }
+            .sorted(by: { ($0.timestamp ?? 0) < ($1.timestamp ?? 0) })
 
+        var existingKeys = Set(collectionRecorder.currentRules().map(\.key))
+        for flow in candidates {
+            guard let response = flow.response,
+                  let info = mapRuleKey(for: flow) else { continue }
+
+            let key = MapRuleKeyBuilder.disambiguatedKey(preferredKey: info.key, existingKeys: existingKeys)
+            existingKeys.insert(key)
             let rule = MapRule(
-                key: info.key,
+                key: key,
                 host: info.host,
                 path: info.path,
                 scheme: info.scheme,
+                request: info.request,
                 body: response.body ?? "",
                 status: response.status ?? 200,
                 headers: response.headers ?? [:],
@@ -730,8 +942,18 @@ final class ProxyViewModel: ObservableObject {
 
     private func syncAppliedRules() {
         var merged: [String: MapRule] = [:]
-        for rule in rules.values where rule.isEnabled {
+        var orderedKeys: [String] = []
+
+        func upsert(_ rule: MapRule) {
+            if let index = orderedKeys.firstIndex(of: rule.key) {
+                orderedKeys.remove(at: index)
+            }
+            orderedKeys.append(rule.key)
             merged[rule.key] = rule
+        }
+
+        for rule in rules.values.sorted(by: { $0.key < $1.key }) where rule.isEnabled {
+            upsert(rule)
         }
 
         let enabledCollections = collections
@@ -740,7 +962,7 @@ final class ProxyViewModel: ObservableObject {
 
         for collection in enabledCollections {
             for rule in collection.rules where rule.isEnabled {
-                merged[rule.key] = rule
+                upsert(rule)
             }
         }
 
@@ -751,7 +973,8 @@ final class ProxyViewModel: ObservableObject {
             service.deleteRule(forKey: key)
         }
 
-        for (key, rule) in merged {
+        for key in orderedKeys {
+            guard let rule = merged[key] else { continue }
             if let existing = appliedRules[key], existing == rule {
                 continue
             }

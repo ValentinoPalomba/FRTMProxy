@@ -29,11 +29,26 @@ struct MitmFlow: Identifiable, Codable, Equatable {
     }
 }
 
-struct MapRule: Identifiable, Hashable, Codable {
+struct MapRuleRequest: Hashable, Codable, Sendable {
+    var method: String
+    var url: String
+    var headers: [String: String]
+    var body: String?
+
+    init(method: String, url: String, headers: [String: String] = [:], body: String? = nil) {
+        self.method = method
+        self.url = url
+        self.headers = headers
+        self.body = body
+    }
+}
+
+struct MapRule: Identifiable, Hashable, Codable, Sendable {
     let key: String
     let host: String
     let path: String
     var scheme: String?
+    var request: MapRuleRequest? = nil
     var body: String
     var status: Int
     var headers: [String: String]

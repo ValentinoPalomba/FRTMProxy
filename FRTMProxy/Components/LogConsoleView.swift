@@ -3,7 +3,8 @@ import SwiftUI
 struct LogConsoleView: View {
     let logText: String
     let colors: DesignSystem.ColorPalette
-    @State private var anchor = UUID()
+    @State private var scrollTask: Task<Void, Never>?
+    private let bottomAnchorID = "log-bottom-anchor"
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -30,12 +31,16 @@ struct LogConsoleView: View {
                                         .stroke(colors.border.opacity(0.7), lineWidth: 1)
                                 )
                         )
-                        .id(anchor)
+                    Color.clear
+                        .frame(height: 1)
+                        .id(bottomAnchorID)
                 }
-                .onChange(of: logText) { _ in
-                    anchor = UUID()
-                    withAnimation(.easeOut(duration: 0.15)) {
-                        proxy.scrollTo(anchor, anchor: .bottom)
+                .onChange(of: logText) { _, _ in
+                    scrollTask?.cancel()
+                    scrollTask = Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(80))
+                        guard !Task.isCancelled else { return }
+                        proxy.scrollTo(bottomAnchorID, anchor: .bottom)
                     }
                 }
             }

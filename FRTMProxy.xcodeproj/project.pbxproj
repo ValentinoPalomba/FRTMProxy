@@ -17,8 +17,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		E6538F412ECB60D70013CCA6 /* FRTMProxy */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = FRTMProxy;
 			sourceTree = "<group>";
 		};
