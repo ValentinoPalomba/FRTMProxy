@@ -1,0 +1,15 @@
+{
+  "originHash" : "e345098f9557c3a2d2b131934e02f390abb6a084346bd60d32474dd76d5db8de",
+  "pins" : [
+    {
+      "identity" : "codemirror-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ValentinoPalomba/CodeMirror-Swift",
+      "state" : {
+        "branch" : "master",
+        "revision" : "5b489f2c92fa70c42b6d9f6744a3926af752189a"
+      }
+    }
+  ],
+  "version" : 3
+}

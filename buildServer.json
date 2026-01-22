@@ -1,0 +1,19 @@
+{
+	"name": "xcode build server",
+	"version": "1.3.0",
+	"bspVersion": "2.2.0",
+	"languages": [
+		"c",
+		"cpp",
+		"objective-c",
+		"objective-cpp",
+		"swift"
+	],
+	"argv": [
+		"/Users/u471688/.vscode/extensions/fireplusteam.vscode-ios-0.5.16/xcode-build-server/xcode-build-server"
+	],
+	"workspace": "/Users/u471688/Repositories/FRTMProxy/FRTMProxy.xcodeproj/project.xcworkspace",
+	"build_root": "/Users/u471688/Library/Developer/Xcode/DerivedData/FRTMProxy-hfiwuvkyfqtsljfzzappjpkiyjmv",
+	"scheme": "FRTMProxy",
+	"kind": "xcode"
+}
