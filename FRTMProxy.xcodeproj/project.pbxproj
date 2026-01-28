@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		E67F14CC2ECD9C7000807063 /* CodeMirror in Frameworks */ = {isa = PBXBuildFile; productRef = E67F14CB2ECD9C7000807063 /* CodeMirror */; };
+		E6EE46392F2ACED1009AA367 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = E6EE46382F2ACED1009AA367 /* Sparkle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,6 +41,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E6EE46392F2ACED1009AA367 /* Sparkle in Frameworks */,
 				E67F14CC2ECD9C7000807063 /* CodeMirror in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -92,6 +94,7 @@
 			name = FRTMProxy;
 			packageProductDependencies = (
 				E67F14CB2ECD9C7000807063 /* CodeMirror */,
+				E6EE46382F2ACED1009AA367 /* Sparkle */,
 			);
 			productName = FRTMProxy;
 			productReference = E6538F3F2ECB60D70013CCA6 /* FRTMProxy.app */;
@@ -123,6 +126,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				E67F14CA2ECD9C6F00807063 /* XCRemoteSwiftPackageReference "CodeMirror-Swift" */,
+				E6EE46372F2ACED1009AA367 /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E6538F402ECB60D70013CCA6 /* Products */;
@@ -364,6 +368,14 @@
 				kind = branch;
 			};
 		};
+		E6EE46372F2ACED1009AA367 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.8.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -371,6 +383,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = E67F14CA2ECD9C6F00807063 /* XCRemoteSwiftPackageReference "CodeMirror-Swift" */;
 			productName = CodeMirror;
+		};
+		E6EE46382F2ACED1009AA367 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E6EE46372F2ACED1009AA367 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
