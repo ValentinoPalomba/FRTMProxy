@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AppKit
+import Sparkle
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     weak var proxyViewModel: ProxyViewModel?
@@ -27,6 +28,11 @@ struct FRTMProxyApp: App {
     @State private var isInstallingSimulatorCertificate = false
     private let certificateInstaller = SimulatorCertificateInstaller()
     @Environment(\.openWindow) private var openWindow
+    private let updaterController: SPUStandardUpdaterController
+    
+    init() {
+        updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+    }
     
     var body: some Scene {
         WindowGroup {
@@ -50,6 +56,9 @@ struct FRTMProxyApp: App {
         .windowResizability(.contentSize)
         
         .commands {
+            CommandGroup(after: .appInfo) {
+                            CheckForUpdatesView(updater: updaterController.updater)
+                        }
             CommandGroup(replacing: .appInfo) {
                 Button("About FRTMTools") {
                     openWindow(id: "about-ftrmtools")
