@@ -34,6 +34,15 @@ final class ProxyViewModel: ObservableObject {
     private var restrictInterceptionToHosts = false
     private var interceptionHosts: [String] = []
     private var lastInterceptionConfigHash: Int?
+    private let clientAppResolver = ClientAppResolver()
+    private var clientAppByConnectionKey: [String: FlowClientApp] = [:]
+    private var resolvingConnectionKeys: Set<String> = []
+    private var alertsEnabled = false
+    private var alertRules: [AlertRule] = []
+    private var alertFiltersByRuleID: [UUID: FlowFilter] = [:]
+    private var alertRuleQueryByID: [UUID: String] = [:]
+    private var triggeredAlertKeys: Set<String> = []
+    private var seenAlertFlowIDs: Set<String> = []
     
     init(
         service: ProxyServiceProtocol = MitmproxyService(config: MitmproxyConfig()),
@@ -92,6 +101,8 @@ final class ProxyViewModel: ObservableObject {
     func clear() {
         flows.removeAll()
         selectedFlowID = nil
+        clientAppByConnectionKey.removeAll()
+        resolvingConnectionKeys.removeAll()
         service.clearFlows()
     }
 
@@ -431,12 +442,38 @@ final class ProxyViewModel: ObservableObject {
             }
             .store(in: &settingsCancellables)
 
+        settings.$alertsEnabled
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isEnabled in
+                guard let self else { return }
+                self.alertsEnabled = isEnabled
+                if isEnabled {
+                    self.seenAlertFlowIDs = Set(self.flows.filter { $0.response != nil }.map(\.id))
+                    self.triggeredAlertKeys.removeAll()
+                } else {
+                    self.seenAlertFlowIDs.removeAll()
+                    self.triggeredAlertKeys.removeAll()
+                }
+            }
+            .store(in: &settingsCancellables)
+
+        settings.$alertRules
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] rules in
+                guard let self else { return }
+                self.applyAlertRules(rules)
+            }
+            .store(in: &settingsCancellables)
+
         defaultPort = settings.defaultPort
         autoClearOnStart = settings.autoClearOnStart
         restrictInterceptionToHosts = settings.restrictInterceptionToActivePinnedHosts
         interceptionHosts = settings.pinnedHosts.filter(\.isActive).map(\.host)
         setTrafficProfile(settings.activeTrafficProfile, force: true)
         overrideMacOSProxy = settings.overrideMacOSProxy
+        alertsEnabled = settings.alertsEnabled
+        applyAlertRules(settings.alertRules)
         if overrideMacOSProxy {
             applyMacOSProxyOverride(port: activePort)
         }
@@ -812,12 +849,16 @@ final class ProxyViewModel: ObservableObject {
             }
             .receive(on: DispatchQueue.main)
             .sink { [weak self] sorted in
-                self?.flows = sorted
-                if self?.selectedFlowID == nil {
-                    self?.selectedFlowID = sorted.first?.id
+                guard let self else { return }
+                let enriched = self.enrichFlowsWithCachedApps(sorted)
+                self.flows = enriched
+                if self.selectedFlowID == nil {
+                    self.selectedFlowID = enriched.first?.id
                 }
-                self?.captureRecordingRules(from: sorted)
-                self?.enqueueBreakpointHits(from: sorted)
+                self.captureRecordingRules(from: enriched)
+                self.enqueueBreakpointHits(from: enriched)
+                self.resolveClientAppsIfNeeded(in: enriched)
+                self.processAlerts(in: enriched)
             }
             .store(in: &cancellables)
         
@@ -836,6 +877,169 @@ final class ProxyViewModel: ObservableObject {
             DispatchQueue.main.async {
                 self?.appendLog(text)
             }
+        }
+    }
+
+    private func enrichFlowsWithCachedApps(_ flows: [MitmFlow]) -> [MitmFlow] {
+        var enriched = flows
+        for index in enriched.indices {
+            guard enriched[index].clientApp == nil,
+                  let clientPort = enriched[index].client?.port,
+                  !enriched[index].clientIP.isEmpty else {
+                continue
+            }
+            let key = connectionKey(clientIP: enriched[index].clientIP, clientPort: clientPort, proxyPort: activePort)
+            if let app = clientAppByConnectionKey[key] {
+                enriched[index].clientApp = app
+            }
+        }
+        return enriched
+    }
+
+    private func resolveClientAppsIfNeeded(in flows: [MitmFlow]) {
+        let proxyPort = activePort
+        for flow in flows {
+            guard flow.clientApp == nil,
+                  let clientPort = flow.client?.port,
+                  isLoopbackClientIP(flow.clientIP) else {
+                continue
+            }
+
+            let key = connectionKey(clientIP: flow.clientIP, clientPort: clientPort, proxyPort: proxyPort)
+            if resolvingConnectionKeys.contains(key) || clientAppByConnectionKey[key] != nil {
+                continue
+            }
+            resolvingConnectionKeys.insert(key)
+
+            Task.detached { [weak self] in
+                guard let self else { return }
+                let app = await self.clientAppResolver.resolve(clientPort: clientPort, proxyPort: proxyPort)
+                await MainActor.run {
+                    self.resolvingConnectionKeys.remove(key)
+                    guard let app else { return }
+                    self.clientAppByConnectionKey[key] = app
+                    var updated = self.flows
+                    var changed = false
+                    for idx in updated.indices where updated[idx].clientApp == nil {
+                        guard let existingPort = updated[idx].client?.port else { continue }
+                        let existingKey = self.connectionKey(clientIP: updated[idx].clientIP, clientPort: existingPort, proxyPort: proxyPort)
+                        if existingKey == key {
+                            updated[idx].clientApp = app
+                            changed = true
+                        }
+                    }
+                    if changed {
+                        self.flows = updated
+                    }
+                }
+            }
+        }
+    }
+
+    private func connectionKey(clientIP: String, clientPort: Int, proxyPort: Int) -> String {
+        "\(clientIP.trimmingCharacters(in: .whitespacesAndNewlines))|\(clientPort)|\(proxyPort)"
+    }
+
+    private func isLoopbackClientIP(_ ip: String) -> Bool {
+        let trimmed = ip.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed == "::1" || trimmed == "localhost" {
+            return true
+        }
+        return trimmed.hasPrefix("127.")
+    }
+
+    private func applyAlertRules(_ rules: [AlertRule]) {
+        let trimmed: [AlertRule] = rules.map {
+            AlertRule(
+                id: $0.id,
+                name: $0.name,
+                query: $0.query,
+                isEnabled: $0.isEnabled,
+                createdAt: $0.createdAt
+            )
+        }
+
+        let previousQueries = alertRuleQueryByID
+        alertRuleQueryByID = Dictionary(uniqueKeysWithValues: trimmed.map { ($0.id, $0.query) })
+
+        let currentIDs = Set(trimmed.map(\.id))
+        let removedIDs = Set(previousQueries.keys).subtracting(currentIDs)
+        if !removedIDs.isEmpty {
+            for id in removedIDs {
+                removeTriggeredAlerts(forRuleID: id)
+            }
+        }
+
+        for rule in trimmed {
+            let previous = previousQueries[rule.id]
+            if let previous, previous != rule.query {
+                removeTriggeredAlerts(forRuleID: rule.id)
+            }
+        }
+
+        alertRules = trimmed
+        alertFiltersByRuleID = Dictionary(uniqueKeysWithValues: trimmed.map { ($0.id, FlowFilter(searchText: $0.query)) })
+    }
+
+    private func removeTriggeredAlerts(forRuleID id: UUID) {
+        let prefix = id.uuidString + "|"
+        triggeredAlertKeys = Set(triggeredAlertKeys.filter { !$0.hasPrefix(prefix) })
+    }
+
+    private func processAlerts(in flows: [MitmFlow]) {
+        guard alertsEnabled else { return }
+        guard !alertRules.isEmpty else { return }
+
+        let enabledRules = alertRules.filter(\.isEnabled)
+        guard !enabledRules.isEmpty else { return }
+
+        let candidates = flows.filter { $0.response != nil && !seenAlertFlowIDs.contains($0.id) }
+        guard !candidates.isEmpty else { return }
+
+        for rule in enabledRules {
+            let filter = alertFiltersByRuleID[rule.id] ?? FlowFilter(searchText: rule.query)
+            let matching = filter.apply(to: candidates)
+            for flow in matching {
+                let key = rule.id.uuidString + "|" + flow.id
+                guard !triggeredAlertKeys.contains(key) else { continue }
+                triggeredAlertKeys.insert(key)
+                notifyAlert(rule: rule, flow: flow)
+            }
+        }
+
+        seenAlertFlowIDs.formUnion(candidates.map(\.id))
+        if seenAlertFlowIDs.count > 2_000 {
+            let responseFlowIDs = Set(flows.filter { $0.response != nil }.map(\.id))
+            seenAlertFlowIDs = seenAlertFlowIDs.intersection(responseFlowIDs)
+        }
+
+        if triggeredAlertKeys.count > 20_000 {
+            triggeredAlertKeys.removeAll()
+        }
+    }
+
+    private func notifyAlert(rule: AlertRule, flow: MitmFlow) {
+        let title = rule.name.isEmpty ? "FRTMProxy Alert" : rule.name
+        let method = flow.request?.method.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() ?? ""
+        let url = flow.request?.url.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let status = flow.response?.status.map(String.init) ?? "—"
+        let client = flow.clientIP
+
+        var body = ""
+        if !method.isEmpty && !url.isEmpty {
+            body = "\(method) \(url)"
+        } else if !url.isEmpty {
+            body = url
+        } else {
+            body = flow.sharePreviewTitle
+        }
+        body += "\nStatus: \(status)"
+        if !client.isEmpty {
+            body += "\nClient: \(client)"
+        }
+
+        Task {
+            await AlertNotificationService.shared.postAlertNotification(title: title, body: body)
         }
     }
 

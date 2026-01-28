@@ -11,23 +11,48 @@ struct FlowHeaderView: View {
     let isResponseBreakpointEnabled: Bool
     let onToggleBreakpoint: ((FlowBreakpointPhase, Bool) -> Void)?
     @State private var showBreakpointMenu = false
+    
+    var styledURLText: Text? {
+        guard
+            let urlString = flow.request?.url,
+            let url = URL(string: urlString)
+        else { return nil }
+
+        var attributed = AttributedString(urlString)
+
+        if let host = url.host,
+           let range = attributed.range(of: host) {
+            attributed[range].foregroundColor = colors.accent
+        }
+
+        if !url.path.isEmpty,
+           let range = attributed.range(of: url.path) {
+            attributed[range].foregroundColor = colors.success
+        }
+
+        return Text(attributed)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .center, spacing: 10) {
                 VStack(alignment: .leading, spacing: 4) {
-                    if let fullURL = flow.request?.url, !fullURL.isEmpty {
-                        Text(fullURL)
+                    if let text = styledURLText {
+                        text
                             .font(DesignSystem.Fonts.mono(12))
-                            .foregroundStyle(colors.textSecondary)
                             .textSelection(.enabled)
                             .lineLimit(2)
                             .minimumScaleFactor(0.8)
                     } else {
-                        Text(flow.host + flow.path)
-                            .font(DesignSystem.Fonts.mono(12))
-                            .foregroundStyle(colors.textSecondary)
-                            .lineLimit(1)
+                        (
+                            Text(flow.host)
+                                .foregroundStyle(colors.accent)
+                            +
+                            Text(flow.path)
+                                .foregroundStyle(colors.success)
+                        )
+                        .font(DesignSystem.Fonts.mono(12))
+                        .lineLimit(1)
                     }
                 }
 
@@ -71,8 +96,6 @@ struct FlowHeaderView: View {
                 }
 
                 HStack(spacing: 8) {
-                    ControlButton(title: "URL", systemImage: "link", style: .ghost(colors), disabled: onCopyUrl == nil) { onCopyUrl?() }
-                    ControlButton(title: "cURL", systemImage: "terminal", style: .ghost(colors), disabled: onCopyCurl == nil) { onCopyCurl?() }
                     ControlButton(title: "Body", systemImage: "doc.on.doc", style: .ghost(colors), disabled: onCopyBody == nil) { onCopyBody?() }
                     if let onMapLocal {
                         ControlButton(title: "Map Local", systemImage: "pencil.and.outline", style: .filled(colors)) { onMapLocal() }

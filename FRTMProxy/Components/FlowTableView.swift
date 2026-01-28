@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct FlowTableView: View {
@@ -6,10 +7,14 @@ struct FlowTableView: View {
     let emptyMessage: String
     let colors: DesignSystem.ColorPalette
     let pinnedHostnames: Set<String>
+    let pinnedAppIDs: Set<String>
     let onMapLocal: (MitmFlow) -> Void
     let onEditRetry: (MitmFlow) -> Void
     let onPinHost: (String) -> Void
     let onUnpinHost: (String) -> Void
+    let onPinApp: (FlowClientApp) -> Void
+    let onUnpinApp: (String) -> Void
+    let onFilterApp: (FlowClientApp) -> Void
     let onFilterDevice: (String) -> Void
     
     var body: some View {
@@ -29,11 +34,13 @@ struct FlowTableView: View {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(flows) { flow in
+                            let appID = FlowClientApp.normalizedID(flow.clientApp?.id ?? "")
                             FlowTableRow(
                                 flow: flow,
                                 isSelected: selection == flow.id,
                                 colors: colors,
                                 isHostPinned: pinnedHostnames.contains(PinnedHost.normalized(flow.host)),
+                                isAppPinned: !appID.isEmpty && pinnedAppIDs.contains(appID),
                                 onSelect: { selection = flow.id },
                                 onMapLocal: {
                                     selection = flow.id
@@ -45,6 +52,18 @@ struct FlowTableView: View {
                                 },
                                 onPinHost: { onPinHost(flow.host) },
                                 onUnpinHost: { onUnpinHost(flow.host) },
+                                onPinApp: {
+                                    guard let app = flow.clientApp else { return }
+                                    onPinApp(app)
+                                },
+                                onUnpinApp: {
+                                    guard let app = flow.clientApp else { return }
+                                    onUnpinApp(app.id)
+                                },
+                                onFilterApp: {
+                                    guard let app = flow.clientApp else { return }
+                                    onFilterApp(app)
+                                },
                                 onFilterDevice: { onFilterDevice(flow.clientIP) }
                             )
                         }
@@ -56,28 +75,26 @@ struct FlowTableView: View {
     }
 }
 
+private enum ColumnWidths {
+    static let method: CGFloat = 86
+    static let status: CGFloat = 112
+    static let app: CGFloat = 210
+    static let host: CGFloat = 220
+    static let map: CGFloat = 64
+    static let time: CGFloat = 118
+}
+
 private struct FlowTableHeader: View {
     let colors: DesignSystem.ColorPalette
     
     var body: some View {
-        HStack(spacing: 0) {
-            headerLabel("Method")
-                .frame(width: 90, alignment: .leading)
-            headerLabel("Path")
-                .frame(minWidth: 200, maxWidth: .infinity, alignment: .leading)
-            headerLabel("Status")
-                .frame(width: 120, alignment: .leading)
-            headerLabel("Device")
-                .frame(width: 150, alignment: .leading)
-            headerLabel("Host")
-                .frame(width: 200, alignment: .leading)
-            headerLabel("Map")
-                .frame(width: 70, alignment: .center)
-            headerLabel("Time")
-                .frame(width: 130, alignment: .trailing)
+        ViewThatFits(in: .horizontal) {
+            regularHeader
+            compactHeader
+            minimalHeader
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
         .background(colors.surfaceElevated)
         .overlay(
             Rectangle()
@@ -85,6 +102,53 @@ private struct FlowTableHeader: View {
                 .foregroundStyle(colors.border),
             alignment: .bottom
         )
+    }
+
+    private var regularHeader: some View {
+        HStack(spacing: 0) {
+            headerLabel("Method")
+                .frame(width: ColumnWidths.method, alignment: .leading)
+            headerLabel("Path")
+                .frame(minWidth: 180, maxWidth: .infinity, alignment: .leading)
+            headerLabel("Status")
+                .frame(width: ColumnWidths.status, alignment: .leading)
+            headerLabel("App")
+                .frame(width: ColumnWidths.app, alignment: .leading)
+            headerLabel("Host")
+                .frame(width: ColumnWidths.host, alignment: .leading)
+            headerLabel("Map")
+                .frame(width: ColumnWidths.map, alignment: .center)
+            headerLabel("Time")
+                .frame(width: ColumnWidths.time, alignment: .trailing)
+        }
+    }
+
+    private var compactHeader: some View {
+        HStack(spacing: 0) {
+            headerLabel("Method")
+                .frame(width: ColumnWidths.method, alignment: .leading)
+            headerLabel("Path")
+                .frame(minWidth: 180, maxWidth: .infinity, alignment: .leading)
+            headerLabel("Status")
+                .frame(width: ColumnWidths.status, alignment: .leading)
+            headerLabel("App")
+                .frame(width: ColumnWidths.app, alignment: .leading)
+            headerLabel("Host")
+                .frame(width: ColumnWidths.host, alignment: .leading)
+        }
+    }
+
+    private var minimalHeader: some View {
+        HStack(spacing: 0) {
+            headerLabel("Method")
+                .frame(width: ColumnWidths.method, alignment: .leading)
+            headerLabel("Path")
+                .frame(minWidth: 180, maxWidth: .infinity, alignment: .leading)
+            headerLabel("Status")
+                .frame(width: ColumnWidths.status, alignment: .leading)
+            headerLabel("App")
+                .frame(width: ColumnWidths.app, alignment: .leading)
+        }
     }
     
     private func headerLabel(_ text: String) -> some View {
@@ -99,75 +163,49 @@ private struct FlowTableRow: View {
     let isSelected: Bool
     let colors: DesignSystem.ColorPalette
     let isHostPinned: Bool
+    let isAppPinned: Bool
     let onSelect: () -> Void
     let onMapLocal: () -> Void
     let onEditRetry: () -> Void
     let onPinHost: () -> Void
     let onUnpinHost: () -> Void
+    let onPinApp: () -> Void
+    let onUnpinApp: () -> Void
+    let onFilterApp: () -> Void
     let onFilterDevice: () -> Void
+
+    @State private var shareAnchorView: NSView?
     
     var body: some View {
         Button(action: onSelect) {
-            HStack(spacing: 0) {
-                methodLabel
-                    .frame(width: 90, alignment: .leading)
-                Text(flow.path)
-                    .font(DesignSystem.Fonts.mono(12))
-                    .foregroundStyle(colors.textPrimary)
-                    .textSelection(.enabled)
-                    .frame(minWidth: 200, maxWidth: .infinity, alignment: .leading)
-                StatusBadge(status: flow.response?.status, colors: colors)
-                    .frame(width: 120, alignment: .leading)
-                deviceLabel
-                    .frame(width: 150, alignment: .leading)
-                hostLabel
-                    .frame(width: 200, alignment: .leading)
-                mapIndicator
-                    .frame(width: 70, alignment: .center)
-                Text(flow.formattedTimestamp)
-                    .font(DesignSystem.Fonts.mono(11))
-                    .foregroundStyle(colors.textSecondary)
-                    .frame(width: 130, alignment: .trailing)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            regularRow
+            .padding(.horizontal, 14)
+            .padding(.vertical, 7)
             .background(rowBackground)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
+        .background(
+            ShareAnchorView { view in
+                shareAnchorView = view
+            }
+            .frame(width: 1, height: 1)
+        )
         .contextMenu {
-            Button {
-                onEditRetry()
-            } label: {
-                Label("Edit & Retry", systemImage: "arrow.triangle.2.circlepath")
-            }
-            Button {
-                onMapLocal()
-            } label: {
-                Label("Map Local", systemImage: "pencil.and.outline")
-            }
-            if !flow.clientIP.isEmpty {
-                Button {
-                    onFilterDevice()
-                } label: {
-                    Label("Filter device", systemImage: "line.3.horizontal.decrease.circle")
-                }
-            }
-            if !flow.host.isEmpty {
-                if isHostPinned {
-                    Button {
-                        onUnpinHost()
-                    } label: {
-                        Label("Unpin host", systemImage: "pin.slash")
-                    }
-                } else {
-                    Button {
-                        onPinHost()
-                    } label: {
-                        Label("Pin host", systemImage: "pin")
-                    }
-                }
-            }
+            FlowContextMenuContent(
+                flow: flow,
+                isHostPinned: isHostPinned,
+                isAppPinned: isAppPinned,
+                shareAnchorView: shareAnchorView,
+                onEditRetry: onEditRetry,
+                onMapLocal: onMapLocal,
+                onPinHost: onPinHost,
+                onUnpinHost: onUnpinHost,
+                onPinApp: onPinApp,
+                onUnpinApp: onUnpinApp,
+                onFilterApp: onFilterApp,
+                onFilterDevice: onFilterDevice
+            )
         }
         .overlay(
             Rectangle()
@@ -176,7 +214,26 @@ private struct FlowTableRow: View {
             alignment: .bottom
         )
     }
-    
+
+    private var regularRow: some View {
+        HStack(spacing: 0) {
+            methodLabel
+                .frame(width: ColumnWidths.method, alignment: .leading)
+            pathLabel
+                .frame(minWidth: 180, maxWidth: .infinity, alignment: .leading)
+            StatusBadge(status: flow.response?.status, colors: colors)
+                .frame(width: ColumnWidths.status, alignment: .leading)
+            appLabel
+                .frame(width: ColumnWidths.app, alignment: .leading)
+            hostLabel
+                .frame(width: ColumnWidths.host, alignment: .leading)
+            mapIndicator
+                .frame(width: ColumnWidths.map, alignment: .center)
+            timeLabel
+                .frame(width: ColumnWidths.time, alignment: .trailing)
+        }
+    }
+
     private var methodLabel: some View {
         let method = flow.request?.method.uppercased() ?? "—"
         return Text(method)
@@ -229,28 +286,97 @@ private struct FlowTableRow: View {
                 .font(DesignSystem.Fonts.mono(13, weight: .medium))
                 .foregroundStyle(isHostPinned ? colors.accent : colors.textSecondary)
                 .lineLimit(1)
+                .truncationMode(.middle)
+                .layoutPriority(1)
             if isHostPinned {
                 Image(systemName: "pin.fill")
                     .foregroundStyle(colors.accent)
                     .font(.system(size: 11, weight: .semibold))
             }
         }
+        .help(flow.host)
     }
 
-    private var deviceLabel: some View {
+    private var appLabel: some View {
         let ip = flow.clientIP
+        let appName = flow.clientApp?.displayName.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return Group {
-            if ip.isEmpty {
+            if appName.isEmpty, ip.isEmpty {
                 Text("—")
                     .font(DesignSystem.Fonts.mono(12))
                     .foregroundStyle(colors.textSecondary.opacity(0.6))
-            } else {
+            } else if appName.isEmpty {
                 Text(ip)
                     .font(DesignSystem.Fonts.mono(12, weight: .medium))
                     .foregroundStyle(colors.textSecondary)
                     .lineLimit(1)
+                    .truncationMode(.middle)
                     .textSelection(.enabled)
+            } else {
+                HStack(spacing: 8) {
+                    appIcon
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Text(appName)
+                                .font(DesignSystem.Fonts.sans(12, weight: .semibold))
+                                .foregroundStyle(colors.textSecondary)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                                .layoutPriority(1)
+                            if isAppPinned {
+                                Image(systemName: "pin.fill")
+                                    .foregroundStyle(colors.accent)
+                                    .font(.system(size: 11, weight: .semibold))
+                            }
+                        }
+                        if !ip.isEmpty {
+                            Text(ip)
+                                .font(DesignSystem.Fonts.mono(10))
+                                .foregroundStyle(colors.textSecondary.opacity(0.85))
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                                .textSelection(.enabled)
+                        }
+                    }
+                }
+                .help(appHelpText)
             }
         }
+    }
+
+    @ViewBuilder
+    private var appIcon: some View {
+        AppBadgeIconView(
+            title: flow.clientApp?.displayName ?? "",
+            seed: flow.clientApp?.id,
+            size: 18
+        )
+    }
+
+    private var appHelpText: String {
+        guard let app = flow.clientApp else { return "" }
+        let pidText = app.pid.map { "pid: \($0)" } ?? ""
+        return [
+            app.displayName,
+            app.bundleIdentifier ?? "",
+            pidText
+        ]
+        .filter { !$0.isEmpty }
+        .joined(separator: "\n")
+    }
+
+    private var pathLabel: some View {
+        Text(flow.path)
+            .font(DesignSystem.Fonts.mono(12))
+            .foregroundStyle(colors.textPrimary)
+            .textSelection(.enabled)
+            .lineLimit(1)
+            .truncationMode(.middle)
+    }
+
+    private var timeLabel: some View {
+        Text(flow.formattedTimestamp)
+            .font(DesignSystem.Fonts.mono(11))
+            .foregroundStyle(colors.textSecondary)
     }
 }

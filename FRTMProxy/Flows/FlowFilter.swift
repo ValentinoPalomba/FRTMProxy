@@ -5,16 +5,18 @@ struct FlowFilter: Equatable {
     var showMappedOnly: Bool = false
     var showErrorsOnly: Bool = false
     var activePinnedHosts: Set<String> = []
+    var activePinnedApps: Set<String> = []
     var activeClientIPs: Set<String> = []
 
     func apply(to flows: [MitmFlow]) -> [MitmFlow] {
         let trimmedSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !showMappedOnly, !showErrorsOnly, activePinnedHosts.isEmpty, activeClientIPs.isEmpty, trimmedSearch.isEmpty {
+        if !showMappedOnly, !showErrorsOnly, activePinnedHosts.isEmpty, activePinnedApps.isEmpty, activeClientIPs.isEmpty, trimmedSearch.isEmpty {
             return flows
         }
 
         let query = FlowQuery.parse(searchText)
         let pinnedHosts = activePinnedHosts
+        let pinnedApps = activePinnedApps
         let activeClients = activeClientIPs
         return flows.filter { flow in
             if showMappedOnly && !flow.isMapped { return false }
@@ -22,6 +24,12 @@ struct FlowFilter: Equatable {
             if !pinnedHosts.isEmpty {
                 let host = PinnedHost.normalized(flow.host)
                 if host.isEmpty || !pinnedHosts.contains(host) {
+                    return false
+                }
+            }
+            if !pinnedApps.isEmpty {
+                let appID = flow.clientApp?.id ?? ""
+                if appID.isEmpty || !pinnedApps.contains(appID) {
                     return false
                 }
             }
@@ -38,6 +46,10 @@ struct FlowFilter: Equatable {
 
     mutating func updateActivePinnedHosts(_ hosts: [String]) {
         activePinnedHosts = Set(hosts.map { PinnedHost.normalized($0) }.filter { !$0.isEmpty })
+    }
+
+    mutating func updateActivePinnedApps(_ appIDs: [String]) {
+        activePinnedApps = Set(appIDs.map { FlowClientApp.normalizedID($0) }.filter { !$0.isEmpty })
     }
 
     mutating func toggleClientIP(_ ip: String) {
@@ -59,6 +71,8 @@ private struct FlowQuery {
     var urlTerms: [String] = []
     var clientTerms: [String] = []
     var excludedClientTerms: [String] = []
+    var appTerms: [String] = []
+    var excludedAppTerms: [String] = []
     var methods: Set<String> = []
     var excludedMethods: Set<String> = []
     var statusPredicate: ((Int) -> Bool)?
@@ -73,6 +87,8 @@ private struct FlowQuery {
             urlTerms.isEmpty &&
             clientTerms.isEmpty &&
             excludedClientTerms.isEmpty &&
+            appTerms.isEmpty &&
+            excludedAppTerms.isEmpty &&
             methods.isEmpty &&
             excludedMethods.isEmpty &&
             statusPredicate == nil &&
@@ -95,6 +111,11 @@ private struct FlowQuery {
         let method = (request?.method ?? "").uppercased()
         let status = response?.status
         let clientIP = flow.clientIP.lowercased()
+        let appHaystack = [
+            flow.clientApp?.displayName.lowercased() ?? "",
+            flow.clientApp?.bundleIdentifier?.lowercased() ?? "",
+            flow.clientApp?.id.lowercased() ?? ""
+        ].joined(separator: " ")
 
         if !methods.isEmpty && !methods.contains(method) { return false }
         if excludedMethods.contains(method) { return false }
@@ -118,6 +139,13 @@ private struct FlowQuery {
         }
         for term in excludedClientTerms where !term.isEmpty {
             if clientIP.localizedStandardContains(term) { return false }
+        }
+
+        for term in appTerms where !term.isEmpty {
+            if !appHaystack.localizedStandardContains(term) { return false }
+        }
+        for term in excludedAppTerms where !term.isEmpty {
+            if appHaystack.localizedStandardContains(term) { return false }
         }
 
         let contentType = Self.headerValue("content-type", in: response?.headers)?.lowercased() ?? ""
@@ -178,6 +206,7 @@ private struct FlowQuery {
         if query.keywords.isEmpty, query.excludedKeywords.isEmpty,
            query.hostTerms.isEmpty, query.pathTerms.isEmpty, query.urlTerms.isEmpty,
            query.clientTerms.isEmpty, query.excludedClientTerms.isEmpty,
+           query.appTerms.isEmpty, query.excludedAppTerms.isEmpty,
            query.methods.isEmpty, query.excludedMethods.isEmpty,
            query.statusPredicate == nil,
            query.contentTypeTerms.isEmpty, query.excludedContentTypeTerms.isEmpty {
@@ -188,6 +217,8 @@ private struct FlowQuery {
         query.excludedKeywords = query.excludedKeywords.filter { !$0.isEmpty }
         query.clientTerms = query.clientTerms.filter { !$0.isEmpty }
         query.excludedClientTerms = query.excludedClientTerms.filter { !$0.isEmpty }
+        query.appTerms = query.appTerms.filter { !$0.isEmpty }
+        query.excludedAppTerms = query.excludedAppTerms.filter { !$0.isEmpty }
         return query
     }
 
@@ -206,6 +237,13 @@ private struct FlowQuery {
                 excludedClientTerms.append(term)
             } else {
                 clientTerms.append(term)
+            }
+        case "app", "bundle", "bundleid", "bundle-id":
+            let term = normalizedValue.lowercased()
+            if excluded {
+                excludedAppTerms.append(term)
+            } else {
+                appTerms.append(term)
             }
         case "path":
             pathTerms.append(normalizedValue.lowercased())

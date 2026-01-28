@@ -3,7 +3,7 @@ import SwiftUI
 struct AppRootView: View {
     private var viewModel: ProxyViewModel
     @StateObject private var rulesViewModel: MapRuleViewModel
-    @StateObject private var onboardingManager = OnboardingManager()
+    @EnvironmentObject var onboardingManager: OnboardingManager
 
     init(
         viewModel: ProxyViewModel,

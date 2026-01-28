@@ -68,13 +68,19 @@ struct InspectorScreen: View {
                         colors: colors,
                         emptyMessage: viewModel.flows.isEmpty ? "In attesa di traffico..." : "Nessun risultato per i filtri",
                         pinnedHosts: settings.pinnedHosts,
+                        pinnedApps: settings.pinnedApps,
                         onTogglePinnedHost: { togglePinnedHost($0) },
                         onRemovePinnedHost: { removePinnedHost($0) },
+                        onTogglePinnedApp: { togglePinnedApp($0) },
+                        onRemovePinnedApp: { removePinnedApp($0) },
                         onResetFilters: resetFilters,
                         onMapLocal: { flow in openMapEditor(flow: flow) },
                         onEditRetry: { flow in openRetryEditor(for: flow) },
                         onPinHost: { pinHost(host: $0) },
                         onUnpinHost: { removePinnedHost(byHostName: $0) },
+                        onPinApp: { pinApp(app: $0) },
+                        onUnpinApp: { unpinApp(appID: $0) },
+                        onFilterApp: { filterApp(app: $0) },
                         onFilterDevice: { ip in
                             filter.activeClientIPs = [ip]
                         }
@@ -165,9 +171,13 @@ struct InspectorScreen: View {
         }
         .onAppear {
             syncPinnedHostFilterState()
+            syncPinnedAppFilterState()
         }
         .onChange(of: settings.pinnedHosts) { _, _ in
             syncPinnedHostFilterState()
+        }
+        .onChange(of: settings.pinnedApps) { _, _ in
+            syncPinnedAppFilterState()
         }
     }
 
@@ -222,7 +232,9 @@ struct InspectorScreen: View {
     private func resetFilters() {
         filter = FlowFilter()
         settings.clearPinnedHostSelections()
+        settings.clearPinnedAppSelections()
         syncPinnedHostFilterState()
+        syncPinnedAppFilterState()
     }
 
     private func syncPinnedHostFilterState() {
@@ -230,6 +242,39 @@ struct InspectorScreen: View {
             .filter { $0.isActive }
             .map(\.host)
         filter.updateActivePinnedHosts(activeHosts)
+    }
+
+    private func syncPinnedAppFilterState() {
+        let activeApps = settings.pinnedApps
+            .filter { $0.isActive }
+            .map(\.appID)
+        filter.updateActivePinnedApps(activeApps)
+    }
+
+    private func togglePinnedApp(_ app: PinnedApp) {
+        settings.togglePinnedAppSelection(app.appID)
+        syncPinnedAppFilterState()
+    }
+
+    private func removePinnedApp(_ app: PinnedApp) {
+        settings.unpinApp(app.appID)
+        syncPinnedAppFilterState()
+    }
+
+    private func pinApp(app: FlowClientApp) {
+        settings.pinApp(app)
+        syncPinnedAppFilterState()
+    }
+
+    private func unpinApp(appID: String) {
+        settings.unpinApp(appID)
+        syncPinnedAppFilterState()
+    }
+
+    private func filterApp(app: FlowClientApp) {
+        settings.pinApp(app)
+        settings.activateOnlyPinnedApp(app.id)
+        syncPinnedAppFilterState()
     }
 
     private var rulesSheet: some View {
@@ -600,13 +645,19 @@ private struct FlowExplorerSection: View {
     let colors: DesignSystem.ColorPalette
     let emptyMessage: String
     let pinnedHosts: [PinnedHost]
+    let pinnedApps: [PinnedApp]
     let onTogglePinnedHost: (PinnedHost) -> Void
     let onRemovePinnedHost: (PinnedHost) -> Void
+    let onTogglePinnedApp: (PinnedApp) -> Void
+    let onRemovePinnedApp: (PinnedApp) -> Void
     let onResetFilters: () -> Void
     let onMapLocal: (MitmFlow) -> Void
     let onEditRetry: (MitmFlow) -> Void
     let onPinHost: (String) -> Void
     let onUnpinHost: (String) -> Void
+    let onPinApp: (FlowClientApp) -> Void
+    let onUnpinApp: (String) -> Void
+    let onFilterApp: (FlowClientApp) -> Void
     let onFilterDevice: (String) -> Void
 
     var body: some View {
@@ -614,11 +665,14 @@ private struct FlowExplorerSection: View {
             FlowFiltersView(
                 filter: $filter,
                 colors: colors,
+                pinnedApps: pinnedApps,
                 pinnedHosts: pinnedHosts,
                 clientIPs: clientIPs,
                 onReset: onResetFilters,
                 onTogglePinnedHost: onTogglePinnedHost,
-                onRemovePinnedHost: onRemovePinnedHost
+                onRemovePinnedHost: onRemovePinnedHost,
+                onTogglePinnedApp: onTogglePinnedApp,
+                onRemovePinnedApp: onRemovePinnedApp
             )
             .onboardingTarget(.filterResults)
             FlowTableView(
@@ -627,10 +681,14 @@ private struct FlowExplorerSection: View {
                 emptyMessage: emptyMessage,
                 colors: colors,
                 pinnedHostnames: Set(pinnedHosts.map(\.host)),
+                pinnedAppIDs: Set(pinnedApps.map(\.appID)),
                 onMapLocal: onMapLocal,
                 onEditRetry: onEditRetry,
                 onPinHost: onPinHost,
                 onUnpinHost: onUnpinHost,
+                onPinApp: onPinApp,
+                onUnpinApp: onUnpinApp,
+                onFilterApp: onFilterApp,
                 onFilterDevice: onFilterDevice
             )
             .frame(minHeight: 120, idealHeight: 360, maxHeight: .infinity)
@@ -642,19 +700,48 @@ private struct FlowExplorerSection: View {
 private struct FlowFiltersView: View {
     @Binding var filter: FlowFilter
     let colors: DesignSystem.ColorPalette
+    let pinnedApps: [PinnedApp]
     let pinnedHosts: [PinnedHost]
     let clientIPs: [String]
     let onReset: () -> Void
     let onTogglePinnedHost: (PinnedHost) -> Void
     let onRemovePinnedHost: (PinnedHost) -> Void
+    let onTogglePinnedApp: (PinnedApp) -> Void
+    let onRemovePinnedApp: (PinnedApp) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
-                SearchField(text: $filter.searchText, placeholder: "Search: keywords, host:, method:, status:, type:, device: (use -term to exclude)", colors: colors)
+                SearchField(text: $filter.searchText, placeholder: "Search: keywords, host:, app:, method:, status:, type:, device: (use -term to exclude)", colors: colors)
                 ControlButton(title: "Reset", systemImage: "arrow.uturn.left", style: .ghost(colors), disabled: !hasCustomFilters) {
                     onReset()
                 }
+            }
+
+            if !pinnedApps.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Pinned apps")
+                        .font(DesignSystem.Fonts.sans(12, weight: .semibold))
+                        .foregroundStyle(colors.textSecondary)
+                    ScrollView(.horizontal) {
+                        HStack(spacing: 8) {
+                            ForEach(pinnedApps) { app in
+                                PinnedAppChip(
+                                    app: app,
+                                    colors: colors,
+                                    onToggle: { onTogglePinnedApp(app) },
+                                    onRemove: { onRemovePinnedApp(app) }
+                                )
+                            }
+                        }
+                        .padding(.vertical, 2)
+                    }
+                    .scrollIndicators(.hidden)
+                }
+            } else {
+                Text("Pin any app from the table to keep it here for quick filtering.")
+                    .font(DesignSystem.Fonts.sans(11))
+                    .foregroundStyle(colors.textSecondary.opacity(0.8))
             }
 
             if !pinnedHosts.isEmpty {
@@ -729,6 +816,7 @@ private struct FlowFiltersView: View {
         filter.showMappedOnly ||
         filter.showErrorsOnly ||
         !filter.activePinnedHosts.isEmpty ||
+        !filter.activePinnedApps.isEmpty ||
         !filter.activeClientIPs.isEmpty
     }
 }
@@ -799,6 +887,54 @@ private struct PinnedHostChip: View {
                 Label("Remove pin", systemImage: "trash")
             }
         }
+    }
+}
+
+private struct PinnedAppChip: View {
+    let app: PinnedApp
+    let colors: DesignSystem.ColorPalette
+    let onToggle: () -> Void
+    let onRemove: () -> Void
+
+    var body: some View {
+        Button(action: onToggle) {
+            HStack(spacing: 6) {
+                appIcon
+                Image(systemName: app.isActive ? "pin.fill" : "pin")
+                    .font(.system(size: 12, weight: .semibold))
+                Text(app.displayName.isEmpty ? app.appID : app.displayName)
+                    .font(DesignSystem.Fonts.sans(12, weight: .semibold))
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 999, style: .continuous)
+                    .fill(app.isActive ? colors.accent.opacity(0.18) : colors.surface)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 999, style: .continuous)
+                    .stroke(app.isActive ? colors.accent : colors.border, lineWidth: 1)
+            )
+            .foregroundStyle(app.isActive ? colors.accent : colors.textPrimary)
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button(role: .destructive) {
+                onRemove()
+            } label: {
+                Label("Remove pin", systemImage: "trash")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var appIcon: some View {
+        AppBadgeIconView(
+            title: app.displayName.isEmpty ? app.appID : app.displayName,
+            seed: app.appID,
+            size: 14
+        )
     }
 }
 

@@ -22,6 +22,7 @@ struct FRTMProxyApp: App {
     @StateObject private var proxyViewModel = ProxyViewModel()
     @StateObject private var rulesViewModel = MapRuleViewModel()
     @StateObject private var settingsStore = SettingsStore()
+    @StateObject private var onboardingManager = OnboardingManager()
     @State private var deviceAlert: DeviceAlert?
     @State private var isInstallingSimulatorCertificate = false
     private let certificateInstaller = SimulatorCertificateInstaller()
@@ -31,6 +32,7 @@ struct FRTMProxyApp: App {
         WindowGroup {
             AppRootView(viewModel: proxyViewModel, rulesViewModel: rulesViewModel)
                 .environmentObject(settingsStore)
+                .environmentObject(onboardingManager)
                 .preferredColorScheme(settingsStore.activeTheme.preferredColorScheme)
                 .task {
                     appDelegate.proxyViewModel = proxyViewModel
@@ -78,6 +80,7 @@ struct FRTMProxyApp: App {
         Settings {
             SettingsView()
                 .environmentObject(settingsStore)
+                .environmentObject(onboardingManager)
                 .frame(minWidth: 480, maxWidth: 1280, minHeight: 480, maxHeight: 720)
         }
         
