@@ -85,6 +85,12 @@ struct FRTMProxyApp: App {
             }
         }
         
+        MenuBarExtra {
+            ProxyMenuBarExtra(proxyViewModel: proxyViewModel)
+        } label: {
+            ProxyMenuBarLabel(isRunning: proxyViewModel.isRunning)
+        }
+        
         
         Settings {
             SettingsView()
