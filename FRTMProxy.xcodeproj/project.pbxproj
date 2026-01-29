@@ -8,15 +8,29 @@
 
 /* Begin PBXBuildFile section */
 		E67F14CC2ECD9C7000807063 /* CodeMirror in Frameworks */ = {isa = PBXBuildFile; productRef = E67F14CB2ECD9C7000807063 /* CodeMirror */; };
+		E6EE46392F2ACED1009AA367 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = E6EE46382F2ACED1009AA367 /* Sparkle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		E6538F3F2ECB60D70013CCA6 /* FRTMProxy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FRTMProxy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		E6EE43CC2F2AC72F009AA367 /* Exceptions for "FRTMProxy" folder in "Link Binary With Libraries" phase from "FRTMProxy" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = E6538F3C2ECB60D70013CCA6 /* Frameworks */;
+			membershipExceptions = (
+				Resources/mitmdump,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		E6538F412ECB60D70013CCA6 /* FRTMProxy */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				E6EE43CC2F2AC72F009AA367 /* Exceptions for "FRTMProxy" folder in "Link Binary With Libraries" phase from "FRTMProxy" target */,
+			);
 			path = FRTMProxy;
 			sourceTree = "<group>";
 		};
@@ -27,6 +41,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E6EE46392F2ACED1009AA367 /* Sparkle in Frameworks */,
 				E67F14CC2ECD9C7000807063 /* CodeMirror in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -38,6 +53,7 @@
 			isa = PBXGroup;
 			children = (
 				E6538F412ECB60D70013CCA6 /* FRTMProxy */,
+				E6EE43CA2F2AC72E009AA367 /* Frameworks */,
 				E6538F402ECB60D70013CCA6 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -48,6 +64,13 @@
 				E6538F3F2ECB60D70013CCA6 /* FRTMProxy.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		E6EE43CA2F2AC72E009AA367 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -71,6 +94,7 @@
 			name = FRTMProxy;
 			packageProductDependencies = (
 				E67F14CB2ECD9C7000807063 /* CodeMirror */,
+				E6EE46382F2ACED1009AA367 /* Sparkle */,
 			);
 			productName = FRTMProxy;
 			productReference = E6538F3F2ECB60D70013CCA6 /* FRTMProxy.app */;
@@ -102,6 +126,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				E67F14CA2ECD9C6F00807063 /* XCRemoteSwiftPackageReference "CodeMirror-Swift" */,
+				E6EE46372F2ACED1009AA367 /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E6538F402ECB60D70013CCA6 /* Products */;
@@ -169,6 +194,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -232,6 +258,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -270,9 +297,9 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				MACOSX_DEPLOYMENT_TARGET = 15.1;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.valentinopalomba.FRTMProxy;
+				PRODUCT_BUNDLE_IDENTIFIER = com.valentinopalomba.frtmproxy;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -291,7 +318,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"FRTMProxy/Preview Content\"";
-				DEVELOPMENT_TEAM = 9HZHXRUJVR;
+				DEVELOPMENT_TEAM = 8JS222QZL3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -300,9 +327,9 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				MACOSX_DEPLOYMENT_TARGET = 15.1;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.valentinopalomba.FRTMProxy;
+				PRODUCT_BUNDLE_IDENTIFIER = com.valentinopalomba.frtmproxy;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -341,6 +368,14 @@
 				kind = branch;
 			};
 		};
+		E6EE46372F2ACED1009AA367 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.8.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -348,6 +383,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = E67F14CA2ECD9C6F00807063 /* XCRemoteSwiftPackageReference "CodeMirror-Swift" */;
 			productName = CodeMirror;
+		};
+		E6EE46382F2ACED1009AA367 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E6EE46372F2ACED1009AA367 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

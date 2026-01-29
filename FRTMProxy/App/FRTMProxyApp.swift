@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AppKit
+import Sparkle
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     weak var proxyViewModel: ProxyViewModel?
@@ -22,15 +23,22 @@ struct FRTMProxyApp: App {
     @StateObject private var proxyViewModel = ProxyViewModel()
     @StateObject private var rulesViewModel = MapRuleViewModel()
     @StateObject private var settingsStore = SettingsStore()
+    @StateObject private var onboardingManager = OnboardingManager()
     @State private var deviceAlert: DeviceAlert?
     @State private var isInstallingSimulatorCertificate = false
     private let certificateInstaller = SimulatorCertificateInstaller()
     @Environment(\.openWindow) private var openWindow
+    private let updaterController: SPUStandardUpdaterController
+    
+    init() {
+        updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+    }
     
     var body: some Scene {
         WindowGroup {
             AppRootView(viewModel: proxyViewModel, rulesViewModel: rulesViewModel)
                 .environmentObject(settingsStore)
+                .environmentObject(onboardingManager)
                 .preferredColorScheme(settingsStore.activeTheme.preferredColorScheme)
                 .task {
                     appDelegate.proxyViewModel = proxyViewModel
@@ -48,6 +56,9 @@ struct FRTMProxyApp: App {
         .windowResizability(.contentSize)
         
         .commands {
+            CommandGroup(after: .appInfo) {
+                            CheckForUpdatesView(updater: updaterController.updater)
+                        }
             CommandGroup(replacing: .appInfo) {
                 Button("About FRTMTools") {
                     openWindow(id: "about-ftrmtools")
@@ -78,6 +89,7 @@ struct FRTMProxyApp: App {
         Settings {
             SettingsView()
                 .environmentObject(settingsStore)
+                .environmentObject(onboardingManager)
                 .frame(minWidth: 480, maxWidth: 1280, minHeight: 480, maxHeight: 720)
         }
         

@@ -34,12 +34,24 @@ final class SettingsStore: ObservableObject {
         didSet { persistPinnedHosts() }
     }
 
+    @Published var pinnedApps: [PinnedApp] {
+        didSet { persistPinnedApps() }
+    }
+
     @Published var restrictInterceptionToActivePinnedHosts: Bool {
         didSet { defaults.set(restrictInterceptionToActivePinnedHosts, forKey: restrictInterceptionKey) }
     }
 
     @Published var selectedTrafficProfileID: String {
         didSet { defaults.set(selectedTrafficProfileID, forKey: trafficProfileKey) }
+    }
+
+    @Published var alertsEnabled: Bool {
+        didSet { defaults.set(alertsEnabled, forKey: alertsEnabledKey) }
+    }
+
+    @Published var alertRules: [AlertRule] {
+        didSet { persistAlertRules() }
     }
 
     private let defaults = UserDefaults.standard
@@ -51,8 +63,11 @@ final class SettingsStore: ObservableObject {
     private let autoClearKey = "settings.autoClear"
     private let macOSProxyOverrideKey = "settings.macosProxyOverride"
     private let pinnedHostsKey = "settings.pinnedHosts"
+    private let pinnedAppsKey = "settings.pinnedApps"
     private let restrictInterceptionKey = "settings.restrictInterceptionToActivePinnedHosts"
     private let trafficProfileKey = "settings.trafficProfile"
+    private let alertsEnabledKey = "settings.alertsEnabled"
+    private let alertRulesKey = "settings.alertRules"
 
     var activeTheme: AppTheme {
         ThemeLibrary.theme(with: selectedThemeID)
@@ -74,9 +89,13 @@ final class SettingsStore: ObservableObject {
         self.autoClearOnStart = defaults.bool(forKey: autoClearKey)
         self.overrideMacOSProxy = defaults.bool(forKey: macOSProxyOverrideKey)
         self.pinnedHosts = SettingsStore.loadPinnedHosts(from: defaults, key: pinnedHostsKey)
+        self.pinnedApps = SettingsStore.loadPinnedApps(from: defaults, key: pinnedAppsKey)
         self.restrictInterceptionToActivePinnedHosts = defaults.bool(forKey: restrictInterceptionKey)
         let storedProfileID = defaults.string(forKey: trafficProfileKey)
         self.selectedTrafficProfileID = TrafficProfileLibrary.profile(with: storedProfileID).id
+
+        self.alertsEnabled = defaults.bool(forKey: alertsEnabledKey)
+        self.alertRules = SettingsStore.loadAlertRules(from: defaults, key: alertRulesKey)
     }
 
     func pinHost(_ rawHost: String) {
@@ -122,14 +141,117 @@ final class SettingsStore: ObservableObject {
         pinnedHosts = updated
     }
 
+    func pinApp(_ app: FlowClientApp) {
+        let normalizedID = FlowClientApp.normalizedID(app.id)
+        guard !normalizedID.isEmpty else { return }
+
+        if pinnedApps.contains(where: { $0.appID == normalizedID }) {
+            return
+        }
+
+        pinnedApps.insert(PinnedApp(app: app), at: 0)
+    }
+
+    func unpinApp(_ rawAppID: String) {
+        let normalizedID = FlowClientApp.normalizedID(rawAppID)
+        guard !normalizedID.isEmpty else { return }
+
+        pinnedApps.removeAll { $0.appID == normalizedID }
+    }
+
+    func togglePinnedAppSelection(_ rawAppID: String) {
+        setPinnedApp(rawAppID, active: nil)
+    }
+
+    func setPinnedApp(_ rawAppID: String, active: Bool?) {
+        let normalizedID = FlowClientApp.normalizedID(rawAppID)
+        guard !normalizedID.isEmpty else { return }
+
+        guard let index = pinnedApps.firstIndex(where: { $0.appID == normalizedID }) else { return }
+        var updated = pinnedApps
+        if let active {
+            updated[index].isActive = active
+        } else {
+            updated[index].isActive.toggle()
+        }
+        pinnedApps = updated
+    }
+
+    func clearPinnedAppSelections() {
+        guard pinnedApps.contains(where: { $0.isActive }) else { return }
+        var updated = pinnedApps
+        updated.indices.forEach { updated[$0].isActive = false }
+        pinnedApps = updated
+    }
+
+    func activateOnlyPinnedApp(_ rawAppID: String) {
+        let normalizedID = FlowClientApp.normalizedID(rawAppID)
+        guard !normalizedID.isEmpty else { return }
+        guard pinnedApps.contains(where: { $0.appID == normalizedID }) else { return }
+
+        var updated = pinnedApps
+        updated.indices.forEach { index in
+            updated[index].isActive = updated[index].appID == normalizedID
+        }
+        pinnedApps = updated
+    }
+
+    func upsertAlertRule(_ rule: AlertRule) {
+        let normalized = AlertRule(
+            id: rule.id,
+            name: rule.name,
+            query: rule.query,
+            isEnabled: rule.isEnabled,
+            createdAt: rule.createdAt
+        )
+
+        if let index = alertRules.firstIndex(where: { $0.id == normalized.id }) {
+            alertRules[index] = normalized
+        } else {
+            alertRules.insert(normalized, at: 0)
+        }
+    }
+
+    func deleteAlertRule(_ id: UUID) {
+        alertRules.removeAll { $0.id == id }
+    }
+
+    private func persistAlertRules() {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted]
+        guard let data = try? encoder.encode(alertRules) else { return }
+        defaults.set(data, forKey: alertRulesKey)
+    }
+
+    private static func loadAlertRules(from defaults: UserDefaults, key: String) -> [AlertRule] {
+        guard let data = defaults.data(forKey: key),
+              let decoded = try? JSONDecoder().decode([AlertRule].self, from: data) else {
+            return []
+        }
+        return decoded
+    }
+
     private func persistPinnedHosts() {
         guard let data = try? JSONEncoder().encode(pinnedHosts) else { return }
         defaults.set(data, forKey: pinnedHostsKey)
     }
 
+    private func persistPinnedApps() {
+        guard let data = try? JSONEncoder().encode(pinnedApps) else { return }
+        defaults.set(data, forKey: pinnedAppsKey)
+    }
+
     private static func loadPinnedHosts(from defaults: UserDefaults, key: String) -> [PinnedHost] {
         guard let data = defaults.data(forKey: key),
               let decoded = try? JSONDecoder().decode([PinnedHost].self, from: data) else {
+            return []
+        }
+        return decoded
+    }
+
+    private static func loadPinnedApps(from defaults: UserDefaults, key: String) -> [PinnedApp] {
+        guard let data = defaults.data(forKey: key),
+              let decoded = try? JSONDecoder().decode([PinnedApp].self, from: data) else {
             return []
         }
         return decoded
