@@ -54,6 +54,7 @@ final class SettingsStore: ObservableObject {
         didSet { persistAlertRules() }
     }
 
+
     private let defaults = UserDefaults.standard
     private let themeKey = "settings.theme"
     private let gitAuthorNameKey = "settings.gitAuthorName"

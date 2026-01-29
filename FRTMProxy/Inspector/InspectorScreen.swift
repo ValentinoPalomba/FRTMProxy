@@ -14,6 +14,7 @@ struct InspectorScreen: View {
     @State private var showBreakpointSheet = false
     @State private var showBreakpointsManager = false
     @State private var showDeviceConnectSheet = false
+    @State private var showCommandPalette = false
     @State private var filter = FlowFilter()
     @State private var activeBreakpointPhase: FlowBreakpointPhase = .request
     @State private var filteredFlows: [MitmFlow] = []
@@ -131,6 +132,35 @@ struct InspectorScreen: View {
         }
 
         return contentWithFiltering
+        .overlay {
+            if showCommandPalette {
+                CommandPaletteView(
+                    isPresented: $showCommandPalette,
+                    actions: commandPaletteActions,
+                    colors: colors
+                )
+                .transition(.opacity)
+                .zIndex(10)
+            }
+        }
+        .overlay {
+            ShortcutHost(
+                isRunning: viewModel.isRunning,
+                hasSelection: selectedFlow != nil,
+                onToggleProxy: toggleProxy,
+                onClear: viewModel.clear,
+                onOpenCommandPalette: { showCommandPalette = true },
+                onMapLocal: openMapEditor,
+                onRetry: {
+                    if let flow = selectedFlow {
+                        openRetryEditor(for: flow)
+                    }
+                },
+                onCopyUrl: { ClipboardHelper.copy(selectedFlow?.request?.url) },
+                onCopyCurl: { ClipboardHelper.copy(selectedFlow?.curlString) }
+            )
+        }
+        .animation(.easeOut(duration: 0.18), value: showCommandPalette)
         .sheet(isPresented: $showMapSheet) { mapSheet }
         .sheet(isPresented: $showRulesSheet) { rulesSheet }
         .sheet(isPresented: $showCollectionsSheet) { collectionsSheet }
@@ -183,6 +213,123 @@ struct InspectorScreen: View {
 
     private func updateFilteredFlows() {
         filteredFlows = filter.apply(to: viewModel.flows)
+    }
+
+    private func toggleProxy() {
+        if viewModel.isRunning {
+            viewModel.stopProxy()
+        } else {
+            viewModel.startProxy()
+        }
+    }
+
+    private var commandPaletteActions: [CommandPaletteAction] {
+        let hasSelection = selectedFlow != nil
+        return [
+            CommandPaletteAction(
+                title: "Start Proxy",
+                subtitle: "Start the embedded mitmproxy",
+                systemImage: "play.fill",
+                shortcut: "⌘⌥P",
+                keywords: ["start", "proxy", "mitm"],
+                isEnabled: !viewModel.isRunning
+            ) {
+                viewModel.startProxy()
+            },
+            CommandPaletteAction(
+                title: "Stop Proxy",
+                subtitle: "Stop capturing traffic",
+                systemImage: "stop.fill",
+                shortcut: "⌘⌥P",
+                keywords: ["stop", "proxy"],
+                isEnabled: viewModel.isRunning
+            ) {
+                viewModel.stopProxy()
+            },
+            CommandPaletteAction(
+                title: "Clear Flows",
+                subtitle: "Remove all captured traffic",
+                systemImage: "trash",
+                shortcut: "⌘⌥K",
+                keywords: ["clear", "reset", "flows"]
+            ) {
+                viewModel.clear()
+            },
+            CommandPaletteAction(
+                title: "Open Rules",
+                subtitle: "Manage map local rules",
+                systemImage: "slider.horizontal.3",
+                keywords: ["rules", "map", "local"]
+            ) {
+                showRulesSheet = true
+            },
+            CommandPaletteAction(
+                title: "Open Breakpoints",
+                subtitle: "Manage breakpoint rules",
+                systemImage: "record.circle",
+                keywords: ["breakpoints", "pause", "intercept"]
+            ) {
+                showBreakpointsManager = true
+            },
+            CommandPaletteAction(
+                title: "Open Collections",
+                subtitle: "Manage map local collections",
+                systemImage: "folder",
+                keywords: ["collections", "map", "rules"]
+            ) {
+                showCollectionsSheet = true
+            },
+            CommandPaletteAction(
+                title: "Open Device Setup",
+                subtitle: "Pair a simulator or device",
+                systemImage: "qrcode",
+                keywords: ["device", "qr", "pair"]
+            ) {
+                showDeviceConnectSheet = true
+            },
+            CommandPaletteAction(
+                title: "Map Local (Selected Flow)",
+                subtitle: "Create a local response for the selected flow",
+                systemImage: "pencil.and.outline",
+                shortcut: "⌘⌥M",
+                keywords: ["map", "local", "mock"],
+                isEnabled: hasSelection
+            ) {
+                openMapEditor()
+            },
+            CommandPaletteAction(
+                title: "Retry Request (Selected Flow)",
+                subtitle: "Replay the selected request",
+                systemImage: "arrow.clockwise",
+                shortcut: "⌘⌥R",
+                keywords: ["retry", "replay"],
+                isEnabled: hasSelection
+            ) {
+                if let flow = selectedFlow {
+                    openRetryEditor(for: flow)
+                }
+            },
+            CommandPaletteAction(
+                title: "Copy URL",
+                subtitle: "Copy selected flow URL",
+                systemImage: "doc.on.doc",
+                shortcut: "⌘⌥U",
+                keywords: ["copy", "url"],
+                isEnabled: hasSelection
+            ) {
+                ClipboardHelper.copy(selectedFlow?.request?.url)
+            },
+            CommandPaletteAction(
+                title: "Copy cURL",
+                subtitle: "Copy selected flow as cURL",
+                systemImage: "terminal",
+                shortcut: "⌘⌥Y",
+                keywords: ["copy", "curl"],
+                isEnabled: hasSelection
+            ) {
+                ClipboardHelper.copy(selectedFlow?.curlString)
+            }
+        ]
     }
 
     private func openMapEditor() {
@@ -694,6 +841,40 @@ private struct FlowExplorerSection: View {
             .frame(minHeight: 120, idealHeight: 360, maxHeight: .infinity)
             .onboardingTarget(.viewTraffic)
         }
+    }
+}
+
+private struct ShortcutHost: View {
+    let isRunning: Bool
+    let hasSelection: Bool
+    let onToggleProxy: () -> Void
+    let onClear: () -> Void
+    let onOpenCommandPalette: () -> Void
+    let onMapLocal: () -> Void
+    let onRetry: () -> Void
+    let onCopyUrl: () -> Void
+    let onCopyCurl: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Button("", action: onOpenCommandPalette)
+                .keyboardShortcut("k", modifiers: [.command])
+            Button("", action: onToggleProxy)
+                .keyboardShortcut("p", modifiers: [.command, .option])
+            Button("", action: onClear)
+                .keyboardShortcut("k", modifiers: [.command, .option])
+            Button("", action: { if hasSelection { onMapLocal() } })
+                .keyboardShortcut("m", modifiers: [.command, .option])
+            Button("", action: { if hasSelection { onRetry() } })
+                .keyboardShortcut("r", modifiers: [.command, .option])
+            Button("", action: { if hasSelection { onCopyUrl() } })
+                .keyboardShortcut("u", modifiers: [.command, .option])
+            Button("", action: { if hasSelection { onCopyCurl() } })
+                .keyboardShortcut("y", modifiers: [.command, .option])
+        }
+        .frame(width: 0, height: 0)
+        .opacity(0.01)
+        .disabled(false)
     }
 }
 

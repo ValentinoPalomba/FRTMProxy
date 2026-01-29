@@ -30,7 +30,7 @@ struct StatusBadge: View {
 struct StatusPill: View {
     let isRunning: Bool
     let colors: DesignSystem.ColorPalette
-    
+
     var body: some View {
         HStack(spacing: 6) {
             Circle()
