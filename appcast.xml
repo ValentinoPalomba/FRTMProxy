@@ -7,9 +7,9 @@
             <pubDate>Thu, 29 Jan 2026 01:20:33 +0100</pubDate>
             <link>https://github.com/ValentinoPalomba/FRTMProxy</link>
             <sparkle:version>1</sparkle:version>
-            <sparkle:shortVersionString>1.3</sparkle:shortVersionString>
+            <sparkle:shortVersionString>1.3.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>15.1</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/ValentinoPalomba/FRTMProxy/releases/download/v1.3/FRTMProxy-1.3.zip" length="42357505" type="application/octet-stream" sparkle:edSignature="hh0Dw8lvcgbB41jIfRDxlEmHwErq3wCl3DN3jkCabJQnK4GMxgXhJWaKPinu30aAH4T2SnHqi20TKTAZORKeCQ=="/>
+            <enclosure url="https://github.com/ValentinoPalomba/FRTMProxy/releases/download/v1.3/FRTMProxy-1.3.0.zip" length="42357499" type="application/octet-stream" sparkle:edSignature="O9bcZOWiL2hd7u/LzU6B/MuEd1Wn/cE+WroNkrQ30y+njaS7xsJdCr32AN+YwapOrn/5qQ/fHtFaksLO+vnmDQ=="/>
         </item>
     </channel>
 </rss>
