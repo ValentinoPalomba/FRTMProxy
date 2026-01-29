@@ -9,32 +9,68 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        TabView {
-            Tab("Git", systemImage: "arrow.triangle.branch") {
+        if #available(macOS 15.0, *) {
+            TabView {
+                Tab("Git", systemImage: "arrow.triangle.branch") {
+                    SettingsGitTab(colors: colors)
+                }
+                
+                Tab("Proxy", systemImage: "shield.lefthalf.filled") {
+                    SettingsProxyTab(colors: colors)
+                }
+                
+                Tab("Traffic", systemImage: "speedometer") {
+                    SettingsTrafficTab(colors: colors)
+                }
+                
+                Tab("Alerts", systemImage: "bell.badge") {
+                    SettingsAlertsTab(colors: colors)
+                }
+                
+                Tab("Themes", systemImage: "paintpalette") {
+                    SettingsThemesTab(colors: colors)
+                }
+                
+                Tab("Onboarding", systemImage: "sparkles") {
+                    SettingsOnboardingTab(colors: colors)
+                }
+            }
+            .background(colors.background)
+            .frame(minWidth: 560, minHeight: 520)
+        } else {
+            TabView {
                 SettingsGitTab(colors: colors)
-            }
+                    .tabItem {
+                        Label("Git", systemImage: "arrow.triangle.branch")
+                    }
 
-            Tab("Proxy", systemImage: "shield.lefthalf.filled") {
                 SettingsProxyTab(colors: colors)
-            }
+                    .tabItem {
+                        Label("Proxy", systemImage: "shield.lefthalf.filled")
+                    }
 
-            Tab("Traffic", systemImage: "speedometer") {
                 SettingsTrafficTab(colors: colors)
-            }
+                    .tabItem {
+                        Label("Traffic", systemImage: "speedometer")
+                    }
 
-            Tab("Alerts", systemImage: "bell.badge") {
                 SettingsAlertsTab(colors: colors)
-            }
+                    .tabItem {
+                        Label("Alerts", systemImage: "bell.badge")
+                    }
 
-            Tab("Themes", systemImage: "paintpalette") {
                 SettingsThemesTab(colors: colors)
-            }
+                    .tabItem {
+                        Label("Themes", systemImage: "paintpalette")
+                    }
 
-            Tab("Onboarding", systemImage: "sparkles") {
                 SettingsOnboardingTab(colors: colors)
+                    .tabItem {
+                        Label("Onboarding", systemImage: "sparkles")
+                    }
             }
+            .background(colors.background)
+            .frame(minWidth: 560, minHeight: 520)
         }
-        .background(colors.background)
-        .frame(minWidth: 560, minHeight: 520)
     }
 }
