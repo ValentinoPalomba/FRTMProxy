@@ -1259,5 +1259,7 @@ final class ProxyViewModel: ObservableObject {
         } else {
             logText = newText
         }
+        
+        print(text)
     }
 }
