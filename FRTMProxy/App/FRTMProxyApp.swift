@@ -56,7 +56,7 @@ struct FRTMProxyApp: App {
         .windowResizability(.contentSize)
         
         .commands {
-            CommandGroup(after: .appInfo) {
+            CommandGroup(after: .appTermination) {
                             CheckForUpdatesView(updater: updaterController.updater)
                         }
             CommandGroup(replacing: .appInfo) {
