@@ -64,6 +64,7 @@ struct SettingsProxyTab: View {
                         .foregroundStyle(colors.textSecondary)
                 }
             }
+
         }
     }
 

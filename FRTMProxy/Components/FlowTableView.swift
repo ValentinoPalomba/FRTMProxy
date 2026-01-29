@@ -71,6 +71,103 @@ struct FlowTableView: View {
                 }
             }
             .background(colors.surface)
+            .background(
+                KeyEventMonitorView { event in
+                    handleKeyEvent(event)
+                }
+            )
+        }
+    }
+
+    private func handleKeyEvent(_ event: NSEvent) -> Bool {
+        guard !flows.isEmpty else { return false }
+        guard shouldHandleKeyboardNavigation() else { return false }
+        let currentIndex = selection.flatMap { id in
+            flows.firstIndex(where: { $0.id == id })
+        }
+
+        switch event.keyCode {
+        case 125: // down
+            let nextIndex = min((currentIndex ?? -1) + 1, flows.count - 1)
+            selection = flows[nextIndex].id
+            return true
+        case 126: // up
+            let nextIndex = max((currentIndex ?? flows.count) - 1, 0)
+            selection = flows[nextIndex].id
+            return true
+        case 115: // home
+            selection = flows.first?.id
+            return true
+        case 119: // end
+            selection = flows.last?.id
+            return true
+        case 116: // page up
+            let jump = 10
+            let nextIndex = max((currentIndex ?? 0) - jump, 0)
+            selection = flows[nextIndex].id
+            return true
+        case 121: // page down
+            let jump = 10
+            let nextIndex = min((currentIndex ?? -1) + jump, flows.count - 1)
+            selection = flows[nextIndex].id
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func shouldHandleKeyboardNavigation() -> Bool {
+        guard let responder = NSApp.keyWindow?.firstResponder else { return true }
+        if responder is NSTextView || responder is NSTextField {
+            return false
+        }
+        return true
+    }
+}
+
+private struct KeyEventMonitorView: NSViewRepresentable {
+    let onKeyDown: (NSEvent) -> Bool
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        context.coordinator.installMonitor(onKeyDown: onKeyDown)
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        context.coordinator.onKeyDown = onKeyDown
+    }
+
+    static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
+        coordinator.removeMonitor()
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onKeyDown: onKeyDown)
+    }
+
+    final class Coordinator {
+        var onKeyDown: (NSEvent) -> Bool
+        private var monitor: Any?
+
+        init(onKeyDown: @escaping (NSEvent) -> Bool) {
+            self.onKeyDown = onKeyDown
+        }
+
+        func installMonitor(onKeyDown: @escaping (NSEvent) -> Bool) {
+            self.onKeyDown = onKeyDown
+            guard monitor == nil else { return }
+            monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                guard let self else { return event }
+                return self.onKeyDown(event) ? nil : event
+            }
+        }
+
+        func removeMonitor() {
+            if let monitor {
+                NSEvent.removeMonitor(monitor)
+                self.monitor = nil
+            }
         }
     }
 }
