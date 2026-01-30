@@ -12,14 +12,14 @@ struct SettingsOnboardingTab: View {
             SettingsCard(title: "Guided Tour", colors: colors) {
                 VStack(alignment: .leading, spacing: 12) {
                     ControlButton(
-                        title: "Riavvia tutorial guidato",
+                        title: "Restart guided tour",
                         systemImage: "arrow.counterclockwise",
                         style: .destructive(colors)
                     ) {
                         OnboardingManager().resetOnboarding()
                     }
 
-                    Text("Mostra nuovamente il tour interattivo delle funzionalità principali dell'app.")
+                    Text("Show the interactive tour of the app's main features again.")
                         .font(DesignSystem.Fonts.mono(11))
                         .foregroundStyle(colors.textSecondary)
                 }

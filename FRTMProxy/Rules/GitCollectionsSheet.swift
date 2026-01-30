@@ -23,7 +23,7 @@ struct GitCollectionsSheet: View {
         .frame(minWidth: 820, minHeight: 520)
         .background(colors.background)
         .alert(
-            "Operazione non riuscita",
+            "Operation failed",
             isPresented: Binding(
                 get: { errorMessage != nil },
                 set: { if !$0 { errorMessage = nil } }
@@ -34,24 +34,24 @@ struct GitCollectionsSheet: View {
             Text(errorMessage ?? "")
         }
         .confirmationDialog(
-            "Rimuovere questo repository?",
+            "Remove this repository?",
             isPresented: Binding(
                 get: { confirmRemoveID != nil },
                 set: { if !$0 { confirmRemoveID = nil } }
             ),
             titleVisibility: .visible
         ) {
-            Button("Rimuovi", role: .destructive) {
+            Button("Remove", role: .destructive) {
                 if let id = confirmRemoveID {
                     viewModel.removeGitCollectionSource(id)
                 }
                 confirmRemoveID = nil
             }
-            Button("Annulla", role: .cancel) {
+            Button("Cancel", role: .cancel) {
                 confirmRemoveID = nil
             }
         } message: {
-            Text("Le collections importate resteranno nel tuo workspace; il sync verrà disabilitato.")
+            Text("Imported collections will remain in your workspace; sync will be disabled.")
         }
     }
 
@@ -61,7 +61,7 @@ struct GitCollectionsSheet: View {
                 Text("Git Collections")
                     .font(DesignSystem.Fonts.mono(22, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
-                Text("Importa e sincronizza collections da un repository Git (branch/tag/commit). Le collections vengono lette da file `.har` nel repo.")
+                Text("Import and sync collections from a Git repository (branch/tag/commit). Collections are read from `.har` files in the repo.")
                     .font(DesignSystem.Fonts.mono(12))
                     .foregroundStyle(colors.textSecondary)
             }
@@ -101,7 +101,7 @@ struct GitCollectionsSheet: View {
                 TextField("Subdirectory (optional)", text: $subdirectory)
                     .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "folder"))
 
-                Text("Esempio: `main`, `v1.2.3`, oppure uno SHA commit. La subdirectory limita la scansione dei `.har` (es. `collections/`).")
+                Text("Example: `main`, `v1.2.3`, or a commit SHA. The subdirectory limits the `.har` scan (e.g. `collections/`).")
                     .font(DesignSystem.Fonts.mono(11))
                     .foregroundStyle(colors.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -158,10 +158,10 @@ struct GitCollectionsSheet: View {
                     Image(systemName: "arrow.triangle.branch")
                         .font(DesignSystem.Fonts.sans(26, weight: .semibold))
                         .foregroundStyle(colors.textSecondary)
-                    Text("Nessun repository configurato.")
+                    Text("No repository configured.")
                         .font(DesignSystem.Fonts.sans(14, weight: .semibold))
                         .foregroundStyle(colors.textPrimary)
-                    Text("Aggiungi un repo a sinistra per importare collections in modo collaborativo via Git.")
+                    Text("Add a repo on the left to import collections collaboratively via Git.")
                         .font(DesignSystem.Fonts.mono(12))
                         .foregroundStyle(colors.textSecondary)
                         .multilineTextAlignment(.center)

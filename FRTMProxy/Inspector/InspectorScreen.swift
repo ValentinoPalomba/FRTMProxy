@@ -67,7 +67,7 @@ struct InspectorScreen: View {
                         clientIPs: availableClientIPs,
                         selection: $viewModel.selectedFlowID,
                         colors: colors,
-                        emptyMessage: viewModel.flows.isEmpty ? "In attesa di traffico..." : "Nessun risultato per i filtri",
+                        emptyMessage: viewModel.flows.isEmpty ? "Waiting for traffic..." : "No results for the current filters",
                         pinnedHosts: settings.pinnedHosts,
                         pinnedApps: settings.pinnedApps,
                         onTogglePinnedHost: { togglePinnedHost($0) },
@@ -592,7 +592,7 @@ private struct InspectorHeaderBar: View {
                 Text("FRTM Proxy")
                     .font(DesignSystem.Fonts.mono(26, weight: .bold))
                     .foregroundStyle(colors.textPrimary)
-                Text("Sniffa, ispeziona e mappa le richieste di rete in tempo reale.")
+                Text("Sniff, inspect, and map network requests in real time.")
                     .font(DesignSystem.Fonts.mono(13, weight: .medium))
                     .foregroundStyle(colors.textSecondary)
             }

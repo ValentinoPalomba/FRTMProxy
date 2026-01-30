@@ -47,7 +47,7 @@ struct GitPublishCollectionSheet: View {
         .frame(minWidth: 760, minHeight: 520)
         .background(colors.background)
         .alert(
-            "Operazione non riuscita",
+            "Operation failed",
             isPresented: Binding(
                 get: { errorMessage != nil },
                 set: { if !$0 { errorMessage = nil } }
@@ -65,7 +65,7 @@ struct GitPublishCollectionSheet: View {
                 Text(collection.origin?.git == nil ? "Publish Collection" : "Push Collection")
                     .font(DesignSystem.Fonts.mono(22, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
-                Text("Esporta la collection come `.har`, crea un commit e push su un branch. Opzionalmente crea anche un tag.")
+                Text("Export the collection as `.har`, create a commit, and push to a branch. Optionally create a tag too.")
                     .font(DesignSystem.Fonts.mono(12))
                     .foregroundStyle(colors.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -106,7 +106,7 @@ struct GitPublishCollectionSheet: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
             } else if viewModel.gitCollectionSources.isEmpty {
-                Text("Nessun Git source configurato.")
+                Text("No Git source configured.")
                     .font(DesignSystem.Fonts.mono(12))
                     .foregroundStyle(colors.textSecondary)
             } else {
@@ -116,7 +116,7 @@ struct GitPublishCollectionSheet: View {
                     }
                 }
                 .pickerStyle(.menu)
-                Text("Configura i repository da Collections → Git.")
+                Text("Configure repositories in Collections → Git.")
                     .font(DesignSystem.Fonts.mono(11))
                     .foregroundStyle(colors.textSecondary)
             }
@@ -148,7 +148,7 @@ struct GitPublishCollectionSheet: View {
             } else {
                 TextField("Relative path (e.g. collections/api.har)", text: $relativePath)
                     .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "doc"))
-                Text("Percorso relativo alla subdirectory del Git source (se configurata).")
+                Text("Relative path to the Git source subdirectory (if configured).")
                     .font(DesignSystem.Fonts.mono(11))
                     .foregroundStyle(colors.textSecondary)
             }
@@ -172,7 +172,7 @@ struct GitPublishCollectionSheet: View {
                 .foregroundStyle(colors.textPrimary)
             TextField("Tag name (e.g. v1.2.3)", text: $tagName)
                 .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "tag"))
-            Text("Se valorizzato, FRTMProxy creerà un tag annotato dopo il push.")
+            Text("If set, FRTMProxy will create an annotated tag after the push.")
                 .font(DesignSystem.Fonts.mono(11))
                 .foregroundStyle(colors.textSecondary)
         }

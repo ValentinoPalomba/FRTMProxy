@@ -19,9 +19,9 @@ enum MitmproxyServiceError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .executableNotFound(let path):
-            return "Eseguibile mitmdump non trovato a: \(path)"
+            return "mitmdump executable not found at: \(path)"
         case .failedToRun(let reason):
-            return "Impossibile eseguire mitmdump: \(reason)"
+            return "Unable to run mitmdump: \(reason)"
         }
     }
 }
@@ -213,7 +213,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         try fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: path)
         
         guard fileManager.isExecutableFile(atPath: path) else {
-            throw MitmproxyServiceError.failedToRun("Impossibile rendere eseguibile \(path)")
+            throw MitmproxyServiceError.failedToRun("Unable to make \(path) executable")
         }
     }
 
@@ -235,10 +235,10 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
                     self.warmupProcess = nil
                     if proc.terminationStatus == 0 {
                         self.warmupState = .ready
-                        self.onLog?("[PROXY] mitmdump pronto all'avvio\n")
+                        self.onLog?("[PROXY] mitmdump ready to start\n")
                     } else {
-                        self.warmupState = .failed("uscita con codice \(proc.terminationStatus)")
-                        self.onLog?("[PROXY] warmup mitmdump fallito (codice \(proc.terminationStatus))\n")
+                        self.warmupState = .failed("exited with code \(proc.terminationStatus)")
+                        self.onLog?("[PROXY] mitmdump warmup failed (code \(proc.terminationStatus))\n")
                     }
                 }
             }
@@ -246,13 +246,13 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             self.warmupProcess = warmupProcess
         } catch {
             warmupState = .failed(error.localizedDescription)
-            onLog?("[PROXY] impossibile pre-avviare mitmdump: \(error.localizedDescription)\n")
+            onLog?("[PROXY] unable to pre-start mitmdump: \(error.localizedDescription)\n")
         }
     }
     
     private func bridgeScriptURL() throws -> URL {
         guard let url = Bundle.main.url(forResource: "bridge", withExtension: "py") else {
-            throw MitmproxyServiceError.failedToRun("bridge.py non trovato nel bundle")
+            throw MitmproxyServiceError.failedToRun("bridge.py not found in the bundle")
         }
         return url
     }
@@ -355,13 +355,13 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let handle = commandHandle else {
-            onLog?("[PROXY CMD] impossibile inviare comando: handle o JSON non valido\n")
+            onLog?("[PROXY CMD] unable to send command: invalid handle or JSON\n")
             return
         }
 
         handle.write(data)
         handle.write(Data([0x0A])) // newline terminator
-        onLog?("[MAP LOCAL] comando inviato per flow \(flowID) (\(body.count) byte)\n")
+        onLog?("[MAP LOCAL] command sent for flow \(flowID) (\(body.count) bytes)\n")
     }
     
     func mockResponse(for flowID: String, body: String) {
@@ -383,7 +383,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             ]
         ]
 
-        sendCommand(payload, successLog: "[TRAFFIC] profilo \(profile.name) attivato\n")
+        sendCommand(payload, successLog: "[TRAFFIC] profile \(profile.name) activated\n")
     }
     
     func mockRequest(for flowID: String, body: String, headers: [String: String]?) {
@@ -393,7 +393,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             "body": body,
             "headers": headers ?? NSNull()
         ]
-        sendCommand(payload, successLog: "[MAP LOCAL] richiesta mock inviata per flow \(flowID)\n")
+        sendCommand(payload, successLog: "[MAP LOCAL] mock request sent for flow \(flowID)\n")
     }
 
     func mockRule(_ rule: MapRule) {
@@ -406,7 +406,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             "enabled": rule.isEnabled
         ]
 
-        sendCommand(payload, successLog: "[MAP LOCAL] regola aggiornata per \(rule.key)\n")
+        sendCommand(payload, successLog: "[MAP LOCAL] rule updated for \(rule.key)\n")
     }
 
     func deleteRule(forKey key: String) {
@@ -415,7 +415,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             "key": key
         ]
 
-        sendCommand(payload, successLog: "[MAP LOCAL] regola rimossa per \(key)\n")
+        sendCommand(payload, successLog: "[MAP LOCAL] rule removed for \(key)\n")
     }
     
     func updateBreakpointRule(_ rule: FlowBreakpointRule) {
@@ -425,7 +425,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             "request": rule.interceptRequest,
             "response": rule.interceptResponse
         ]
-        sendCommand(payload, successLog: "[BREAKPOINT] regola aggiornata per \(rule.key)\n")
+        sendCommand(payload, successLog: "[BREAKPOINT] rule updated for \(rule.key)\n")
     }
 
     func deleteBreakpointRule(forKey key: String) {
@@ -435,13 +435,13 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             "request": false,
             "response": false
         ]
-        sendCommand(payload, successLog: "[BREAKPOINT] regola rimossa per \(key)\n")
+        sendCommand(payload, successLog: "[BREAKPOINT] rule removed for \(key)\n")
     }
 
     private func sendCommand(_ payload: [String: Any], successLog: String) {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let handle = commandHandle else {
-            onLog?("[PROXY CMD] impossibile inviare comando: handle o JSON non valido\n")
+            onLog?("[PROXY CMD] unable to send command: invalid handle or JSON\n")
             return
         }
 
@@ -459,7 +459,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             "body": body ?? "",
             "headers": headers
         ]
-        sendCommand(payload, successLog: "[RETRY] richiesta reinviata per flow \(flowID)\n")
+        sendCommand(payload, successLog: "[RETRY] request resent for flow \(flowID)\n")
     }
 
     func resumeBreakpoint(

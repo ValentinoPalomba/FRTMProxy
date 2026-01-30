@@ -18,7 +18,7 @@ struct LogConsoleView: View {
             
             ScrollViewReader { proxy in
                 ScrollView {
-                    Text(logText.isEmpty ? "Nessun log disponibile" : logText)
+                    Text(logText.isEmpty ? "No logs available" : logText)
                         .font(DesignSystem.Fonts.mono(11))
                         .foregroundStyle(colors.accent)
                         .frame(maxWidth: .infinity, alignment: .topLeading)

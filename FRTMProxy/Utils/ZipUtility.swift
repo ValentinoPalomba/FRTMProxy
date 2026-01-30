@@ -7,9 +7,9 @@ enum ZipUtilityError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .zipFailed(let output):
-            return "Impossibile creare l'archivio zip: \(output)"
+            return "Unable to create zip archive: \(output)"
         case .unzipFailed(let output):
-            return "Impossibile estrarre l'archivio: \(output)"
+            return "Unable to extract archive: \(output)"
         }
     }
 }
@@ -29,7 +29,7 @@ enum ZipUtility {
         process.waitUntilExit()
         guard process.terminationStatus == 0 else {
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            let message = String(data: data, encoding: .utf8) ?? "zip fallito"
+            let message = String(data: data, encoding: .utf8) ?? "zip failed"
             throw ZipUtilityError.zipFailed(message)
         }
     }
@@ -45,7 +45,7 @@ enum ZipUtility {
         process.waitUntilExit()
         guard process.terminationStatus == 0 else {
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            let message = String(data: data, encoding: .utf8) ?? "unzip fallito"
+            let message = String(data: data, encoding: .utf8) ?? "unzip failed"
             throw ZipUtilityError.unzipFailed(message)
         }
     }

@@ -56,7 +56,7 @@ struct MapEditorView: View {
                     Image(systemName: "cursorarrow.rays")
                         .font(.system(size: 30))
                         .foregroundStyle(colors.textSecondary)
-                    Text("Seleziona un flow o una regola per \(titlePrefix)")
+                    Text("Select a flow or rule for \(titlePrefix)")
                         .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                         .foregroundStyle(colors.textSecondary)
                 }
@@ -71,7 +71,7 @@ struct MapEditorView: View {
                 .foregroundStyle(colors.textSecondary)
             Text("/")
                 .foregroundStyle(colors.textSecondary)
-            Text(viewModel.title.isEmpty ? "Nessun elemento selezionato" : viewModel.title)
+            Text(viewModel.title.isEmpty ? "No item selected" : viewModel.title)
                 .font(DesignSystem.Fonts.sans(12, weight: .medium))
                 .foregroundStyle(colors.textPrimary)
         }
@@ -172,7 +172,7 @@ struct MapEditorView: View {
                     colors: colors,
                     keyPlaceholder: "Header",
                     valuePlaceholder: "Value",
-                    emptyMessage: "Nessun header della request",
+                    emptyMessage: "No request headers",
                     useMultilineValue: true,
                     onAdd: viewModel.addRequestHeader,
                     onRemove: viewModel.removeRequestHeader
@@ -183,9 +183,9 @@ struct MapEditorView: View {
                 KeyValueEditor(
                     rows: $viewModel.queryParameters,
                     colors: colors,
-                    keyPlaceholder: "Parametro",
-                    valuePlaceholder: "Valore",
-                    emptyMessage: "Nessun parametro query",
+                    keyPlaceholder: "Parameter",
+                    valuePlaceholder: "Value",
+                    emptyMessage: "No query parameters",
                     useMultilineValue: false,
                     onAdd: viewModel.addQueryParameter,
                     onRemove: viewModel.removeQueryParameter
@@ -205,7 +205,7 @@ struct MapEditorView: View {
                     colors: colors,
                     keyPlaceholder: "Header",
                     valuePlaceholder: "Value",
-                    emptyMessage: "Nessun header della response",
+                    emptyMessage: "No response headers",
                     useMultilineValue: true,
                     onAdd: viewModel.addResponseHeader,
                     onRemove: viewModel.removeResponseHeader
@@ -317,7 +317,7 @@ private struct KeyValueEditor: View {
             HStack {
                 Spacer()
                 Button(action: onAdd) {
-                    Label("Aggiungi", systemImage: "plus.circle.fill")
+                    Label("Add", systemImage: "plus.circle.fill")
                         .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                 }
                 .buttonStyle(.plain)

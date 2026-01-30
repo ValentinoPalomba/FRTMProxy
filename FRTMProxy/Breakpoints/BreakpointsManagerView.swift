@@ -40,7 +40,7 @@ struct BreakpointsManagerView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Breakpoints")
                     .font(DesignSystem.Fonts.mono(20, weight: .semibold))
-                Text("Crea e abilita breakpoints persistenti per request e response.")
+                Text("Create and enable persistent breakpoints for requests and responses.")
                     .font(DesignSystem.Fonts.mono(13))
                     .foregroundStyle(colors.textSecondary)
             }
@@ -54,14 +54,14 @@ struct BreakpointsManagerView: View {
     private var creationCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Nuovo breakpoint")
+                Text("New breakpoint")
                     .font(DesignSystem.Fonts.sans(14, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
                 Spacer()
                 Button {
                     fillFromSelection()
                 } label: {
-                    Label("Usa flow selezionato", systemImage: "cursorarrow.rays")
+                    Label("Use selected flow", systemImage: "cursorarrow.rays")
                         .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                 }
                 .buttonStyle(.borderless)
@@ -69,23 +69,23 @@ struct BreakpointsManagerView: View {
             }
 
             HStack(spacing: 12) {
-                TextField("Host (es. api.example.com)", text: $newHost)
+                TextField("Host (e.g. api.example.com)", text: $newHost)
                     .textFieldStyle(ProxyTextFieldStyle(palette: colors))
-                TextField("Path (es. /v1/users)", text: $newPath)
+                TextField("Path (e.g. /v1/users)", text: $newPath)
                     .textFieldStyle(ProxyTextFieldStyle(palette: colors))
             }
 
             HStack(spacing: 12) {
                 PhaseChip(
                     title: "Request",
-                    subtitle: "Interrompi prima che parta",
+                    subtitle: "Pause before it starts",
                     isOn: includeRequest,
                     colors: colors,
                     action: { includeRequest.toggle() }
                 )
                 PhaseChip(
                     title: "Response",
-                    subtitle: "Interrompi prima di mostrarla",
+                    subtitle: "Pause before displaying it",
                     isOn: includeResponse,
                     colors: colors,
                     action: { includeResponse.toggle() }
@@ -152,10 +152,10 @@ struct BreakpointsManagerView: View {
             Image(systemName: "exclamationmark.shield")
                 .font(.system(size: 46))
                 .foregroundStyle(colors.textSecondary)
-            Text("Nessun breakpoint configurato")
+            Text("No breakpoints configured")
                 .font(DesignSystem.Fonts.sans(16, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)
-            Text("Aggiungi un host/path per bloccare request o response prima che passino dal proxy.")
+            Text("Add a host/path to pause requests or responses before they pass through the proxy.")
                 .font(DesignSystem.Fonts.sans(13))
                 .foregroundStyle(colors.textSecondary)
         }
@@ -224,7 +224,7 @@ private struct BreakpointRow: View {
                 colors: colors,
                 action: { onToggleResponse(!rule.interceptResponse) }
             )
-            Toggle("Attivo", isOn: Binding(
+            Toggle("Active", isOn: Binding(
                 get: { rule.isEnabled },
                 set: { onToggleEnabled($0) }
             ))

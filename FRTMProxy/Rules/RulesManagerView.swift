@@ -62,7 +62,7 @@ struct RulesManagerView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Map Local Rules")
                     .font(DesignSystem.Fonts.mono(20, weight: .semibold))
-                Text("Gestisci le risposte mock salvate e abilita/disable rapidamente le regole.")
+                Text("Manage saved mock responses and quickly enable/disable rules.")
                     .font(DesignSystem.Fonts.mono(13))
                     .foregroundStyle(colors.textSecondary)
             }
@@ -140,10 +140,10 @@ struct RulesManagerView: View {
             Image(systemName: "folder.badge.questionmark")
                 .font(.system(size: 48))
                 .foregroundStyle(colors.textSecondary)
-            Text("Nessuna regola salvata")
+            Text("No rules saved")
                 .font(DesignSystem.Fonts.sans(16, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)
-            Text("Crea una nuova regola o usa Map Local su un flow per popolare questa lista.")
+            Text("Create a new rule or use Map Local on a flow to populate this list.")
                 .font(DesignSystem.Fonts.sans(13))
                 .foregroundStyle(colors.textSecondary)
         }
@@ -266,14 +266,14 @@ private struct NewRuleSheet: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("New Map Local Rule")
                 .font(DesignSystem.Fonts.sans(18, weight: .semibold))
-            Text("Specifica host e path della richiesta da intercettare. Potrai modificare body e headers dopo aver creato la regola.")
+            Text("Specify the host and path of the request to intercept. You can edit body and headers after creating the rule.")
                 .font(DesignSystem.Fonts.sans(13))
                 .foregroundStyle(colors.textSecondary)
 
             VStack(alignment: .leading, spacing: 12) {
-                TextField("Host (es. api.example.com)", text: $host)
+                TextField("Host (e.g. api.example.com)", text: $host)
                     .textFieldStyle(ProxyTextFieldStyle(palette: colors))
-                TextField("Path (es. /v1/resource)", text: $path)
+                TextField("Path (e.g. /v1/resource)", text: $path)
                     .textFieldStyle(ProxyTextFieldStyle(palette: colors))
             }
 

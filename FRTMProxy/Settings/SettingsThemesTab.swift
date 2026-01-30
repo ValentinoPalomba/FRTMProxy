@@ -11,24 +11,24 @@ struct SettingsThemesTab: View {
             colors: colors
         ) {
             ThemePickerSection(
-                title: "Automatico",
-                subtitle: "Usa l'aspetto di macOS e mantieni i colori originali dell'app.",
+                title: "Automatic",
+                subtitle: "Match macOS appearance and keep the app's original colors.",
                 themes: ThemeLibrary.automaticThemes,
                 selection: $settings.selectedThemeID,
                 colors: colors
             )
 
             ThemePickerSection(
-                title: "Temi Chiari",
-                subtitle: "Palette pensate per ambienti luminosi.",
+                title: "Light Themes",
+                subtitle: "Palettes designed for bright environments.",
                 themes: ThemeLibrary.lightThemes,
                 selection: $settings.selectedThemeID,
                 colors: colors
             )
 
             ThemePickerSection(
-                title: "Temi Scuri",
-                subtitle: "Ideali per sessioni notturne o ambienti poco illuminati.",
+                title: "Dark Themes",
+                subtitle: "Ideal for night sessions or low-light environments.",
                 themes: ThemeLibrary.darkThemes,
                 selection: $settings.selectedThemeID,
                 colors: colors

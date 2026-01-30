@@ -41,8 +41,8 @@ struct AppTheme: Identifiable {
 enum ThemeLibrary {
     private static let systemTheme = AppTheme(
         id: "system",
-        name: "Sistema (Automatico)",
-        description: "Segue l'aspetto di macOS e usa la palette originale dell'app.",
+        name: "System (Automatic)",
+        description: "Matches macOS appearance and uses the app's original palette.",
         preferredColorScheme: nil,
         category: .automatic,
         previewSwatches: [
@@ -58,7 +58,7 @@ enum ThemeLibrary {
     private static let xcodeLight = AppTheme(
         id: "xcode-light",
         name: "Xcode Light",
-        description: "Ispirato al tema chiaro di Xcode, ideale per ambienti luminosi.",
+        description: "Inspired by Xcode's light theme, ideal for bright environments.",
         preferredColorScheme: .light,
         category: .light,
         previewSwatches: [
@@ -86,7 +86,7 @@ enum ThemeLibrary {
     private static let xcodeDark = AppTheme(
         id: "xcode-dark",
         name: "Xcode Dark",
-        description: "Palette high-contrast come il tema scuro di Xcode.",
+        description: "High-contrast palette like Xcode's dark theme.",
         preferredColorScheme: .dark,
         category: .dark,
         previewSwatches: [
@@ -114,7 +114,7 @@ enum ThemeLibrary {
     private static let vscodeLight = AppTheme(
         id: "vscode-light",
         name: "VS Code Light",
-        description: "Colori puliti e neutri ispirati al tema Light+ di VS Code.",
+        description: "Clean, neutral colors inspired by VS Code's Light+ theme.",
         preferredColorScheme: .light,
         category: .light,
         previewSwatches: [
@@ -142,7 +142,7 @@ enum ThemeLibrary {
     private static let vscodeDark = AppTheme(
         id: "vscode-dark",
         name: "VS Code Dark",
-        description: "Ricrea il look del classico tema Dark+.",
+        description: "Recreates the look of the classic Dark+ theme.",
         preferredColorScheme: .dark,
         category: .dark,
         previewSwatches: [
@@ -170,7 +170,7 @@ enum ThemeLibrary {
     private static let prideLight = AppTheme(
         id: "pride-light",
         name: "Pride Light",
-        description: "Palette vibrante arcobaleno per interfacce chiare.",
+        description: "Vibrant rainbow palette for light interfaces.",
         preferredColorScheme: .light,
         category: .light,
         previewSwatches: [
@@ -198,7 +198,7 @@ enum ThemeLibrary {
     private static let prideDark = AppTheme(
         id: "pride-dark",
         name: "Pride Dark",
-        description: "Contrasti neon arcobaleno per ambienti scuri.",
+        description: "Neon rainbow contrast for dark environments.",
         preferredColorScheme: .dark,
         category: .dark,
         previewSwatches: [
@@ -226,7 +226,7 @@ enum ThemeLibrary {
     private static let githubLight = AppTheme(
         id: "github-light",
         name: "GitHub Light",
-        description: "Replica il tema \"GitHub Light Default\".",
+        description: "Replicates the \"GitHub Light Default\" theme.",
         preferredColorScheme: .light,
         category: .light,
         previewSwatches: [
@@ -254,7 +254,7 @@ enum ThemeLibrary {
     private static let githubDark = AppTheme(
         id: "github-dark",
         name: "GitHub Dark",
-        description: "Ispirato a \"GitHub Dark Default\".",
+        description: "Inspired by \"GitHub Dark Default\".",
         preferredColorScheme: .dark,
         category: .dark,
         previewSwatches: [
@@ -282,7 +282,7 @@ enum ThemeLibrary {
     private static let unicornLight = AppTheme(
         id: "unicorn-light",
         name: "Unicorn Light",
-        description: "Pastelli e colori candy-friendly.",
+        description: "Pastels and candy-friendly colors.",
         preferredColorScheme: .light,
         category: .light,
         previewSwatches: [
@@ -310,7 +310,7 @@ enum ThemeLibrary {
     private static let unicornDark = AppTheme(
         id: "unicorn-dark",
         name: "Unicorn Dark",
-        description: "Night mode sognante con accenti neon.",
+        description: "Dreamy night mode with neon accents.",
         preferredColorScheme: .dark,
         category: .dark,
         previewSwatches: [
@@ -338,7 +338,7 @@ enum ThemeLibrary {
     private static let solarizedLight = AppTheme(
         id: "solarized-light",
         name: "Solarized Light",
-        description: "Il classico tema chiaro di Ethan Schoonover.",
+        description: "The classic light theme by Ethan Schoonover.",
         preferredColorScheme: .light,
         category: .light,
         previewSwatches: [
@@ -366,7 +366,7 @@ enum ThemeLibrary {
     private static let solarizedDark = AppTheme(
         id: "solarized-dark",
         name: "Solarized Dark",
-        description: "Versione dark accuratamente bilanciata.",
+        description: "Carefully balanced dark version.",
         preferredColorScheme: .dark,
         category: .dark,
         previewSwatches: [
@@ -394,7 +394,7 @@ enum ThemeLibrary {
     private static let dracula = AppTheme(
         id: "dracula",
         name: "Dracula",
-        description: "Tema scuro iconico per dev notturni.",
+        description: "Iconic dark theme for night owls.",
         preferredColorScheme: .dark,
         category: .dark,
         previewSwatches: [
@@ -422,7 +422,7 @@ enum ThemeLibrary {
     private static let monokai = AppTheme(
         id: "monokai",
         name: "Monokai",
-        description: "Colori saturi in stile Sublime Text.",
+        description: "Saturated colors in the style of Sublime Text.",
         preferredColorScheme: .dark,
         category: .dark,
         previewSwatches: [
@@ -450,7 +450,7 @@ enum ThemeLibrary {
     private static let nordLight = AppTheme(
         id: "nord-light",
         name: "Nord Light",
-        description: "Toni ghiaccio e accenti blu della palette Nord.",
+        description: "Icy tones and blue accents from the Nord palette.",
         preferredColorScheme: .light,
         category: .light,
         previewSwatches: [
@@ -478,7 +478,7 @@ enum ThemeLibrary {
     private static let nordDark = AppTheme(
         id: "nord-dark",
         name: "Nord Dark",
-        description: "Versione dark professionale e desaturata.",
+        description: "Professional, desaturated dark version.",
         preferredColorScheme: .dark,
         category: .dark,
         previewSwatches: [
@@ -506,7 +506,7 @@ enum ThemeLibrary {
     private static let tokyoNight = AppTheme(
         id: "tokyo-night",
         name: "Tokyo Night",
-        description: "Scuro, neon e ispirato all'omonimo tema VS Code.",
+        description: "Dark, neon, and inspired by the VS Code theme of the same name.",
         preferredColorScheme: .dark,
         category: .dark,
         previewSwatches: [
@@ -534,7 +534,7 @@ enum ThemeLibrary {
     private static let gruvboxLight = AppTheme(
         id: "gruvbox-light",
         name: "Gruvbox Light",
-        description: "Look retro caldo con sfondo crema.",
+        description: "Warm retro look with a cream background.",
         preferredColorScheme: .light,
         category: .light,
         previewSwatches: [
@@ -562,7 +562,7 @@ enum ThemeLibrary {
     private static let eInkDark = AppTheme(
         id: "e-ink-dark",
         name: "E Ink Dark",
-        description: "Un tema scuro che simula l'inversione di un display E Ink.",
+        description: "A dark theme that simulates an inverted E Ink display.",
         preferredColorScheme: .dark,
         category: .dark,
         previewSwatches: [
@@ -590,7 +590,7 @@ enum ThemeLibrary {
     private static let eInkLight = AppTheme(
         id: "e-ink-light",
         name: "E Ink Light",
-        description: "Un tema ad alto contrasto che imita un display E Ink.",
+        description: "A high-contrast theme that mimics an E Ink display.",
         preferredColorScheme: .light,
         category: .light,
         previewSwatches: [
@@ -618,7 +618,7 @@ enum ThemeLibrary {
     private static let notionDark = AppTheme(
         id: "notion-dark",
         name: "Notion Dark",
-        description: "Una versione scura del tema Notion per non affaticare gli occhi.",
+        description: "A dark version of the Notion theme that's easy on the eyes.",
         preferredColorScheme: .dark,
         category: .dark,
         previewSwatches: [
@@ -646,7 +646,7 @@ enum ThemeLibrary {
     private static let notionLight = AppTheme(
         id: "notion-light",
         name: "Notion Light",
-        description: "Un tema pulito e minimale ispirato a Notion.",
+        description: "A clean, minimal theme inspired by Notion.",
         preferredColorScheme: .light,
         category: .light,
         previewSwatches: [
@@ -674,7 +674,7 @@ enum ThemeLibrary {
     private static let gruvboxDark = AppTheme(
         id: "gruvbox-dark",
         name: "Gruvbox Dark",
-        description: "Palette terrosa con accenti vivaci.",
+        description: "Earthy palette with vivid accents.",
         preferredColorScheme: .dark,
         category: .dark,
         previewSwatches: [

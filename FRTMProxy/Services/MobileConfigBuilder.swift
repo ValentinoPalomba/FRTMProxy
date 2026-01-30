@@ -47,7 +47,7 @@ struct MobileConfigBuilder {
             "PayloadIdentifier": "io.frtmproxy.profile.\(profileUUID)",
             "PayloadUUID": profileUUID,
             "PayloadDisplayName": payload.displayName,
-            "PayloadDescription": "Configura il proxy (solo per la rete Wi‑Fi selezionata) e installa la Root CA di FRTMProxy per intercettare traffico HTTP/S.",
+            "PayloadDescription": "Configures the proxy (only for the selected Wi‑Fi network) and installs the FRTMProxy Root CA to intercept HTTP/S traffic.",
             "PayloadOrganization": payload.organization,
             "PayloadContent": [wifiPayload, certificatePayload]
         ]

@@ -10,13 +10,13 @@ struct MitmproxyCertificateLoader {
             switch self {
             case .certificateMissing(let path):
                 return """
-                Certificato CA di mitmproxy non trovato in \(path). \
-                Avvia il proxy una volta (anche solo aprendo mitm.it) per generarlo.
+                mitmproxy CA certificate not found in \(path). \
+                Start the proxy once (even just opening mitm.it) to generate it.
                 """
             case .conversionFailed(let reason):
-                return "Impossibile convertire il certificato PEM in DER: \(reason)"
+                return "Unable to convert the PEM certificate to DER: \(reason)"
             case .commandFailed(let reason):
-                return "Impossibile eseguire un comando richiesto: \(reason)"
+                return "Unable to execute a required command: \(reason)"
             }
         }
     }
@@ -102,4 +102,3 @@ struct MitmproxyCertificateLoader {
         text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
-

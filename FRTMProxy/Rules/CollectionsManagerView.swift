@@ -40,8 +40,8 @@ struct CollectionsManagerView: View {
         .background(colors.background)
         .sheet(isPresented: $showStartSheet) {
             CollectionNameSheet(
-                title: "Nuova Collection",
-                message: "Le richieste mappate mentre la registrazione è attiva verranno salvate in questa collection.",
+                title: "New Collection",
+                message: "Mapped requests captured while recording is active will be saved in this collection.",
                 name: $pendingName,
                 colors: colors,
                 confirmLabel: "Start",
@@ -51,8 +51,8 @@ struct CollectionsManagerView: View {
         }
         .sheet(item: $renameTarget) { collection in
             CollectionNameSheet(
-                title: "Rinomina Collection",
-                message: "Aggiorna il nome per organizzare meglio le tue raccolte.",
+                title: "Rename Collection",
+                message: "Update the name to better organize your collections.",
                 name: $renameInput,
                 colors: colors,
                 confirmLabel: "Rename",
@@ -84,12 +84,12 @@ struct CollectionsManagerView: View {
             if let collection = viewModel.collections.first(where: { $0.id == context.collectionID }) {
                 GitPublishCollectionSheet(viewModel: viewModel, collection: collection, colors: colors)
             } else {
-                Text("Collection non trovata.")
+                Text("Collection not found.")
                     .padding(24)
             }
         }
         .alert(
-            "Operazione non riuscita",
+            "Operation failed",
             isPresented: Binding(
                 get: { alertMessage != nil },
                 set: { if !$0 { alertMessage = nil } }
@@ -104,13 +104,13 @@ struct CollectionsManagerView: View {
             isPresented: $confirmStopRecording,
             titleVisibility: .visible
         ) {
-            Button("Salva sessione") {
+            Button("Save session") {
                 viewModel.stopCollectionRecording(save: true)
             }
-            Button("Scarta", role: .destructive) {
+            Button("Discard", role: .destructive) {
                 viewModel.stopCollectionRecording(save: false)
             }
-            Button("Annulla", role: .cancel) { }
+            Button("Cancel", role: .cancel) { }
         }
         .onAppear {
             if selectedCollectionID == nil {
@@ -132,7 +132,7 @@ struct CollectionsManagerView: View {
                 Text("Collections")
                     .font(DesignSystem.Fonts.mono(22, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
-                Text("Raggruppa Map Local in collezioni esportabili e abilita blocchi di regole in un colpo solo.")
+                Text("Group Map Local into exportable collections and enable rule sets in one click.")
                     .font(DesignSystem.Fonts.mono(13))
                     .foregroundStyle(colors.textSecondary)
             }
@@ -286,10 +286,10 @@ struct CollectionsManagerView: View {
             Image(systemName: "folder.badge.questionmark")
                 .font(.system(size: 42))
                 .foregroundStyle(colors.textSecondary)
-            Text("Nessuna collection")
+            Text("No collections")
                 .font(DesignSystem.Fonts.sans(16, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)
-            Text("Avvia una registrazione per salvare automaticamente una collezione di Map Local.")
+            Text("Start a recording to automatically save a Map Local collection.")
                 .font(DesignSystem.Fonts.sans(13))
                 .foregroundStyle(colors.textSecondary)
                 .multilineTextAlignment(.center)
@@ -303,7 +303,7 @@ struct CollectionsManagerView: View {
             Image(systemName: "tray")
                 .font(.system(size: 40))
                 .foregroundStyle(colors.textSecondary)
-            Text("Seleziona una collection per vedere le sue regole.")
+            Text("Select a collection to view its rules.")
                 .font(DesignSystem.Fonts.sans(15, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)
         }
@@ -454,7 +454,7 @@ private struct RecordingPreviewView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Recording \"\(collectionName)\"")
                         .font(DesignSystem.Fonts.sans(18, weight: .semibold))
-                    Text("\(rules.count) \(rules.count == 1 ? "rule" : "rules") catturate finora")
+                    Text("\(rules.count) \(rules.count == 1 ? "rule" : "rules") captured so far")
                         .font(DesignSystem.Fonts.mono(12))
                         .foregroundStyle(colors.textSecondary)
                 }
@@ -462,7 +462,7 @@ private struct RecordingPreviewView: View {
             }
             Divider()
             if rules.isEmpty {
-                Text("Map Local non ancora registrate. Map un flow per iniziare a popolare la collection.")
+                Text("No Map Local recorded yet. Map a flow to start populating the collection.")
                     .font(DesignSystem.Fonts.sans(13))
                     .foregroundStyle(colors.textSecondary)
             } else {
@@ -573,7 +573,7 @@ private struct CollectionDetailView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(collection.name)
                         .font(DesignSystem.Fonts.sans(20, weight: .semibold))
-                    Text("Creata \(collection.createdAt.formatted(date: .abbreviated, time: .shortened))")
+                    Text("Created \(collection.createdAt.formatted(date: .abbreviated, time: .shortened))")
                         .font(DesignSystem.Fonts.mono(12))
                         .foregroundStyle(colors.textSecondary)
                 }
@@ -604,7 +604,7 @@ private struct CollectionDetailView: View {
                     Image(systemName: "questionmark.square.dashed")
                         .font(.system(size: 40))
                         .foregroundStyle(colors.textSecondary)
-                    Text("Nessuna regola salvata in questa collection")
+                    Text("No rules saved in this collection")
                         .font(DesignSystem.Fonts.sans(14, weight: .semibold))
                         .foregroundStyle(colors.textSecondary)
                 }
@@ -739,7 +739,7 @@ private struct CollectionNameSheet: View {
                 .font(DesignSystem.Fonts.sans(13))
                 .foregroundStyle(colors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-            TextField("Nome collection", text: $name)
+            TextField("Collection name", text: $name)
                 .textFieldStyle(ProxyTextFieldStyle(palette: colors))
             HStack {
                 Spacer()

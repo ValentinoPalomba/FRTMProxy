@@ -14,10 +14,10 @@ struct SimulatorCertificateInstaller {
             switch self {
             case .simctlFailed(let reason):
                 return """
-                simctl ha restituito un errore: \(reason.isEmpty ? "esegui almeno un simulatore prima di procedere" : reason)
+                simctl returned an error: \(reason.isEmpty ? "launch at least one simulator before continuing" : reason)
                 """
             case .commandFailed(let reason):
-                return "Impossibile eseguire un comando richiesto: \(reason)"
+                return "Unable to execute a required command: \(reason)"
             }
         }
     }
@@ -25,7 +25,7 @@ struct SimulatorCertificateInstaller {
     func installCertificateOnBootedSimulators() throws -> String {
         let booted = try bootedSimulators()
         guard !booted.isEmpty else {
-            throw InstallerError.simctlFailed("nessun simulatore avviato (booted)")
+            throw InstallerError.simctlFailed("no booted simulators")
         }
 
         let certificateDER = try MitmproxyCertificateLoader().loadRootCADER()
@@ -63,18 +63,18 @@ struct SimulatorCertificateInstaller {
 
         var parts: [String] = []
         if !installedOn.isEmpty {
-            parts.append("Installato su: " + installedOn.joined(separator: ", "))
+            parts.append("Installed on: " + installedOn.joined(separator: ", "))
         }
         if !alreadyOn.isEmpty {
-            parts.append("Già presente su: " + alreadyOn.joined(separator: ", "))
+            parts.append("Already present on: " + alreadyOn.joined(separator: ", "))
         }
         if !verifiedOn.isEmpty {
-            parts.append("Verificato in keychain: " + verifiedOn.joined(separator: ", "))
+            parts.append("Verified in keychain: " + verifiedOn.joined(separator: ", "))
         } else {
-            parts.append("Nota: la verifica automatica non è disponibile su questa macchina; se non lo vedi in UI, riavvia il simulatore.")
+            parts.append("Note: automatic verification isn't available on this machine; if you don't see it in the UI, restart the simulator.")
         }
         if !failures.isEmpty {
-            parts.append("Fallito su: " + failures.joined(separator: ", "))
+            parts.append("Failed on: " + failures.joined(separator: ", "))
         }
 
         return parts.joined(separator: "\n")

@@ -166,7 +166,7 @@ private struct HeadersList: View {
 
     var body: some View {
         if headers.isEmpty {
-            Text("Nessun header disponibile")
+            Text("No headers available")
                 .foregroundStyle(colors.textSecondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         } else {
@@ -217,7 +217,7 @@ private struct QueryParametersList: View {
 
     var body: some View {
         if parameters.isEmpty {
-            Text("Nessun parametro query")
+            Text("No query parameters")
                 .foregroundStyle(colors.textSecondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         } else {

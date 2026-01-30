@@ -15,9 +15,9 @@ final class DevicePairingHTTPServer {
         var errorDescription: String? {
             switch self {
             case .noNetworkAddress:
-                return "Impossibile determinare l'indirizzo IP locale (Wi‑Fi)."
+                return "Unable to determine the local IP address (Wi‑Fi)."
             case .failedToStart(let reason):
-                return "Impossibile avviare il server di pairing: \(reason)"
+                return "Unable to start the pairing server: \(reason)"
             }
         }
     }
@@ -68,7 +68,7 @@ final class DevicePairingHTTPServer {
                 switch state {
                 case .ready:
                     guard let port = listener.port else {
-                        self.onError?(ServerError.failedToStart("port non disponibile"))
+                        self.onError?(ServerError.failedToStart("port unavailable"))
                         return
                     }
                     let url = URL(string: "http://\(ipAddress):\(port.rawValue)/")!
@@ -210,7 +210,7 @@ final class DevicePairingHTTPServer {
                 connection: connection,
                 status: "400 Bad Request",
                 headers: ["Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store"],
-                body: Data("SSID Wi‑Fi mancante: apri la pagina principale e riprova.".utf8)
+                body: Data("Missing Wi‑Fi SSID: open the main page and try again.".utf8)
             )
             return
         }
@@ -286,7 +286,7 @@ final class DevicePairingHTTPServer {
         let proxyDescription = htmlEscape("\(ipAddress):\(proxyPort)")
         return """
         <!DOCTYPE html>
-        <html lang="it">
+        <html lang="en">
         <head>
           <meta charset="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -456,48 +456,48 @@ final class DevicePairingHTTPServer {
             <header class="hero">
               <div class="eyebrow">FRTMProxy</div>
               <h1>Device setup</h1>
-              <p>Scarica e installa il profilo combinato per questa rete Wi‑Fi.</p>
+              <p>Download and install the combined profile for this Wi‑Fi network.</p>
             </header>
 
             <section class="card profile-card">
-              <div class="badge">Wi‑Fi attuale: <strong>\(safeSSID)</strong></div>
+              <div class="badge">Current Wi‑Fi: <strong>\(safeSSID)</strong></div>
               <div class="stats">
                 <div class="stat">
                   <p class="label">Proxy</p>
                   <p class="value">\(proxyDescription)</p>
                 </div>
                 <div class="stat">
-                  <p class="label">IP del Mac</p>
+                  <p class="label">Mac IP</p>
                   <p class="value">\(safeIP)</p>
                 </div>
               </div>
-              <a class="primary" href="\(safeProfileURL)">Scarica profilo</a>
-              <p class="note">Dopo il download apri Impostazioni → Profilo scaricato per completare l’installazione.</p>
-              <p class="note">Il profilo configura il proxy solo per la rete indicata: se cambi Wi‑Fi rigenera il QR.</p>
+              <a class="primary" href="\(safeProfileURL)">Download profile</a>
+              <p class="note">After downloading, open Settings → Profile Downloaded to complete installation.</p>
+              <p class="note">The profile configures the proxy only for the specified network: if you change Wi‑Fi, regenerate the QR.</p>
             </section>
 
             <section class="card">
-              <h2 style="margin-top:0; font-size:18px;">Come installare</h2>
+              <h2 style="margin-top:0; font-size:18px;">How to install</h2>
               <ol class="steps">
                 <li>
                   <span class="step-index">1</span>
                   <div class="step-body">
-                    <strong>Scarica il profilo.</strong>
-                    <p>Tocca “Scarica profilo” e conferma nel browser del dispositivo.</p>
+                    <strong>Download the profile.</strong>
+                    <p>Tap “Download profile” and confirm in the device browser.</p>
                   </div>
                 </li>
                 <li>
                   <span class="step-index">2</span>
                   <div class="step-body">
-                    <strong>Installa da Impostazioni.</strong>
-                    <p>Vai in Impostazioni → Profilo scaricato e completa l’installazione del proxy + CA.</p>
+                    <strong>Install from Settings.</strong>
+                    <p>Go to Settings → Profile Downloaded and complete the proxy + CA installation.</p>
                   </div>
                 </li>
                 <li>
                   <span class="step-index">3</span>
                   <div class="step-body">
-                    <strong>Attiva la fiducia della CA.</strong>
-                    <p>Impostazioni → Generali → Info → Impostazioni certificati → abilita la CA mitmproxy.</p>
+                    <strong>Enable trust for the CA.</strong>
+                    <p>Settings → General → About → Certificate Trust Settings → enable the mitmproxy CA.</p>
                   </div>
                 </li>
               </ol>

@@ -297,23 +297,23 @@ enum GitCollectionsSyncerError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidRemoteURL:
-            return "Git remote URL non valido."
+            return "Invalid Git remote URL."
         case .invalidReference:
-            return "Git branch/tag/commit non valido."
+            return "Invalid Git branch/tag/commit."
         case .gitNotAvailable:
-            return "git non disponibile (atteso in /usr/bin/git)."
+            return "git not available (expected at /usr/bin/git)."
         case .cloneDirectoryNotEmpty:
-            return "La cartella di clone esiste ma non è vuota."
+            return "The clone directory exists but is not empty."
         case .scanPathMissing:
-            return "Il percorso di scansione non esiste nel repository."
+            return "The scan path does not exist in the repository."
         case .scanPathNotDirectory:
-            return "Il percorso di scansione non è una directory."
+            return "The scan path is not a directory."
         case .gitFailed(let args, let output):
             let renderedArgs = args.joined(separator: " ")
             if output.isEmpty {
-                return "git fallito: \(renderedArgs)"
+                return "git failed: \(renderedArgs)"
             }
-            return "git fallito: \(renderedArgs)\n\n\(output)"
+            return "git failed: \(renderedArgs)\n\n\(output)"
         }
     }
 }

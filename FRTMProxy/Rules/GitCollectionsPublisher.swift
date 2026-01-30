@@ -388,27 +388,27 @@ enum GitCollectionsPublisherError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidRemoteURL:
-            return "Git remote URL non valido."
+            return "Invalid Git remote URL."
         case .invalidBranch:
-            return "Branch non valido."
+            return "Invalid branch."
         case .invalidTag:
-            return "Tag non valido."
+            return "Invalid tag."
         case .invalidRelativePath:
-            return "Percorso file non valido (usa un path relativo, es. `collections/api.har`)."
+            return "Invalid file path (use a relative path, e.g. `collections/api.har`)."
         case .gitNotAvailable:
-            return "git non disponibile (atteso in /usr/bin/git)."
+            return "git not available (expected at /usr/bin/git)."
         case .cloneDirectoryNotEmpty:
-            return "La cartella di clone esiste ma non è vuota."
+            return "The clone directory exists but is not empty."
         case .nothingToCommit:
-            return "Nessuna modifica da pushare."
+            return "No changes to push."
         case .tagAlreadyExists:
-            return "Il tag esiste già nel repository."
+            return "The tag already exists in the repository."
         case .gitFailed(let args, let output):
             let renderedArgs = args.joined(separator: " ")
             if output.isEmpty {
-                return "git fallito: \(renderedArgs)"
+                return "git failed: \(renderedArgs)"
             }
-            return "git fallito: \(renderedArgs)\n\n\(output)"
+            return "git failed: \(renderedArgs)\n\n\(output)"
         }
     }
 }

@@ -143,15 +143,15 @@ enum OnboardingStep: CaseIterable, Hashable {
     var title: String {
         switch self {
         case .startProxy:
-            return "Avvia il proxy"
+            return "Start the proxy"
         case .macOSProxyOverride:
-            return "Override proxy macOS"
+            return "Override macOS proxy"
         case .viewTraffic:
-            return "Monitora il traffico"
+            return "Monitor traffic"
         case .filterResults:
-            return "Filtri rapidi"
+            return "Quick filters"
         case .inspectFlow:
-            return "Inspector richiesta"
+            return "Request inspector"
         case .mapResponse:
             return "Map Local"
         }
@@ -160,17 +160,17 @@ enum OnboardingStep: CaseIterable, Hashable {
     var description: String {
         switch self {
         case .startProxy:
-            return "Premi Start per avviare il proxy e iniziare a intercettare il traffico dal tuo dispositivo."
+            return "Press Start to run the proxy and begin capturing traffic from your device."
         case .macOSProxyOverride:
-            return "In Impostazioni > Proxy Behavior abilita \"Override macOS proxy\" per instradare il traffico del Mac su localhost e la porta del proxy."
+            return "In Settings > Proxy Behavior, enable \"Override macOS proxy\" to route Mac traffic to localhost and the proxy port."
         case .viewTraffic:
-            return "La tabella del traffico si popola qui con tutte le richieste HTTP/HTTPS in tempo reale."
+            return "The traffic table fills here with all HTTP/HTTPS requests in real time."
         case .filterResults:
-            return "Usa la barra di ricerca e i filtri per restringere rapidamente i risultati."
+            return "Use the search bar and filters to quickly narrow results."
         case .inspectFlow:
-            return "Seleziona una richiesta nella tabella per aprire l'Inspector con header e body."
+            return "Select a request in the table to open the Inspector with headers and body."
         case .mapResponse:
-            return "Dopo aver selezionato una richiesta, usa Map Local per simulare risposte locali senza toccare il server."
+            return "After selecting a request, use Map Local to simulate local responses without touching the server."
         }
     }
     

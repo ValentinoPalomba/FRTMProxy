@@ -147,12 +147,12 @@ private struct BreakpointSelectorButton: View {
         .buttonStyle(.plain)
         .popover(isPresented: $isPresented, arrowEdge: .bottom) {
             VStack(alignment: .leading, spacing: 14) {
-                Text("Interrompi")
+                Text("Pause")
                     .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                     .foregroundStyle(colors.textSecondary)
                 BreakpointToggleRow(
                     title: "Request",
-                    subtitle: "Blocca la richiesta prima di inviarla",
+                    subtitle: "Pause the request before sending it",
                     isEnabled: isRequestEnabled,
                     colors: colors
                 ) {
@@ -160,7 +160,7 @@ private struct BreakpointSelectorButton: View {
                 }
                 BreakpointToggleRow(
                     title: "Response",
-                    subtitle: "Blocca la risposta prima di mostrarla",
+                    subtitle: "Pause the response before showing it",
                     isEnabled: isResponseEnabled,
                     colors: colors
                 ) {
