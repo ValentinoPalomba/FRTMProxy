@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import CodeMirror
+import WebKit
 
 /// SwiftUI wrapper around CodeMirror (WebKit-based) editor.
 struct CodeEditorView: NSViewRepresentable {
@@ -28,6 +29,11 @@ struct CodeEditorView: NSViewRepresentable {
         
 
         configure(nsView.webView, coordinator: context.coordinator)
+    }
+
+    static func dismantleNSView(_ nsView: CodeMirrorContainerView, coordinator: Coordinator) {
+        coordinator.detach(webView: nsView.webView)
+        nsView.cleanup()
     }
 
     private func configure(_ webView: CodeMirrorWebView, coordinator: Coordinator) {
@@ -60,10 +66,20 @@ final class Coordinator: NSObject, CodeMirrorWebViewDelegate {
             }
             CodeMirrorShortcutCenter.shared.register(webView: webView)
             registeredWebView = webView
+            didConfigureEditor = false
         }
         
         webView.delegate = self
-        didConfigureEditor = false
+    }
+
+    func detach(webView: CodeMirrorWebView) {
+        if registeredWebView === webView {
+            CodeMirrorShortcutCenter.shared.unregister(webView: webView)
+            registeredWebView = nil
+        }
+        if webView.delegate === self {
+            webView.delegate = nil
+        }
     }
 
     deinit {
@@ -169,5 +185,28 @@ final class CodeMirrorContainerView: NSView {
             webView.bottomAnchor.constraint(equalTo: bottomAnchor),
             heightConstraint!
         ])
+    }
+
+    func cleanup() {
+        guard let wkWebView = findWKWebView(in: webView) else { return }
+        let controller = wkWebView.configuration.userContentController
+        controller.removeScriptMessageHandler(forName: "codeMirrorDidReady")
+        controller.removeScriptMessageHandler(forName: "codeMirrorTextContentDidChange")
+        wkWebView.navigationDelegate = nil
+        wkWebView.uiDelegate = nil
+        wkWebView.stopLoading()
+        wkWebView.loadHTMLString("", baseURL: nil)
+    }
+
+    private func findWKWebView(in view: NSView) -> WKWebView? {
+        if let wkWebView = view as? WKWebView {
+            return wkWebView
+        }
+        for subview in view.subviews {
+            if let match = findWKWebView(in: subview) {
+                return match
+            }
+        }
+        return nil
     }
 }

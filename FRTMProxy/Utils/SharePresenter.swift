@@ -23,17 +23,23 @@ enum SharePresenter {
             .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 
-    static func present(items: [Any], from view: NSView) {
+    static func present(items: [Any], from view: NSView? = nil) {
         let normalized = normalizedItems(items)
         guard !normalized.isEmpty else { return }
-        guard view.window != nil else { return }
+        let anchorView = view ?? NSApp.keyWindow?.contentView ?? NSApp.mainWindow?.contentView
+        guard let anchorView, anchorView.window != nil else { return }
 
         let picker = NSSharingServicePicker(items: normalized)
         activePicker = picker
 
         Task { @MainActor in
-            let rect = CGRect(x: 0, y: 0, width: max(1, view.bounds.width), height: max(1, view.bounds.height))
-            picker.show(relativeTo: rect, of: view, preferredEdge: .minY)
+            let rect = CGRect(
+                x: 0,
+                y: 0,
+                width: max(1, anchorView.bounds.width),
+                height: max(1, anchorView.bounds.height)
+            )
+            picker.show(relativeTo: rect, of: anchorView, preferredEdge: .minY)
         }
 
         Task {

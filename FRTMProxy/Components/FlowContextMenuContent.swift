@@ -5,7 +5,6 @@ struct FlowContextMenuContent: View {
     let flow: MitmFlow
     let isHostPinned: Bool
     let isAppPinned: Bool
-    let shareAnchorView: NSView?
 
     let onEditRetry: () -> Void
     let onMapLocal: () -> Void
@@ -61,7 +60,6 @@ struct FlowContextMenuContent: View {
                 } label: {
                     Label("X-Request-ID…", systemImage: "number")
                 }
-                .disabled(shareAnchorView == nil)
             }
 
             Button {
@@ -69,21 +67,21 @@ struct FlowContextMenuContent: View {
             } label: {
                 Label("Details…", systemImage: "square.and.arrow.up")
             }
-            .disabled(flow.teamsShareText == nil || shareAnchorView == nil)
+            .disabled(flow.teamsShareText == nil )
 
             Button {
                 presentURLShare()
             } label: {
                 Label("URL…", systemImage: "link")
             }
-            .disabled(flow.request?.url == nil || shareAnchorView == nil)
+            .disabled(flow.request?.url == nil)
 
             Button {
                 presentCurlShare()
             } label: {
                 Label("cURL…", systemImage: "terminal")
             }
-            .disabled(flow.curlString == nil || shareAnchorView == nil)
+            .disabled(flow.curlString == nil)
         } label: {
             Label("Share", systemImage: "square.and.arrow.up")
         }
@@ -164,27 +162,23 @@ struct FlowContextMenuContent: View {
 
     private func presentDetailsShare() {
         guard let shareText = flow.teamsShareText else { return }
-        guard let shareAnchorView else { return }
-        SharePresenter.present(items: [shareText], from: shareAnchorView)
+        SharePresenter.present(items: [shareText])
     }
 
     private func presentRequestIDShare() {
         guard let requestID = flow.xRequestID else { return }
-        guard let shareAnchorView else { return }
-        SharePresenter.present(items: [requestID], from: shareAnchorView)
+        SharePresenter.present(items: [requestID])
     }
 
     private func presentURLShare() {
         guard let urlString = flow.request?.url else { return }
         guard let url = URL(string: urlString) else { return }
-        guard let shareAnchorView else { return }
-        SharePresenter.present(items: [url], from: shareAnchorView)
+        SharePresenter.present(items: [url])
     }
 
     private func presentCurlShare() {
         guard let curl = flow.curlString else { return }
-        guard let shareAnchorView else { return }
-        SharePresenter.present(items: [curl], from: shareAnchorView)
+        SharePresenter.present(items: [curl])
     }
 
     private func openTeamsWithCopiedDetails() {

@@ -271,8 +271,6 @@ private struct FlowTableRow: View {
     let onFilterApp: () -> Void
     let onFilterDevice: () -> Void
 
-    @State private var shareAnchorView: NSView?
-    
     var body: some View {
         Button(action: onSelect) {
             regularRow
@@ -282,18 +280,11 @@ private struct FlowTableRow: View {
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .background(
-            ShareAnchorView { view in
-                shareAnchorView = view
-            }
-            .frame(width: 1, height: 1)
-        )
         .contextMenu {
             FlowContextMenuContent(
                 flow: flow,
                 isHostPinned: isHostPinned,
                 isAppPinned: isAppPinned,
-                shareAnchorView: shareAnchorView,
                 onEditRetry: onEditRetry,
                 onMapLocal: onMapLocal,
                 onPinHost: onPinHost,
