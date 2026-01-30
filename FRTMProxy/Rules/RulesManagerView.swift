@@ -275,6 +275,9 @@ private struct NewRuleSheet: View {
                     .textFieldStyle(ProxyTextFieldStyle(palette: colors))
                 TextField("Path (e.g. /v1/resource)", text: $path)
                     .textFieldStyle(ProxyTextFieldStyle(palette: colors))
+                Text("Wildcard support: use * or ? in host/path (e.g. *.example.com, /v1/*).")
+                    .font(DesignSystem.Fonts.sans(11, weight: .medium))
+                    .foregroundStyle(colors.textSecondary)
             }
 
             HStack {

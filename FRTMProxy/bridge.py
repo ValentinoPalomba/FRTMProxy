@@ -6,6 +6,7 @@ import uuid
 import base64
 import random
 import hashlib
+import fnmatch
 from urllib.parse import urlsplit, parse_qsl
 from mitmproxy import http, ctx
 
@@ -14,6 +15,7 @@ MAP_LOCAL_RULES = {}
 MAP_LOCAL_RULE_KEYS_BY_BASE = {}
 MAP_LOCAL_FALLBACK_CURSOR = {}
 MAP_LOCAL_SIGNATURE_CURSOR = {}
+MAP_LOCAL_WILDCARD_RULES = []
 FLOW_BY_ID = {}
 FLOW_BY_KEY = {}
 FLOW_BY_MAP_LOCAL_KEY = {}
@@ -53,6 +55,14 @@ def base_key_from_rule_key(rule_key: str) -> str:
     if "#" in rule_key:
         return rule_key.split("#", 1)[0]
     return rule_key
+
+def is_wildcard_key(rule_key: str) -> bool:
+    base = base_key_from_rule_key(rule_key)
+    return "*" in base or "?" in base
+
+def wildcard_score(rule_key: str) -> int:
+    base = base_key_from_rule_key(rule_key)
+    return sum(1 for ch in base if ch not in ("*", "?"))
 
 def canonical_request_signature(flow: http.HTTPFlow) -> str:
     method = (flow.request.method or "GET").strip().upper()
@@ -103,6 +113,9 @@ def track_map_local_key(rule_key: str):
     bucket = MAP_LOCAL_RULE_KEYS_BY_BASE.setdefault(base, [])
     if rule_key not in bucket:
         bucket.append(rule_key)
+    if is_wildcard_key(rule_key):
+        if rule_key not in MAP_LOCAL_WILDCARD_RULES:
+            MAP_LOCAL_WILDCARD_RULES.append(rule_key)
 
 def untrack_map_local_key(rule_key: str):
     base = base_key_from_rule_key(rule_key)
@@ -116,6 +129,8 @@ def untrack_map_local_key(rule_key: str):
         MAP_LOCAL_FALLBACK_CURSOR.pop(base, None)
     else:
         MAP_LOCAL_RULE_KEYS_BY_BASE[base] = bucket
+    if rule_key in MAP_LOCAL_WILDCARD_RULES:
+        MAP_LOCAL_WILDCARD_RULES.remove(rule_key)
 
 def is_loopback_host(host: str) -> bool:
     if not host:
@@ -607,7 +622,12 @@ def request(flow: http.HTTPFlow):
         debug_log(f"rule found for {matched_key}, applying mock")
         apply_map_local_response(flow, rule)
     else:
-        debug_log(f"no rule found for {computed_key} (base {base})")
+        wildcard_key = select_wildcard_rule(flow)
+        if wildcard_key:
+            debug_log(f"wildcard rule found for {wildcard_key}, applying mock")
+            apply_map_local_response(flow, MAP_LOCAL_RULES[wildcard_key])
+        else:
+            debug_log(f"no rule found for {computed_key} (base {base})")
 
     bp_meta = breakpoint_snapshot(flow, "request", "waiting") if waiting_request else None
     send_flow_event(flow, "request", bp_meta)
@@ -629,3 +649,20 @@ def response(flow: http.HTTPFlow):
 
     bp_meta = breakpoint_snapshot(flow, "response", "waiting") if waiting_response else None
     send_flow_event(flow, "response", bp_meta)
+
+def select_wildcard_rule(flow: http.HTTPFlow):
+    if not MAP_LOCAL_WILDCARD_RULES:
+        return None
+    subject = flow_key(flow)
+    best_key = None
+    best_score = -1
+    for rule_key in MAP_LOCAL_WILDCARD_RULES:
+        base = base_key_from_rule_key(rule_key)
+        if not base:
+            continue
+        if fnmatch.fnmatchcase(subject, base):
+            score = wildcard_score(rule_key)
+            if score > best_score:
+                best_key = rule_key
+                best_score = score
+    return best_key
