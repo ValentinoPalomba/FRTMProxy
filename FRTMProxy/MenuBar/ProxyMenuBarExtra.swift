@@ -15,7 +15,9 @@ struct ProxyMenuBarExtra: View {
         Divider()
 
         Button {
-            proxyViewModel.startProxy()
+            Task { @MainActor in
+                await proxyViewModel.startProxy()
+            }
         } label: {
             Label("Start Proxy", systemImage: "play.fill")
         }
@@ -41,4 +43,3 @@ struct ProxyMenuBarExtra: View {
         NSApplication.shared.activate(ignoringOtherApps: true)
     }
 }
-

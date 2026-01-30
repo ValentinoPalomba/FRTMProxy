@@ -18,6 +18,9 @@ struct InspectorScreen: View {
     @State private var filter = FlowFilter()
     @State private var activeBreakpointPhase: FlowBreakpointPhase = .request
     @State private var filteredFlows: [MitmFlow] = []
+    @State private var availableClientIPs: [String] = []
+    @State private var filterUpdateTask: Task<Void, Never>?
+    @State private var lastSearchText: String = ""
 
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var settings: SettingsStore
@@ -33,9 +36,6 @@ struct InspectorScreen: View {
     }
 
     var body: some View {
-        let availableClientIPs = Array(
-            Set(viewModel.flows.map(\.clientIP).filter { !$0.isEmpty })
-        ).sorted()
         let trafficProfiles = TrafficProfileLibrary.presets
 
         let content = VStack(spacing: 16) {
@@ -53,7 +53,11 @@ struct InspectorScreen: View {
                     viewModel.selectTrafficProfile(profile)
                     settings.selectedTrafficProfileID = profile.id
                 },
-                onStart: { viewModel.startProxy() },
+                onStart: {
+                    Task { @MainActor in
+                        await viewModel.startProxy()
+                    }
+                },
                 onStop: viewModel.stopProxy
             )
             .padding(.horizontal, 20)
@@ -128,7 +132,13 @@ struct InspectorScreen: View {
             updateFilteredFlows()
         }
         .onChange(of: filter) { _, _ in
-            updateFilteredFlows()
+            let searchText = filter.searchText
+            let searchChanged = searchText != lastSearchText
+            lastSearchText = searchText
+            updateFilteredFlows(debounced: searchChanged)
+        }
+        .onDisappear {
+            filterUpdateTask?.cancel()
         }
 
         return contentWithFiltering
@@ -212,14 +222,40 @@ struct InspectorScreen: View {
     }
 
     private func updateFilteredFlows() {
-        filteredFlows = filter.apply(to: viewModel.flows)
+        updateFilteredFlows(debounced: false)
+    }
+
+    private func updateFilteredFlows(debounced: Bool) {
+        let flowsSnapshot = viewModel.flows
+        let filterSnapshot = filter
+
+        filterUpdateTask?.cancel()
+        filterUpdateTask = Task.detached(priority: .userInitiated) {
+            if debounced {
+                try? await Task.sleep(nanoseconds: 250_000_000)
+            }
+            guard !Task.isCancelled else { return }
+
+            let filtered = filterSnapshot.apply(to: flowsSnapshot)
+            let clientIPs = Array(
+                Set(flowsSnapshot.map(\.clientIP).filter { !$0.isEmpty })
+            ).sorted()
+
+            await MainActor.run {
+                guard !Task.isCancelled else { return }
+                filteredFlows = filtered
+                availableClientIPs = clientIPs
+            }
+        }
     }
 
     private func toggleProxy() {
         if viewModel.isRunning {
             viewModel.stopProxy()
         } else {
-            viewModel.startProxy()
+            Task { @MainActor in
+                await viewModel.startProxy()
+            }
         }
     }
 
@@ -234,7 +270,9 @@ struct InspectorScreen: View {
                 keywords: ["start", "proxy", "mitm"],
                 isEnabled: !viewModel.isRunning
             ) {
-                viewModel.startProxy()
+                Task { @MainActor in
+                    await viewModel.startProxy()
+                }
             },
             CommandPaletteAction(
                 title: "Stop Proxy",

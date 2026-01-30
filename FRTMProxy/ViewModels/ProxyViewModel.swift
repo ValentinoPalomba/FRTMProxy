@@ -74,13 +74,14 @@ final class ProxyViewModel: ObservableObject {
         breakpointRules.values.sorted(by: { $0.key < $1.key })
     }
     
-    func startProxy(port: Int? = nil) {
+    @MainActor
+    func startProxy(port: Int? = nil) async {
         if autoClearOnStart {
             clear()
         }
         let selectedPort = port ?? defaultPort
         do {
-            try service.startProxy(
+            try await service.startProxy(
                 port: selectedPort,
                 restrictToHosts: restrictInterceptionToHosts,
                 hosts: interceptionHosts
@@ -399,7 +400,9 @@ final class ProxyViewModel: ObservableObject {
             .sink { [weak self] autoStart in
                 guard let self else { return }
                 if autoStart && !self.isRunning {
-                    self.startProxy()
+                    Task { @MainActor in
+                        await self.startProxy()
+                    }
                 }
             }
             .store(in: &settingsCancellables)
@@ -479,7 +482,9 @@ final class ProxyViewModel: ObservableObject {
         }
 
         if settings.autoStartProxy && !isRunning {
-            startProxy()
+            Task { @MainActor in
+                await self.startProxy()
+            }
         }
     }
 

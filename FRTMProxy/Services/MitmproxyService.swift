@@ -76,19 +76,121 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         }
     }
     
-    func startProxy(port: Int? = nil, restrictToHosts: Bool = false, hosts: [String] = []) throws {
+    func startProxy(port: Int? = nil, restrictToHosts: Bool = false, hosts: [String] = []) async throws {
         if isRunning {
             return
         }
-
-        terminateStaleMitmProcesses()
         
         let executableURL = try bundledMitmdumpExecutableURL()
         let scriptURL = try bridgeScriptURL()
         let selectedPort = port ?? config.port
-        
-        let process = Process()
-        process.executableURL = executableURL
+        let logger = onLog
+
+        let result = try await MitmproxyService.launchProcess(
+            executableURL: executableURL,
+            scriptURL: scriptURL,
+            selectedPort: selectedPort,
+            restrictToHosts: restrictToHosts,
+            hosts: hosts,
+            onLine: { [weak self] line in
+                self?.handleIncomingLine(line)
+            },
+            onError: { [weak self] text in
+                self?.onLog?("[ERR] " + text)
+            },
+            onTermination: { [weak self] in
+                DispatchQueue.main.async {
+                    self?.isRunning = false
+                }
+            },
+            logger: logger
+        )
+
+        self.process = result.process
+        self.commandHandle = result.commandHandle
+        self.isRunning = true
+        onLog?("mitmdump started on port \(selectedPort)\n")
+    }
+    
+    private struct LaunchResult {
+        let process: Process
+        let commandHandle: FileHandle
+    }
+
+    private static func launchProcess(
+        executableURL: URL,
+        scriptURL: URL,
+        selectedPort: Int,
+        restrictToHosts: Bool,
+        hosts: [String],
+        onLine: @escaping (String) -> Void,
+        onError: @escaping (String) -> Void,
+        onTermination: @escaping () -> Void,
+        logger: ((String) -> Void)?
+    ) async throws -> LaunchResult {
+        try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                MitmproxyService.terminateStaleMitmProcesses(logger: logger)
+
+                let process = Process()
+                process.executableURL = executableURL
+                process.arguments = MitmproxyService.buildArguments(
+                    scriptURL: scriptURL,
+                    selectedPort: selectedPort,
+                    restrictToHosts: restrictToHosts,
+                    hosts: hosts
+                )
+
+                let pipe = Pipe()
+                let errorPipe = Pipe()
+                let inputPipe = Pipe()
+                var stdoutBuffer = Data()
+
+                process.standardOutput = pipe
+                process.standardError = errorPipe
+                process.standardInput = inputPipe
+
+                pipe.fileHandleForReading.readabilityHandler = { handle in
+                    stdoutBuffer.append(handle.availableData)
+                    while let range = stdoutBuffer.firstRange(of: Data([0x0A])) {
+                        let lineData = stdoutBuffer.subdata(in: stdoutBuffer.startIndex..<range.lowerBound)
+                        stdoutBuffer.removeSubrange(stdoutBuffer.startIndex...range.lowerBound)
+                        if let text = String(data: lineData, encoding: .utf8), !text.isEmpty {
+                            onLine(text)
+                        }
+                    }
+                }
+
+                errorPipe.fileHandleForReading.readabilityHandler = { handle in
+                    let data = handle.availableData
+                    if let text = String(data: data, encoding: .utf8), !text.isEmpty {
+                        onError(text)
+                    }
+                }
+
+                process.terminationHandler = { _ in
+                    onTermination()
+                }
+
+                do {
+                    try process.run()
+                    continuation.resume(returning: LaunchResult(
+                        process: process,
+                        commandHandle: inputPipe.fileHandleForWriting
+                    ))
+                } catch {
+                    continuation.resume(throwing: MitmproxyServiceError.failedToRun(error.localizedDescription))
+                }
+            }
+        }
+    }
+
+    private static func buildArguments(
+        scriptURL: URL,
+        selectedPort: Int,
+        restrictToHosts: Bool,
+        hosts: [String]
+    ) -> [String] {
         var args: [String] = [
             "-p", "\(selectedPort)",
             "-s", scriptURL.path,
@@ -108,59 +210,10 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
                 }
             }
         }
-        process.arguments = args
-        
-        print("VALELOG process url \(process.executableURL)")
-        
-        
-        let pipe = Pipe()
-        let errorPipe = Pipe()
-        let inputPipe = Pipe()
-        var stdoutBuffer = Data()
-
-        process.standardOutput = pipe
-        process.standardError = errorPipe
-        process.standardInput = inputPipe
-        commandHandle = inputPipe.fileHandleForWriting
-
-        pipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
-            guard let self else { return }
-            stdoutBuffer.append(handle.availableData)
-
-            // Process complete lines; keep leftovers in the buffer
-            while let range = stdoutBuffer.firstRange(of: Data([0x0A])) {
-                let lineData = stdoutBuffer.subdata(in: stdoutBuffer.startIndex..<range.lowerBound)
-                stdoutBuffer.removeSubrange(stdoutBuffer.startIndex...range.lowerBound)
-                if let text = String(data: lineData, encoding: .utf8), !text.isEmpty {
-                    self.handleIncomingLine(text)
-                }
-            }
-        }
-
-        errorPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
-            let data = handle.availableData
-            if let text = String(data: data, encoding: .utf8), !text.isEmpty {
-                self?.onLog?("[ERR] " + text)
-            }
-        }
-
-        process.terminationHandler = { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.isRunning = false
-            }
-        }
-        
-        do {
-            try process.run()
-            self.process = process
-            self.isRunning = true
-            onLog?("mitmdump started on port \(selectedPort)\n")
-        } catch {
-            throw MitmproxyServiceError.failedToRun(error.localizedDescription)
-        }
+        return args
     }
-    
-    private func terminateStaleMitmProcesses() {
+
+    private static func terminateStaleMitmProcesses(logger: ((String) -> Void)?) {
         let commands: [(path: String, args: [String])] = [
             ("/usr/bin/pkill", ["-TERM", "-f", "mitmdump"]),
             ("/usr/bin/pkill", ["-TERM", "-f", "mitmproxy"]),
@@ -178,7 +231,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
                 try killer.run()
                 killer.waitUntilExit()
                 if killer.terminationStatus == 0 {
-                    onLog?("[PROXY] terminated stale mitm processes via \(command.path)\n")
+                    logger?("[PROXY] terminated stale mitm processes via \(command.path)\n")
                     break
                 }
             } catch {
