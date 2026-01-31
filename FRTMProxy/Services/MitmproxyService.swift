@@ -13,37 +13,23 @@ struct MitmproxyConfig {
 }
 
 enum MitmproxyServiceError: LocalizedError {
-    case executableNotFound(String)
     case failedToRun(String)
     
     var errorDescription: String? {
         switch self {
-        case .executableNotFound(let path):
-            return "mitmdump executable not found at: \(path)"
         case .failedToRun(let reason):
-            return "Unable to run mitmdump: \(reason)"
+            return "Unable to run Swift Proxy Engine: \(reason)"
         }
     }
-}
-
-private enum MitmdumpWarmupState: Equatable {
-    case idle
-    case warming
-    case ready
-    case failed(String)
 }
 
 @MainActor
 final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     private let config: MitmproxyConfig
-    private var process: Process?
-    private var commandHandle: FileHandle?
+    private let engine = SwiftProxyEngine()
     private let maxFlowsStored = 500
     private var appTerminationObserver: NSObjectProtocol?
     private var workspaceTerminationObserver: NSObjectProtocol?
-    private var warmupState: MitmdumpWarmupState = .idle
-    private var warmupProcess: Process?
-    private var cachedMitmdumpURL: URL?
     
     nonisolated(unsafe) var onLog: ((String) -> Void)?
     
@@ -58,7 +44,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         self.config = config
         Task { @MainActor in
             self.setupTerminationObservers()
-            self.prewarmMitmdumpExecutableIfNeeded()
+            self.setupEngineCallbacks()
         }
     }
     
@@ -71,8 +57,15 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         }
         Task { @MainActor [weak self]  in
             self?.stopProxy()
-            self?.warmupProcess?.terminate()
-            self?.warmupProcess = nil
+        }
+    }
+    
+    private func setupEngineCallbacks() {
+        engine.onLog = { [weak self] message in
+            self?.onLog?(message)
+        }
+        engine.onFlowUpdate = { [weak self] flow in
+            self?.mergeFlow(flow)
         }
     }
     
@@ -81,251 +74,14 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             return
         }
         
-        let executableURL = try bundledMitmdumpExecutableURL()
-        let scriptURL = try bridgeScriptURL()
         let selectedPort = port ?? config.port
-        let logger = onLog
-
-        let result = try await MitmproxyService.launchProcess(
-            executableURL: executableURL,
-            scriptURL: scriptURL,
-            selectedPort: selectedPort,
-            restrictToHosts: restrictToHosts,
-            hosts: hosts,
-            onLine: { [weak self] line in
-                self?.handleIncomingLine(line)
-            },
-            onError: { [weak self] text in
-                self?.onLog?("[ERR] " + text)
-            },
-            onTermination: { [weak self] in
-                DispatchQueue.main.async {
-                    self?.isRunning = false
-                }
-            },
-            logger: logger
-        )
-
-        self.process = result.process
-        self.commandHandle = result.commandHandle
-        self.isRunning = true
-        onLog?("mitmdump started on port \(selectedPort)\n")
-    }
-    
-    private struct LaunchResult {
-        let process: Process
-        let commandHandle: FileHandle
-    }
-
-    private static func launchProcess(
-        executableURL: URL,
-        scriptURL: URL,
-        selectedPort: Int,
-        restrictToHosts: Bool,
-        hosts: [String],
-        onLine: @escaping (String) -> Void,
-        onError: @escaping (String) -> Void,
-        onTermination: @escaping () -> Void,
-        logger: ((String) -> Void)?
-    ) async throws -> LaunchResult {
-        try await withCheckedThrowingContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
-                MitmproxyService.terminateStaleMitmProcesses(logger: logger)
-
-                let process = Process()
-                process.executableURL = executableURL
-                process.arguments = MitmproxyService.buildArguments(
-                    scriptURL: scriptURL,
-                    selectedPort: selectedPort,
-                    restrictToHosts: restrictToHosts,
-                    hosts: hosts
-                )
-
-                let pipe = Pipe()
-                let errorPipe = Pipe()
-                let inputPipe = Pipe()
-                var stdoutBuffer = Data()
-
-                process.standardOutput = pipe
-                process.standardError = errorPipe
-                process.standardInput = inputPipe
-
-                pipe.fileHandleForReading.readabilityHandler = { handle in
-                    stdoutBuffer.append(handle.availableData)
-                    while let range = stdoutBuffer.firstRange(of: Data([0x0A])) {
-                        let lineData = stdoutBuffer.subdata(in: stdoutBuffer.startIndex..<range.lowerBound)
-                        stdoutBuffer.removeSubrange(stdoutBuffer.startIndex...range.lowerBound)
-                        if let text = String(data: lineData, encoding: .utf8), !text.isEmpty {
-                            onLine(text)
-                        }
-                    }
-                }
-
-                errorPipe.fileHandleForReading.readabilityHandler = { handle in
-                    let data = handle.availableData
-                    if let text = String(data: data, encoding: .utf8), !text.isEmpty {
-                        onError(text)
-                    }
-                }
-
-                process.terminationHandler = { _ in
-                    onTermination()
-                }
-
-                do {
-                    try process.run()
-                    continuation.resume(returning: LaunchResult(
-                        process: process,
-                        commandHandle: inputPipe.fileHandleForWriting
-                    ))
-                } catch {
-                    continuation.resume(throwing: MitmproxyServiceError.failedToRun(error.localizedDescription))
-                }
-            }
-        }
-    }
-
-    private static func buildArguments(
-        scriptURL: URL,
-        selectedPort: Int,
-        restrictToHosts: Bool,
-        hosts: [String]
-    ) -> [String] {
-        var args: [String] = [
-            "-p", "\(selectedPort)",
-            "-s", scriptURL.path,
-            "--anticache",
-            "--set", "connection_strategy=lazy",
-            "--set", "ssl_insecure=true"
-        ]
-
-        if restrictToHosts {
-            let normalizedHosts = hosts.map { PinnedHost.normalized($0) }.filter { !$0.isEmpty }
-            if normalizedHosts.isEmpty {
-                args.append(contentsOf: ["--set", "ignore_hosts=.*"])
-            } else {
-                let allowRegexes = normalizedHosts.map(Self.hostAllowRegex(for:))
-                for regex in allowRegexes {
-                    args.append(contentsOf: ["--set", "allow_hosts=\(regex)"])
-                }
-            }
-        }
-        return args
-    }
-
-    private static func terminateStaleMitmProcesses(logger: ((String) -> Void)?) {
-        let commands: [(path: String, args: [String])] = [
-            ("/usr/bin/pkill", ["-TERM", "-f", "mitmdump"]),
-            ("/usr/bin/pkill", ["-TERM", "-f", "mitmproxy"]),
-            ("/usr/bin/killall", ["mitmdump"])
-        ]
-
-        for command in commands {
-            guard FileManager.default.isExecutableFile(atPath: command.path) else { continue }
-            let killer = Process()
-            killer.executableURL = URL(fileURLWithPath: command.path)
-            killer.arguments = command.args
-            killer.standardOutput = Pipe()
-            killer.standardError = Pipe()
-            do {
-                try killer.run()
-                killer.waitUntilExit()
-                if killer.terminationStatus == 0 {
-                    logger?("[PROXY] terminated stale mitm processes via \(command.path)\n")
-                    break
-                }
-            } catch {
-                continue
-            }
-        }
-    }
-    
-    private func bundledMitmdumpExecutableURL() throws -> URL {
-        if let cachedMitmdumpURL {
-            return cachedMitmdumpURL
-        }
-        
-        guard let url = Bundle.main.url(forResource: "mitmdump", withExtension: nil) else {
-            print("NOT FOUND")
-            throw MitmproxyServiceError.executableNotFound("Resources/mitmdump")
-        }
-        
-        try ensureExecutablePermission(for: url)
-        cachedMitmdumpURL = url
-        return url
-    }
-    
-    private func ensureExecutablePermission(for url: URL) throws {
-        let path = url.path
-        let fileManager = FileManager.default
-        
-        if fileManager.isExecutableFile(atPath: path) {
-            return
-        }
-        
-        try fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: path)
-        
-        guard fileManager.isExecutableFile(atPath: path) else {
-            throw MitmproxyServiceError.failedToRun("Unable to make \(path) executable")
-        }
-    }
-
-    /// Launches a lightweight `mitmdump --version` to force the bundled binary to unpack/cache itself before the user presses Start.
-    private func prewarmMitmdumpExecutableIfNeeded() {
-        guard warmupState == .idle else { return }
-        warmupState = .warming
         
         do {
-            let executableURL = try bundledMitmdumpExecutableURL()
-            let warmupProcess = Process()
-            warmupProcess.executableURL = executableURL
-            warmupProcess.arguments = ["--version"]
-            warmupProcess.standardOutput = Pipe()
-            warmupProcess.standardError = Pipe()
-            warmupProcess.terminationHandler = { [weak self] proc in
-                Task { @MainActor in
-                    guard let self else { return }
-                    self.warmupProcess = nil
-                    if proc.terminationStatus == 0 {
-                        self.warmupState = .ready
-                        self.onLog?("[PROXY] mitmdump ready to start\n")
-                    } else {
-                        self.warmupState = .failed("exited with code \(proc.terminationStatus)")
-                        self.onLog?("[PROXY] mitmdump warmup failed (code \(proc.terminationStatus))\n")
-                    }
-                }
-            }
-            try warmupProcess.run()
-            self.warmupProcess = warmupProcess
+            try engine.start(port: selectedPort, restrictToHosts: restrictToHosts, allowedHosts: hosts)
+            self.isRunning = true
+            onLog?("Swift Proxy started on port \(selectedPort)\n")
         } catch {
-            warmupState = .failed(error.localizedDescription)
-            onLog?("[PROXY] unable to pre-start mitmdump: \(error.localizedDescription)\n")
-        }
-    }
-    
-    private func bridgeScriptURL() throws -> URL {
-        guard let url = Bundle.main.url(forResource: "bridge", withExtension: "py") else {
-            throw MitmproxyServiceError.failedToRun("bridge.py not found in the bundle")
-        }
-        return url
-    }
-
-    private static func hostAllowRegex(for host: String) -> String {
-        // Matches the host itself and any subdomain of it.
-        "(^|\\\\.)" + NSRegularExpression.escapedPattern(for: host) + "$"
-    }
-    
-    private nonisolated func handleIncomingLine(_ line: String) {
-        guard let data = line.data(using: .utf8) else { return }
-        
-        if let flow = try? JSONDecoder().decode(MitmFlow.self, from: data) {
-            DispatchQueue.main.async {
-                self.mergeFlow(flow)
-            }
-        } else {
-            DispatchQueue.main.async {
-                self.onLog?(line)
-            }
+            throw MitmproxyServiceError.failedToRun(error.localizedDescription)
         }
     }
     
@@ -371,12 +127,9 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     }
 
     func stopProxy() {
-        guard let proc = process else { return }
-        proc.terminate()
-        process = nil
+        engine.stop()
         isRunning = false
-        onLog?("mitmdump stopped\n")
-        commandHandle = nil
+        onLog?("Swift Proxy stopped\n")
     }
     
     private func setupTerminationObservers() {
@@ -398,23 +151,24 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     }
     
     func mockResponse(for flowID: String, body: String, status: Int?, headers: [String: String]?) {
-        let payload: [String: Any] = [
-            "type": "mock_response",
-            "id": flowID,
-            "body": body,
-            "status": status ?? NSNull(),
-            "headers": headers ?? NSNull()
-        ]
-        
-        guard let data = try? JSONSerialization.data(withJSONObject: payload),
-              let handle = commandHandle else {
-            onLog?("[PROXY CMD] unable to send command: invalid handle or JSON\n")
-            return
-        }
+        // Find existing flow to get its host/path if needed, or just use a dummy key
+        if let flow = flows[flowID], let request = flow.request {
+            let url = URL(string: request.url)
+            let host = url?.host ?? ""
+            let path = url?.path ?? ""
+            let key = "\(host)\(path)"
 
-        handle.write(data)
-        handle.write(Data([0x0A])) // newline terminator
-        onLog?("[MAP LOCAL] command sent for flow \(flowID) (\(body.count) bytes)\n")
+            let rule = MapRule(
+                key: key,
+                host: host,
+                path: path,
+                body: body,
+                status: status ?? 200,
+                headers: headers ?? [:]
+            )
+            engine.updateMapRule(rule)
+            onLog?("[MAP LOCAL] mock response applied for \(key)\n")
+        }
     }
     
     func mockResponse(for flowID: String, body: String) {
@@ -422,97 +176,44 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     }
 
     func applyTrafficProfile(_ profile: TrafficProfile) {
-        let payload: [String: Any] = [
-            "type": "traffic_profile",
-            "profile": [
-                "id": profile.id,
-                "name": profile.name,
-                "description": profile.description,
-                "latency_ms": profile.latencyMs,
-                "jitter_ms": profile.jitterMs,
-                "downstream_kbps": profile.downstreamKbps,
-                "upstream_kbps": profile.upstreamKbps,
-                "packet_loss": profile.packetLoss
-            ]
-        ]
-
-        sendCommand(payload, successLog: "[TRAFFIC] profile \(profile.name) activated\n")
+        engine.setTrafficProfile(profile)
+        onLog?("[TRAFFIC] profile \(profile.name) activated\n")
     }
     
     func mockRequest(for flowID: String, body: String, headers: [String: String]?) {
-        let payload: [String: Any] = [
-            "type": "mock_request",
-            "id": flowID,
-            "body": body,
-            "headers": headers ?? NSNull()
-        ]
-        sendCommand(payload, successLog: "[MAP LOCAL] mock request sent for flow \(flowID)\n")
+        // Not directly supported in the same way as mitmproxy, but we can simulate it by updating the flow
+        if var flow = flows[flowID], var request = flow.request {
+            // This is mostly for UI/History in our native engine
+            flow.request = MitmFlow.Request(method: request.method, url: request.url, headers: headers ?? request.headers, body: body)
+            flows[flowID] = flow
+            onLog?("[PROXY] flow \(flowID) request updated in memory\n")
+        }
     }
 
     func mockRule(_ rule: MapRule) {
-        let payload: [String: Any] = [
-            "type": "mock_rule",
-            "key": rule.key,
-            "body": rule.body,
-            "status": rule.status,
-            "headers": rule.headers,
-            "enabled": rule.isEnabled
-        ]
-
-        sendCommand(payload, successLog: "[MAP LOCAL] rule updated for \(rule.key)\n")
+        engine.updateMapRule(rule)
+        onLog?("[MAP LOCAL] rule updated for \(rule.key)\n")
     }
 
     func deleteRule(forKey key: String) {
-        let payload: [String: Any] = [
-            "type": "delete_rule",
-            "key": key
-        ]
-
-        sendCommand(payload, successLog: "[MAP LOCAL] rule removed for \(key)\n")
+        engine.deleteMapRule(forKey: key)
+        onLog?("[MAP LOCAL] rule removed for \(key)\n")
     }
     
     func updateBreakpointRule(_ rule: FlowBreakpointRule) {
-        let payload: [String: Any] = [
-            "type": "breakpoint_rule",
-            "key": rule.key,
-            "request": rule.interceptRequest,
-            "response": rule.interceptResponse
-        ]
-        sendCommand(payload, successLog: "[BREAKPOINT] rule updated for \(rule.key)\n")
+        engine.updateBreakpointRule(rule)
+        onLog?("[BREAKPOINT] rule updated for \(rule.key)\n")
     }
 
     func deleteBreakpointRule(forKey key: String) {
-        let payload: [String: Any] = [
-            "type": "breakpoint_rule",
-            "key": key,
-            "request": false,
-            "response": false
-        ]
-        sendCommand(payload, successLog: "[BREAKPOINT] rule removed for \(key)\n")
-    }
-
-    private func sendCommand(_ payload: [String: Any], successLog: String) {
-        guard let data = try? JSONSerialization.data(withJSONObject: payload),
-              let handle = commandHandle else {
-            onLog?("[PROXY CMD] unable to send command: invalid handle or JSON\n")
-            return
-        }
-
-        handle.write(data)
-        handle.write(Data([0x0A]))
-        onLog?(successLog)
+        engine.deleteBreakpointRule(forKey: key)
+        onLog?("[BREAKPOINT] rule removed for \(key)\n")
     }
 
     func retryFlow(flowID: String, method: String, url: String, body: String?, headers: [String: String]) {
-        let payload: [String: Any] = [
-            "type": "retry_flow",
-            "id": flowID,
-            "method": method,
-            "url": url,
-            "body": body ?? "",
-            "headers": headers
-        ]
-        sendCommand(payload, successLog: "[RETRY] request resent for flow \(flowID)\n")
+        let bodyData = body?.data(using: .utf8) ?? Data()
+        engine.retryFlow(method: method, url: url, headers: headers, body: bodyData)
+        onLog?("[RETRY] retry initiated for \(url)\n")
     }
 
     func resumeBreakpoint(
@@ -521,29 +222,8 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         requestPayload: BreakpointRequestPayload?,
         responsePayload: BreakpointResponsePayload?
     ) {
-        var payload: [String: Any] = [
-            "type": "breakpoint_continue",
-            "id": flowID,
-            "phase": phase.rawValue
-        ]
-
-        if let requestPayload {
-            payload["request"] = [
-                "method": requestPayload.method,
-                "url": requestPayload.url,
-                "headers": requestPayload.headers,
-                "body": requestPayload.body ?? ""
-            ]
-        }
-
-        if let responsePayload {
-            payload["response"] = [
-                "status": responsePayload.status,
-                "headers": responsePayload.headers,
-                "body": responsePayload.body
-            ]
-        }
-
-        sendCommand(payload, successLog: "[BREAKPOINT] resume inviato per \(flowID) (\(phase.rawValue))\n")
+        let payload = BreakpointResumePayload(request: requestPayload, response: responsePayload)
+        engine.resumeBreakpoint(flowID: flowID, payload: payload)
+        onLog?("[BREAKPOINT] resume inviato per \(flowID) (\(phase.rawValue))\n")
     }
 }

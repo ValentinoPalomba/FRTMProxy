@@ -109,7 +109,7 @@ struct SimulatorCertificateInstaller {
         do {
             let result = try runCommand(
                 executable: "/usr/bin/xcrun",
-                arguments: ["simctl", "spawn", udid, "security", "find-certificate", "-a", "-c", "mitmproxy"]
+                arguments: ["simctl", "spawn", udid, "security", "find-certificate", "-a", "-c", "FRTMProxy-Root-CA"]
             )
             if result.status != 0 {
                 return nil
