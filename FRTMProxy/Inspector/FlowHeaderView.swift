@@ -11,6 +11,18 @@ struct FlowHeaderView: View {
     let isResponseBreakpointEnabled: Bool
     let onToggleBreakpoint: ((FlowBreakpointPhase, Bool) -> Void)?
     @State private var showBreakpointMenu = false
+
+    private var clientLabel: String? {
+        let appName = flow.clientApp?.displayName.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !appName.isEmpty { return appName }
+        let ip = flow.clientIP
+        return ip.isEmpty ? nil : ip
+    }
+
+    private var clientIcon: String {
+        let appName = flow.clientApp?.displayName.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return appName.isEmpty ? "iphone" : "app.badge"
+    }
     
     var styledURLText: Text? {
         guard
@@ -34,9 +46,9 @@ struct FlowHeaderView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .center, spacing: 10) {
-                VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
                     if let text = styledURLText {
                         text
                             .font(DesignSystem.Fonts.mono(12))
@@ -54,51 +66,53 @@ struct FlowHeaderView: View {
                         .font(DesignSystem.Fonts.mono(12))
                         .lineLimit(1)
                     }
+
+                    HStack(spacing: 10) {
+                        if !flow.formattedTimestamp.isEmpty {
+                            HStack(spacing: 4) {
+                                Image(systemName: "clock")
+                                Text(flow.formattedTimestamp)
+                            }
+                            .font(DesignSystem.Fonts.mono(11))
+                            .foregroundStyle(colors.textSecondary)
+                        }
+
+                        if let clientLabel {
+                            HStack(spacing: 6) {
+                                Image(systemName: clientIcon)
+                                Text(clientLabel)
+                            }
+                            .font(.footnote.weight(.semibold))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule().fill(colors.surfaceElevated)
+                            )
+                            .foregroundStyle(colors.textSecondary)
+                        }
+
+                        if flow.isMapped {
+                            HStack(spacing: 6) {
+                                Image(systemName: "pencil.and.outline")
+                                Text("Mapped")
+                            }
+                            .font(.footnote.weight(.semibold))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule().fill(colors.accent.opacity(0.12))
+                            )
+                            .foregroundStyle(colors.accent)
+                        }
+                    }
                 }
 
                 Spacer()
 
-                if !flow.formattedTimestamp.isEmpty {
-                    HStack(spacing: 4) {
-                        Image(systemName: "clock")
-                        Text(flow.formattedTimestamp)
-                    }
-                    .font(DesignSystem.Fonts.mono(11))
-                    .foregroundStyle(colors.textSecondary)
-                }
-
-                if !flow.clientIP.isEmpty {
-                    HStack(spacing: 6) {
-                        Image(systemName: "iphone")
-                        Text(flow.clientIP)
-                    }
-                    .font(.footnote.weight(.semibold))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(
-                        Capsule().fill(colors.surfaceElevated)
-                    )
-                    .foregroundStyle(colors.textSecondary)
-                }
-
-                if flow.isMapped {
-                    HStack(spacing: 6) {
-                        Image(systemName: "pencil.and.outline")
-                        Text("Mapped")
-                    }
-                        .font(.footnote.weight(.semibold))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(
-                        Capsule().fill(colors.accent.opacity(0.12))
-                    )
-                    .foregroundStyle(colors.accent)
-                }
-
-                HStack(spacing: 8) {
-                    ControlButton(title: "Body", systemImage: "doc.on.doc", style: .ghost(colors), disabled: onCopyBody == nil) { onCopyBody?() }
+                HStack(spacing: 6) {
+                    
                     if let onMapLocal {
-                        ControlButton(title: "Map Local", systemImage: "pencil.and.outline", style: .filled(colors)) { onMapLocal() }
+                        ControlButton(title: "Map Local", systemImage: "app.badge", style: .ghost(colors)) { onMapLocal() }
                             .onboardingTarget(.mapResponse)
                     }
                     if let toggle = onToggleBreakpoint {
@@ -111,6 +125,15 @@ struct FlowHeaderView: View {
                         )
                     }
                 }
+                .padding(6)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(colors.surfaceElevated)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(colors.border.opacity(0.7), lineWidth: 1)
+                        )
+                )
             }
         }
     }

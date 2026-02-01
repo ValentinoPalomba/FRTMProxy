@@ -134,7 +134,7 @@ private struct FlowPanelTabs: View {
     let colors: DesignSystem.ColorPalette
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 0) {
             ForEach(tabs, id: \.self) { tab in
                 Button {
                     selection = tab
@@ -142,20 +142,30 @@ private struct FlowPanelTabs: View {
                     Text(tab.rawValue)
                         .font(DesignSystem.Fonts.sans(13, weight: selection == tab ? .semibold : .medium))
                         .foregroundStyle(selection == tab ? colors.textPrimary : colors.textSecondary)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 6)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 7)
+                        .frame(minHeight: 30)
                         .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(selection == tab ? colors.surfaceElevated : colors.surface.opacity(0.5))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(selection == tab ? colors.border.opacity(0.9) : colors.border.opacity(0.4), lineWidth: 1)
+                            Group {
+                                if selection == tab {
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(colors.surfaceElevated)
+                                }
+                            }
                         )
                 }
                 .buttonStyle(.plain)
             }
         }
+        .padding(4)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(colors.surface.opacity(0.6))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(colors.border.opacity(0.7), lineWidth: 1)
+                )
+        )
     }
 }
 
