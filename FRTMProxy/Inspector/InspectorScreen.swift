@@ -637,13 +637,22 @@ private struct InspectorHeaderBar: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                OctoPixelBadge(colors: colors, state: octoState)
+            HStack(spacing: 10) {
+                OctoPixelBadge(colors: colors, state: octoState, embedded: true)
+                StatusPill(isRunning: isRunning, colors: colors)
             }
+            .padding(.bottom, -8)
+            .padding(.top, -4)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(colors.surfaceElevated)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(colors.border.opacity(0.7), lineWidth: 1)
+                    )
+            )
 
             Spacer()
-
-            StatusPill(isRunning: isRunning, colors: colors)
 
             HStack(spacing: 8) {
                 ControlButton(title: "Clear", systemImage: "trash", style: .ghost(colors), disabled: false) {
@@ -764,6 +773,7 @@ private struct ManageMenuButton: View {
 private struct OctoPixelBadge: View {
     let colors: DesignSystem.ColorPalette
     let state: OctoState
+    let embedded: Bool
     @State private var frames: [NSImage?] = []
 
     private let fps: Double = 8
@@ -776,20 +786,20 @@ private struct OctoPixelBadge: View {
                     Image(nsImage: image)
                         .resizable()
                         .interpolation(.none)
-                        .scaledToFit()
+                        .scaledToFill()
                 } else {
                     Color.clear
                 }
             }
-            .frame(width: 64, height: 64)
+            .frame(width: 64, height: 58)
         }
         
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(colors.surfaceElevated)
+                .fill(embedded ? Color.clear : colors.surfaceElevated)
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
-                        .stroke(colors.border.opacity(0.7), lineWidth: 1)
+                        .stroke(embedded ? Color.clear : colors.border.opacity(0.7), lineWidth: 1)
                 )
         )
         .onAppear {
