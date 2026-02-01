@@ -126,12 +126,12 @@ struct FRTMProxyApp: App {
                 switch result {
                 case .success(let message):
                     self.deviceAlert = DeviceAlert(
-                        title: "Operazione completata",
-                        message: message + "\nRiavvia l'app nel simulatore per applicare la nuova CA."
+                        title: "Operation completed",
+                        message: message + "\nRestart the app in the simulator to apply the new CA."
                     )
                 case .failure(let error):
                     self.deviceAlert = DeviceAlert(
-                        title: "Installazione fallita",
+                        title: "Installation failed",
                         message: error.localizedDescription
                     )
                 }

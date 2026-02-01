@@ -21,7 +21,7 @@
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Consente a FRTMProxy di leggere il nome della rete Wi‑Fi (SSID) per generare automaticamente il profilo di configurazione proxy.</string>
+	<string>Allows FRTMProxy to read the Wi‑Fi network name (SSID) to automatically generate the proxy configuration profile.</string>
 	<key>SUAllowsAutomaticUpdates</key>
 	<true/>
 	<key>SUEnableAutomaticChecks</key>

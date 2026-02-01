@@ -1,4 +1,4 @@
-# bridge.py (VERSIONE COMPATIBILE CON IL TUO MODELLO SWIFT)
+# bridge.py (COMPATIBLE WITH YOUR SWIFT MODEL)
 import json
 import sys
 import time
@@ -6,21 +6,23 @@ import uuid
 import base64
 import random
 import hashlib
+import fnmatch
 from urllib.parse import urlsplit, parse_qsl
 from mitmproxy import http, ctx
 
-# Regole di Map Local: key = "<host><path>", value = dict con body/headers/status
+# Map Local rules: key = "<host><path>", value = dict with body/headers/status
 MAP_LOCAL_RULES = {}
 MAP_LOCAL_RULE_KEYS_BY_BASE = {}
 MAP_LOCAL_FALLBACK_CURSOR = {}
 MAP_LOCAL_SIGNATURE_CURSOR = {}
+MAP_LOCAL_WILDCARD_RULES = []
 FLOW_BY_ID = {}
 FLOW_BY_KEY = {}
 FLOW_BY_MAP_LOCAL_KEY = {}
 BREAKPOINT_RULES = {}
 TRAFFIC_PROFILE_DEFAULT = {
     "id": "traffic.off",
-    "name": "Nessun profilo",
+    "name": "No profile",
     "description": "",
     "latency_ms": 0,
     "jitter_ms": 0,
@@ -32,15 +34,15 @@ ACTIVE_TRAFFIC_PROFILE = dict(TRAFFIC_PROFILE_DEFAULT)
 
 
 def flow_key(flow: http.HTTPFlow) -> str:
-    """Restituisce una chiave univoca per host + path (senza query)."""
+    """Returns a unique key for host + path (without query)."""
     host = flow.request.host
     path = flow.request.path.split("?", 1)[0]
     return f"{host}{path}"
 
 def map_local_key(flow: http.HTTPFlow) -> str:
     """
-    Chiave per Map Local che differenzia le chiamate sullo stesso path in base all'input.
-    Formato: "<host><path>#<sha256(prefix)>"
+    Map Local key that differentiates calls on the same path based on input.
+    Format: "<host><path>#<sha256(prefix)>"
     """
     base = flow_key(flow)
     signature = canonical_request_signature(flow)
@@ -53,6 +55,14 @@ def base_key_from_rule_key(rule_key: str) -> str:
     if "#" in rule_key:
         return rule_key.split("#", 1)[0]
     return rule_key
+
+def is_wildcard_key(rule_key: str) -> bool:
+    base = base_key_from_rule_key(rule_key)
+    return "*" in base or "?" in base
+
+def wildcard_score(rule_key: str) -> int:
+    base = base_key_from_rule_key(rule_key)
+    return sum(1 for ch in base if ch not in ("*", "?"))
 
 def canonical_request_signature(flow: http.HTTPFlow) -> str:
     method = (flow.request.method or "GET").strip().upper()
@@ -103,6 +113,9 @@ def track_map_local_key(rule_key: str):
     bucket = MAP_LOCAL_RULE_KEYS_BY_BASE.setdefault(base, [])
     if rule_key not in bucket:
         bucket.append(rule_key)
+    if is_wildcard_key(rule_key):
+        if rule_key not in MAP_LOCAL_WILDCARD_RULES:
+            MAP_LOCAL_WILDCARD_RULES.append(rule_key)
 
 def untrack_map_local_key(rule_key: str):
     base = base_key_from_rule_key(rule_key)
@@ -116,6 +129,8 @@ def untrack_map_local_key(rule_key: str):
         MAP_LOCAL_FALLBACK_CURSOR.pop(base, None)
     else:
         MAP_LOCAL_RULE_KEYS_BY_BASE[base] = bucket
+    if rule_key in MAP_LOCAL_WILDCARD_RULES:
+        MAP_LOCAL_WILDCARD_RULES.remove(rule_key)
 
 def is_loopback_host(host: str) -> bool:
     if not host:
@@ -135,7 +150,7 @@ def send(obj):
     sys.stdout.flush()
 
 def debug_log(msg: str):
-    """Invia una riga di log sullo stdout così l'app può mostrarla."""
+    """Send a log line to stdout so the app can display it."""
     sys.stdout.write(f"[DEBUG] {msg}\n")
     sys.stdout.flush()
 
@@ -180,8 +195,8 @@ def update_traffic_profile(profile_payload):
             "packet_loss": max(min(float(profile_payload.get("packet_loss", 0) or 0), 1), 0),
         })
     ACTIVE_TRAFFIC_PROFILE = merged
-    ctx.log.info(f"[TRAFFIC] profilo attivo: {merged.get('name')}")
-    debug_log(f"traffic profile aggiornato: {merged}")
+    ctx.log.info(f"[TRAFFIC] active profile: {merged.get('name')}")
+    debug_log(f"traffic profile updated: {merged}")
 
 def apply_profile_latency(direction: str):
     if not traffic_profile_enabled():
@@ -224,7 +239,7 @@ def maybe_inject_packet_loss(flow: http.HTTPFlow) -> bool:
         b"Simulated packet loss (traffic profile)",
         {"Content-Type": "text/plain"}
     )
-    ctx.log.info("[TRAFFIC] packet loss simulato su response")
+    ctx.log.info("[TRAFFIC] simulated packet loss on response")
     return True
 
 def tag_response_with_profile(flow: http.HTTPFlow):
@@ -368,12 +383,12 @@ def stdin_reader():
             handle_command(message)
         except Exception as e:
             ctx.log.error(str(e))
-            debug_log(f"errore parsing comando: {e}")
+            debug_log(f"command parse error: {e}")
 
 def handle_command(cmd):
     t = cmd.get("type")
     flow_id = cmd.get("id")
-    debug_log(f"comando ricevuto type={t} flow_id={flow_id}")
+    debug_log(f"command received type={t} flow_id={flow_id}")
     flow = FLOW_BY_ID.get(flow_id)
 
     if t == "traffic_profile":
@@ -382,7 +397,7 @@ def handle_command(cmd):
 
     if t == "mock_response":
         if not flow:
-            debug_log(f"flow non trovato per id={flow_id}")
+            debug_log(f"flow not found for id={flow_id}")
             return
         body = cmd.get("body", "")
         status = cmd.get("status")
@@ -395,10 +410,10 @@ def handle_command(cmd):
         rule_key = map_local_key(flow)
         MAP_LOCAL_RULES[rule_key] = new_rule
         track_map_local_key(rule_key)
-        ctx.log.info(f"[MAP LOCAL] registrata per {rule_key}")
-        debug_log(f"regola salvata per {rule_key}: byte_body={len(body)}")
+        ctx.log.info(f"[MAP LOCAL] registered for {rule_key}")
+        debug_log(f"rule saved for {rule_key}: byte_body={len(body)}")
 
-        # Se il flow ha già una response, la sovrascriviamo per coerenza nell'UI
+        # If the flow already has a response, overwrite it for UI consistency.
         apply_map_local_response(flow, new_rule)
 
     if t == "mock_rule":
@@ -408,20 +423,20 @@ def handle_command(cmd):
         headers = cmd.get("headers") or {}
         enabled = cmd.get("enabled", True)
         if not key:
-            debug_log("comando mock_rule senza key")
+            debug_log("mock_rule command missing key")
             return
         if not enabled:
             MAP_LOCAL_RULES.pop(key, None)
             untrack_map_local_key(key)
-            debug_log(f"regola disabilitata per {key}")
+            debug_log(f"rule disabled for {key}")
             return
 
         MAP_LOCAL_RULES[key] = {"body": body, "headers": headers, "status": status}
         track_map_local_key(key)
-        ctx.log.info(f"[MAP LOCAL] regola aggiornata per {key}")
-        debug_log(f"regola aggiornata per {key}: byte_body={len(body)}")
+        ctx.log.info(f"[MAP LOCAL] rule updated for {key}")
+        debug_log(f"rule updated for {key}: byte_body={len(body)}")
 
-        # se ho un flow con la stessa key aggiorno subito la response
+        # If a flow with the same key exists, update the response immediately.
         flow_for_key = FLOW_BY_MAP_LOCAL_KEY.get(key) or FLOW_BY_KEY.get(key)
         if flow_for_key:
             apply_map_local_response(flow_for_key, MAP_LOCAL_RULES[key])
@@ -434,13 +449,13 @@ def handle_command(cmd):
             flow_for_key = FLOW_BY_MAP_LOCAL_KEY.get(key) or FLOW_BY_KEY.get(key)
             if flow_for_key:
                 flow_for_key.response = None
-            ctx.log.info(f"[MAP LOCAL] regola rimossa per {key}")
-            debug_log(f"regola rimossa per {key}")
+            ctx.log.info(f"[MAP LOCAL] rule removed for {key}")
+            debug_log(f"rule removed for {key}")
         return
 
     if t == "mock_request":
         if not flow:
-            debug_log(f"flow non trovato per id={flow_id}")
+            debug_log(f"flow not found for id={flow_id}")
             return
         flow.request.set_text(cmd.get("body", ""))
         headers = cmd.get("headers") or {}
@@ -451,23 +466,23 @@ def handle_command(cmd):
     if t == "breakpoint_rule":
         key = cmd.get("key")
         if not key:
-            debug_log("comando breakpoint_rule senza key")
+            debug_log("breakpoint_rule command missing key")
             return
         request_flag = bool(cmd.get("request"))
         response_flag = bool(cmd.get("response"))
         if request_flag or response_flag:
             BREAKPOINT_RULES[key] = {"request": request_flag, "response": response_flag}
-            ctx.log.info(f"[BREAKPOINT] regola aggiornata per {key}")
-            debug_log(f"breakpoint abilitato {key} req={request_flag} res={response_flag}")
+            ctx.log.info(f"[BREAKPOINT] rule updated for {key}")
+            debug_log(f"breakpoint enabled {key} req={request_flag} res={response_flag}")
         else:
             BREAKPOINT_RULES.pop(key, None)
-            ctx.log.info(f"[BREAKPOINT] regola rimossa per {key}")
-            debug_log(f"breakpoint rimosso {key}")
+            ctx.log.info(f"[BREAKPOINT] rule removed for {key}")
+            debug_log(f"breakpoint removed {key}")
         return
 
     if t == "breakpoint_continue":
         if not flow:
-            debug_log(f"flow non trovato per id={flow_id}")
+            debug_log(f"flow not found for id={flow_id}")
             return
         phase = cmd.get("phase")
         if phase == "request":
@@ -485,8 +500,8 @@ def handle_command(cmd):
             FLOW_BY_MAP_LOCAL_KEY[new_map_key] = flow
             send_flow_event(flow, "request", breakpoint_snapshot(flow, "request", "released"))
             flow.resume()
-            ctx.log.info(f"[BREAKPOINT] request ripresa per {flow.request.pretty_url}")
-            debug_log(f"breakpoint request rilasciato per {flow_id}")
+            ctx.log.info(f"[BREAKPOINT] request resumed for {flow.request.pretty_url}")
+            debug_log(f"breakpoint request released for {flow_id}")
         elif phase == "response":
             apply_response_updates(flow, cmd.get("response"))
             FLOW_BY_ID[flow.id] = flow
@@ -494,16 +509,16 @@ def handle_command(cmd):
             FLOW_BY_MAP_LOCAL_KEY[map_local_key(flow)] = flow
             send_flow_event(flow, "response", breakpoint_snapshot(flow, "response", "released"))
             flow.resume()
-            ctx.log.info(f"[BREAKPOINT] response rilasciata per {flow.request.pretty_url}")
-            debug_log(f"breakpoint response rilasciata per {flow_id}")
+            ctx.log.info(f"[BREAKPOINT] response released for {flow.request.pretty_url}")
+            debug_log(f"breakpoint response released for {flow_id}")
         else:
-            debug_log(f"fase breakpoint sconosciuta: {phase}")
+            debug_log(f"unknown breakpoint phase: {phase}")
             flow.resume()
         return
 
     if t == "retry_flow":
         if not flow:
-            debug_log(f"flow non trovato per id={flow_id}")
+            debug_log(f"flow not found for id={flow_id}")
             return
 
         method = (cmd.get("method") or flow.request.method or "GET").upper()
@@ -530,37 +545,37 @@ def handle_command(cmd):
 
         try:
             ctx.master.commands.call("replay.client", [cloned_flow])
-            debug_log(f"retry eseguito per {flow_key(cloned_flow)} nuovo_id={cloned_flow.id}")
-            ctx.log.info(f"[RETRY] richiesta reinviata per {cloned_flow.request.pretty_url}")
+            debug_log(f"retry executed for {flow_key(cloned_flow)} new_id={cloned_flow.id}")
+            ctx.log.info(f"[RETRY] request resent for {cloned_flow.request.pretty_url}")
         except Exception as exc:
-            ctx.log.error(f"[RETRY] errore replay: {exc}")
-            debug_log(f"errore retry: {exc}")
+            ctx.log.error(f"[RETRY] replay error: {exc}")
+            debug_log(f"retry error: {exc}")
 
 
 def apply_map_local_response(flow: http.HTTPFlow, rule: dict):
     """
-    Applica al flow una risposta mock secondo la regola salvata.
-    Viene usata sia quando arriva un comando dal client che sui nuovi flow in request().
+    Apply a mock response to the flow according to the saved rule.
+    Used both when a command arrives from the client and on new flows in request().
     """
     body = rule.get("body", "")
     status = rule.get("status", 200)
     headers = dict(rule.get("headers") or {})
 
-    # Garantisci un content-type leggibile
+    # Ensure a readable content-type.
     if not any(h.lower() == "content-type" for h in headers):
         headers["Content-Type"] = "application/json"
 
     headers["X-Map-Local"] = "true"
     flow.response = http.Response.make(status, body, headers)
-    ctx.log.info(f"[MAP LOCAL] risposta mock applicata a {flow.request.pretty_url}")
-    debug_log(f"risposta mock inviata su {flow_key(flow)} (status {status})")
+    ctx.log.info(f"[MAP LOCAL] mock response applied to {flow.request.pretty_url}")
+    debug_log(f"mock response sent to {flow_key(flow)} (status {status})")
 
 
 def request(flow: http.HTTPFlow):
     if is_loopback_host(flow.request.host):
         return
 
-    # salva il flow per ricerca successiva dal comando mock
+    # Save the flow for later lookup by the mock command.
     FLOW_BY_ID[flow.id] = flow
     FLOW_BY_KEY[flow_key(flow)] = flow
     FLOW_BY_MAP_LOCAL_KEY[map_local_key(flow)] = flow
@@ -571,7 +586,7 @@ def request(flow: http.HTTPFlow):
 
     apply_profile_to_request(flow)
 
-    # Applica il Map Local prima di inviare la richiesta al server
+    # Apply Map Local before sending the request to the server.
     base = flow_key(flow)
     computed_key = map_local_key(flow)
     candidates_all = MAP_LOCAL_RULE_KEYS_BY_BASE.get(base) or []
@@ -604,10 +619,15 @@ def request(flow: http.HTTPFlow):
                     MAP_LOCAL_FALLBACK_CURSOR[base] = (idx + 1) % len(candidates)
                     rule = MAP_LOCAL_RULES.get(matched_key)
     if rule:
-        debug_log(f"regola trovata per {matched_key}, applico mock")
+        debug_log(f"rule found for {matched_key}, applying mock")
         apply_map_local_response(flow, rule)
     else:
-        debug_log(f"nessuna regola trovata per {computed_key} (base {base})")
+        wildcard_key = select_wildcard_rule(flow)
+        if wildcard_key:
+            debug_log(f"wildcard rule found for {wildcard_key}, applying mock")
+            apply_map_local_response(flow, MAP_LOCAL_RULES[wildcard_key])
+        else:
+            debug_log(f"no rule found for {computed_key} (base {base})")
 
     bp_meta = breakpoint_snapshot(flow, "request", "waiting") if waiting_request else None
     send_flow_event(flow, "request", bp_meta)
@@ -616,7 +636,7 @@ def response(flow: http.HTTPFlow):
     if is_loopback_host(flow.request.host):
         return
 
-    # aggiorna il flow in cache (serve se arriva il comando dopo la response)
+    # Update the cached flow (needed if the command arrives after the response).
     FLOW_BY_ID[flow.id] = flow
     FLOW_BY_KEY[flow_key(flow)] = flow
     FLOW_BY_MAP_LOCAL_KEY[map_local_key(flow)] = flow
@@ -629,3 +649,20 @@ def response(flow: http.HTTPFlow):
 
     bp_meta = breakpoint_snapshot(flow, "response", "waiting") if waiting_response else None
     send_flow_event(flow, "response", bp_meta)
+
+def select_wildcard_rule(flow: http.HTTPFlow):
+    if not MAP_LOCAL_WILDCARD_RULES:
+        return None
+    subject = flow_key(flow)
+    best_key = None
+    best_score = -1
+    for rule_key in MAP_LOCAL_WILDCARD_RULES:
+        base = base_key_from_rule_key(rule_key)
+        if not base:
+            continue
+        if fnmatch.fnmatchcase(subject, base):
+            score = wildcard_score(rule_key)
+            if score > best_score:
+                best_key = rule_key
+                best_score = score
+    return best_key
