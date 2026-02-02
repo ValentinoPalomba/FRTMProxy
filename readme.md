@@ -4,7 +4,6 @@ FRTMProxy is a macOS app to observe, understand, and shape HTTP/S traffic in rea
 
 FRTMProxy is free for every developer, and it will remain free.
 
-> **Note**: This app is not intended for production use, but as an internal API debugging tool.
 
 ---
 
