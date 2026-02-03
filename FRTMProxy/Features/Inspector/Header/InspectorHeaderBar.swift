@@ -3,7 +3,14 @@ import SwiftUI
 struct InspectorHeaderBar: View {
     let colors: DesignSystem.ColorPalette
     let isRunning: Bool
-    let lastFlow: MitmFlow?
+    @Binding var filter: FlowFilter
+    let pinnedApps: [PinnedApp]
+    let pinnedHosts: [PinnedHost]
+    let clientIPs: [String]
+    let onTogglePinnedHost: (PinnedHost) -> Void
+    let onRemovePinnedHost: (PinnedHost) -> Void
+    let onTogglePinnedApp: (PinnedApp) -> Void
+    let onRemovePinnedApp: (PinnedApp) -> Void
     let onClear: () -> Void
     let onShowRules: () -> Void
     let onShowBreakpoints: () -> Void
@@ -12,37 +19,36 @@ struct InspectorHeaderBar: View {
     let trafficProfiles: [TrafficProfile]
     let activeTrafficProfile: TrafficProfile
     let onSelectTrafficProfile: (TrafficProfile) -> Void
-    let onStart: () -> Void
-    let onStop: () -> Void
+    let onToggleProxy: () -> Void
 
-    private var octoState: OctoState {
-        guard let lastFlow else { return .idle }
-        if let status = lastFlow.response?.status {
-            return status >= 400 ? .error : .running
-        }
-        return .running
+    private var toggleTitle: String {
+        isRunning ? "Stop" : "Start"
+    }
+
+    private var toggleSystemImage: String {
+        isRunning ? "stop.fill" : "play.fill"
+    }
+
+    private var toggleStyle: ControlButtonStyle {
+        isRunning ? .destructive(colors) : .filled(colors)
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 14) {
-            HStack(spacing: 10) {
-                OctoPixelBadge(colors: colors, state: octoState, embedded: true)
-                StatusPill(isRunning: isRunning, colors: colors)
-            }
-            .padding(.bottom, -8)
-            .padding(.top, -4)
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(colors.surfaceElevated)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(colors.border.opacity(0.7), lineWidth: 1)
-                    )
+        HStack(alignment: .top, spacing: DesignSystem.Metrics.scaled(14)) {
+            FlowFiltersView(
+                filter: $filter,
+                colors: colors,
+                pinnedApps: pinnedApps,
+                pinnedHosts: pinnedHosts,
+                clientIPs: clientIPs,
+                onTogglePinnedHost: onTogglePinnedHost,
+                onRemovePinnedHost: onRemovePinnedHost,
+                onTogglePinnedApp: onTogglePinnedApp,
+                onRemovePinnedApp: onRemovePinnedApp
             )
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Spacer()
-
-            HStack(spacing: 8) {
+            HStack(spacing: DesignSystem.Metrics.scaled(8)) {
                 ControlButton(title: "Clear", systemImage: "trash", style: .ghost(colors), disabled: false) {
                     onClear()
                 }
@@ -56,16 +62,19 @@ struct InspectorHeaderBar: View {
                     onShowCollections: onShowCollections,
                     onShowDeviceConnect: onShowDeviceConnect
                 )
-                ControlButton(title: "Start", systemImage: "play.fill", style: .filled(colors), disabled: isRunning) {
-                    onStart()
+                ControlButton(
+                    title: toggleTitle,
+                    systemImage: toggleSystemImage,
+                    style: toggleStyle,
+                    disabled: false
+                ) {
+                    onToggleProxy()
                 }
                 .onboardingTarget(.startProxy)
-                ControlButton(title: "Stop", systemImage: "stop.fill", style: .destructive(colors), disabled: !isRunning) {
-                    onStop()
-                }
             }
+            .layoutPriority(1)
         }
-        .padding(.horizontal, 4)
+        .padding(.horizontal, DesignSystem.Metrics.scaled(10))
     }
 }
 
@@ -86,20 +95,20 @@ private struct ManageMenuButton: View {
         } label: {
             Label("Manage", systemImage: "ellipsis")
                 .font(DesignSystem.Fonts.mono(13, weight: .semibold))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 9)
-                .frame(minHeight: 34)
+                .padding(.horizontal, DesignSystem.Metrics.scaled(14))
+                .padding(.vertical, DesignSystem.Metrics.scaled(9))
+                .frame(minHeight: DesignSystem.Metrics.scaled(34))
                 .background(colors.surface)
                 .foregroundStyle(colors.textPrimary)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 10)
+                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
                         .stroke(colors.border.opacity(0.9), lineWidth: 1)
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10)))
         }
         .buttonStyle(.plain)
         .popover(isPresented: $isPresented, arrowEdge: .bottom) {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(14)) {
                 Text("Quick actions")
                     .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                     .foregroundStyle(colors.textSecondary)
@@ -121,7 +130,7 @@ private struct ManageMenuButton: View {
                 })
 
                 Divider()
-                    .padding(.vertical, 4)
+                    .padding(.vertical, DesignSystem.Metrics.scaled(4))
 
                 TrafficProfileSection(
                     colors: colors,
@@ -133,10 +142,10 @@ private struct ManageMenuButton: View {
                     }
                 )
             }
-            .padding(16)
-            .frame(width: 280)
+            .padding(DesignSystem.Metrics.scaled(16))
+            .frame(width: DesignSystem.Metrics.scaled(280))
             .background(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(16))
                     .fill(colors.surface)
                     .shadow(color: Color.black.opacity(0.18), radius: 18, y: 8)
             )
@@ -145,14 +154,14 @@ private struct ManageMenuButton: View {
 
     private func menuButton(title: String, icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 10) {
+            HStack(spacing: DesignSystem.Metrics.scaled(10)) {
                 Image(systemName: icon)
                 Text(title)
                     .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                 Spacer()
             }
             .foregroundStyle(colors.textPrimary)
-            .padding(.vertical, 6)
+            .padding(.vertical, DesignSystem.Metrics.scaled(6))
         }
         .buttonStyle(.plain)
     }
@@ -165,8 +174,8 @@ private struct TrafficProfileSection: View {
     let onSelect: (TrafficProfile) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(12)) {
+            VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(2)) {
                 Text("Traffic profiles")
                     .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                     .foregroundStyle(colors.textSecondary)
@@ -175,7 +184,7 @@ private struct TrafficProfileSection: View {
                     .foregroundStyle(colors.textSecondary.opacity(0.8))
             }
 
-            VStack(spacing: 8) {
+            VStack(spacing: DesignSystem.Metrics.scaled(8)) {
                 ForEach(profiles) { profile in
                     profileButton(profile)
                 }
@@ -189,7 +198,7 @@ private struct TrafficProfileSection: View {
         Button {
             onSelect(profile)
         } label: {
-            HStack(alignment: .center, spacing: 12) {
+            HStack(alignment: .center, spacing: DesignSystem.Metrics.scaled(12)) {
                 Image(systemName: profile.systemImageName)
                     .foregroundStyle(isActive ? colors.accent : colors.textSecondary)
                     .font(.title3)
@@ -207,15 +216,15 @@ private struct TrafficProfileSection: View {
                         .foregroundStyle(colors.accent)
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.horizontal, DesignSystem.Metrics.scaled(12))
+            .padding(.vertical, DesignSystem.Metrics.scaled(10))
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(12))
                     .fill(isActive ? colors.accent.opacity(0.12) : colors.surfaceElevated)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(12))
                     .stroke(isActive ? colors.accent.opacity(0.6) : colors.border.opacity(0.8), lineWidth: 1)
             )
         }

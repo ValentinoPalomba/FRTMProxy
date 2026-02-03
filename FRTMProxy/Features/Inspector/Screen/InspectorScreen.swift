@@ -24,8 +24,6 @@ struct InspectorScreen: View {
 
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var settings: SettingsStore
-    @State private var inspectorHeight: CGFloat = 320
-    @GestureState private var inspectorDrag: CGFloat = 0
 
     private var colors: DesignSystem.ColorPalette {
         DesignSystem.Colors.palette(for: settings.activeTheme, interfaceStyle: colorScheme)
@@ -38,11 +36,43 @@ struct InspectorScreen: View {
     var body: some View {
         let trafficProfiles = TrafficProfileLibrary.presets
 
+        let flowExplorer = FlowExplorerSection(
+            flows: filteredFlows,
+            selection: $viewModel.selectedFlowID,
+            colors: colors,
+            emptyMessage: viewModel.flows.isEmpty ? "Waiting for traffic..." : "No results for the current filters",
+            pinnedHosts: settings.pinnedHosts,
+            pinnedApps: settings.pinnedApps,
+            onTogglePinnedHost: { togglePinnedHost($0) },
+            onRemovePinnedHost: { removePinnedHost($0) },
+            onTogglePinnedApp: { togglePinnedApp($0) },
+            onRemovePinnedApp: { removePinnedApp($0) },
+            onMapLocal: { flow in openMapEditor(flow: flow) },
+            onEditRetry: { flow in openRetryEditor(for: flow) },
+            onPinHost: { pinHost(host: $0) },
+            onUnpinHost: { removePinnedHost(byHostName: $0) },
+            onPinApp: { pinApp(app: $0) },
+            onUnpinApp: { unpinApp(appID: $0) },
+            onFilterApp: { filterApp(app: $0) },
+            onFilterDevice: { ip in
+                filter.activeClientIPs = [ip]
+            }
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(minHeight: flowExplorerMinHeight)
+
         let content = VStack(spacing: 16) {
             InspectorHeaderBar(
                 colors: colors,
                 isRunning: viewModel.isRunning,
-                lastFlow: viewModel.flows.last,
+                filter: $filter,
+                pinnedApps: settings.pinnedApps,
+                pinnedHosts: settings.pinnedHosts,
+                clientIPs: availableClientIPs,
+                onTogglePinnedHost: { togglePinnedHost($0) },
+                onRemovePinnedHost: { removePinnedHost($0) },
+                onTogglePinnedApp: { togglePinnedApp($0) },
+                onRemovePinnedApp: { removePinnedApp($0) },
                 onClear: viewModel.clear,
                 onShowRules: { showRulesSheet = true },
                 onShowBreakpoints: { showBreakpointsManager = true },
@@ -54,58 +84,17 @@ struct InspectorScreen: View {
                     viewModel.selectTrafficProfile(profile)
                     settings.selectedTrafficProfileID = profile.id
                 },
-                onStart: {
-                    Task { @MainActor in
-                        await viewModel.startProxy()
-                    }
-                },
-                onStop: viewModel.stopProxy
+                onToggleProxy: toggleProxy
             )
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
+            .padding(.vertical, DesignSystem.Metrics.scaled(10))
 
-            GeometryReader { proxy in
-                ZStack(alignment: .bottom) {
-                    FlowExplorerSection(
-                        filter: $filter,
-                        flows: filteredFlows,
-                        clientIPs: availableClientIPs,
-                        selection: $viewModel.selectedFlowID,
-                        colors: colors,
-                        emptyMessage: viewModel.flows.isEmpty ? "Waiting for traffic..." : "No results for the current filters",
-                        pinnedHosts: settings.pinnedHosts,
-                        pinnedApps: settings.pinnedApps,
-                        onTogglePinnedHost: { togglePinnedHost($0) },
-                        onRemovePinnedHost: { removePinnedHost($0) },
-                        onTogglePinnedApp: { togglePinnedApp($0) },
-                        onRemovePinnedApp: { removePinnedApp($0) },
-                        onResetFilters: resetFilters,
-                        onMapLocal: { flow in openMapEditor(flow: flow) },
-                        onEditRetry: { flow in openRetryEditor(for: flow) },
-                        onPinHost: { pinHost(host: $0) },
-                        onUnpinHost: { removePinnedHost(byHostName: $0) },
-                        onPinApp: { pinApp(app: $0) },
-                        onUnpinApp: { unpinApp(appID: $0) },
-                        onFilterApp: { filterApp(app: $0) },
-                        onFilterDevice: { ip in
-                            filter.activeClientIPs = [ip]
-                        }
-                    )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                    .padding(.horizontal,20)
-
-                    if let flow = selectedFlow {
-                        let maxHeight = max(proxy.size.height * 0.9, inspectorMinHeight + 40)
-                        let currentHeight = min(
-                            maxHeight,
-                            max(inspectorMinHeight, inspectorHeight + inspectorDrag)
-                        )
-
+            Group {
+                if let flow = selectedFlow {
+                    VSplitView {
+                        flowExplorer
                         FlowInspectorPanel(
                             flow: flow,
                             colors: colors,
-                            displayHeight: currentHeight,
-                            maxHeight: maxHeight,
                             onMapLocal: openMapEditor,
                             onCopyUrl: { ClipboardHelper.copy(flow.request?.url) },
                             onCopyCurl: { ClipboardHelper.copy(flow.curlString) },
@@ -117,8 +106,11 @@ struct InspectorScreen: View {
                             }
                         )
                         .onboardingTarget(.inspectFlow)
-                        .gesture(inspectorDragGesture(maxHeight: maxHeight))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .frame(minHeight: inspectorPanelMinHeight, idealHeight: inspectorPanelIdealHeight)
                     }
+                } else {
+                    flowExplorer
                 }
             }
             .frame(maxHeight: .infinity)
@@ -190,11 +182,6 @@ struct InspectorScreen: View {
         .onChange(of: showRulesSheet) { _, shown in
             if shown {
                 rulesViewModel.load(sortedRules())
-            }
-        }
-        .onChange(of: viewModel.selectedFlowID) { _, newValue in
-            if newValue == nil {
-                inspectorHeight = inspectorMinHeight
             }
         }
         .onChange(of: showBreakpointSheet) { _, shown in
@@ -415,14 +402,6 @@ struct InspectorScreen: View {
         syncPinnedHostFilterState()
     }
 
-    private func resetFilters() {
-        filter = FlowFilter()
-        settings.clearPinnedHostSelections()
-        settings.clearPinnedAppSelections()
-        syncPinnedHostFilterState()
-        syncPinnedAppFilterState()
-    }
-
     private func syncPinnedHostFilterState() {
         let activeHosts = settings.pinnedHosts
             .filter { $0.isActive }
@@ -586,25 +565,7 @@ struct InspectorScreen: View {
         viewModel.rules.values.sorted(by: { $0.key < $1.key })
     }
 
-    private var inspectorMinHeight: CGFloat { 0 }
-    private var inspectorDragActivationHeight: CGFloat { 10 }
-
-    private func inspectorDragGesture(maxHeight: CGFloat) -> some Gesture {
-        DragGesture()
-            .updating($inspectorDrag) { value, state, _ in
-                state = -value.translation.height
-            }
-            .onEnded { value in
-                let delta = -value.translation.height
-                var newHeight = inspectorHeight + delta
-                newHeight = min(maxHeight, max(inspectorMinHeight, newHeight))
-
-                let shouldClose = value.translation.height > 90 && newHeight <= inspectorMinHeight + 20
-                if shouldClose {
-                    viewModel.selectedFlowID = nil
-                } else {
-                    inspectorHeight = newHeight
-                }
-            }
-    }
+    private var flowExplorerMinHeight: CGFloat { DesignSystem.Metrics.scaled(260) }
+    private var inspectorPanelMinHeight: CGFloat { DesignSystem.Metrics.scaled(260) }
+    private var inspectorPanelIdealHeight: CGFloat { DesignSystem.Metrics.scaled(340) }
 }

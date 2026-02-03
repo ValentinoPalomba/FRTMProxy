@@ -1,6 +1,22 @@
 import SwiftUI
 
 enum DesignSystem {
+    enum Metrics {
+        static let scale: CGFloat = 0.85
+
+        static func scaled(_ value: CGFloat) -> CGFloat {
+            value * scale
+        }
+
+        static func font(_ value: CGFloat) -> CGFloat {
+            value * scale
+        }
+
+        static func cornerRadius(_ value: CGFloat) -> CGFloat {
+            value * scale
+        }
+    }
+
     struct ColorPalette {
         let background: Color
         let surface: Color
@@ -58,10 +74,10 @@ enum DesignSystem {
 
     enum Fonts {
         static func mono(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
-            .system(size: size, weight: weight, design: .monospaced)
+            .system(size: Metrics.font(size), weight: weight, design: .monospaced)
         }
         static func sans(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
-            .system(size: size, weight: weight, design: .rounded)
+            .system(size: Metrics.font(size), weight: weight, design: .rounded)
         }
     }
 }

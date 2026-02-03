@@ -39,7 +39,7 @@ struct MapEditorView: View {
     @State private var responseTab: EditorTab = .body
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(16)) {
             breadcrumb
             
             editorsStack
@@ -48,13 +48,13 @@ struct MapEditorView: View {
             
             actionBar
         }
-        .padding(20)
+        .padding(DesignSystem.Metrics.scaled(20))
         .background(colors.background)
         .overlay {
             if !isSelectionAvailable {
-                VStack(spacing: 8) {
+                VStack(spacing: DesignSystem.Metrics.scaled(8)) {
                     Image(systemName: "cursorarrow.rays")
-                        .font(.system(size: 30))
+                        .font(.system(size: DesignSystem.Metrics.scaled(30)))
                         .foregroundStyle(colors.textSecondary)
                     Text("Select a flow or rule for \(titlePrefix)")
                         .font(DesignSystem.Fonts.sans(13, weight: .semibold))
@@ -65,7 +65,7 @@ struct MapEditorView: View {
     }
     
     private var breadcrumb: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DesignSystem.Metrics.scaled(8)) {
             Text(titlePrefix)
                 .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)
@@ -80,7 +80,7 @@ struct MapEditorView: View {
     private var editorsStack: some View {
         Group {
             if showsRequestEditor && showsResponseEditor {
-                HStack(alignment: .top, spacing: 16) {
+                HStack(alignment: .top, spacing: DesignSystem.Metrics.scaled(16)) {
                     requestEditorCard
                     responseEditorCard
                 }
@@ -132,9 +132,9 @@ struct MapEditorView: View {
         trailingHeader: AnyView? = nil,
         topAccessory: AnyView? = nil
     ) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(12)) {
             HStack {
-                HStack(spacing: 4) {
+                HStack(spacing: DesignSystem.Metrics.scaled(4)) {
                     Text(title)
                         .font(DesignSystem.Fonts.sans(17, weight: .semibold))
                     if let titleBadge {
@@ -155,7 +155,7 @@ struct MapEditorView: View {
             
             bodyContent(selectedTab.wrappedValue)
         }
-        .padding(16)
+        .padding(DesignSystem.Metrics.scaled(16))
         .surfaceCard(fill: colors.surface, stroke: colors.border, shadowOpacity: 0.08)
         .disabled(!allowEditing)
         .opacity(!allowEditing ? 0.6 : 1)
@@ -217,9 +217,9 @@ struct MapEditorView: View {
     }
     
     private func tabBar(tabs: [EditorTab], selection: Binding<EditorTab>) -> some View {
-        HStack(spacing: 16) {
+        HStack(spacing: DesignSystem.Metrics.scaled(16)) {
             ForEach(tabs, id: \.self) { tab in
-                VStack(spacing: 6) {
+                VStack(spacing: DesignSystem.Metrics.scaled(6)) {
                     Button {
                         selection.wrappedValue = tab
                     } label: {
@@ -231,31 +231,31 @@ struct MapEditorView: View {
                     
                     Rectangle()
                         .fill(selection.wrappedValue == tab ? colors.accent : .clear)
-                        .frame(height: 2)
+                        .frame(height: DesignSystem.Metrics.scaled(2))
                         .frame(maxWidth: .infinity)
                 }
             }
         }
-        .padding(.bottom, 6)
+        .padding(.bottom, DesignSystem.Metrics.scaled(6))
     }
     
     private var statusField: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DesignSystem.Metrics.scaled(8)) {
             Text("Status")
                 .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)
             TextField("200", text: $viewModel.responseStatusText)
-                .frame(width: 72)
+                .frame(width: DesignSystem.Metrics.scaled(72))
                 .textFieldStyle(ProxyTextFieldStyle(palette: colors, size: .compact))
         }
     }
     
     private var actionBar: some View {
         HStack {
-            HStack(spacing: 6) {
+            HStack(spacing: DesignSystem.Metrics.scaled(6)) {
                 Circle()
                     .fill(viewModel.isModified ? colors.warning : colors.textSecondary.opacity(0.4))
-                    .frame(width: 10, height: 10)
+                    .frame(width: DesignSystem.Metrics.scaled(10), height: DesignSystem.Metrics.scaled(10))
                 Text(viewModel.isModified ? "Modified" : "Synced")
                     .font(DesignSystem.Fonts.sans(12, weight: .medium))
                     .foregroundStyle(viewModel.isModified ? colors.textPrimary : colors.textSecondary)
@@ -275,7 +275,7 @@ struct MapEditorView: View {
                 }
             }
         }
-        .padding(.top, 8)
+        .padding(.top, DesignSystem.Metrics.scaled(8))
     }
 }
 
@@ -290,15 +290,15 @@ private struct KeyValueEditor: View {
     let onRemove: (UUID) -> Void
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: DesignSystem.Metrics.scaled(10)) {
             if rows.isEmpty {
                 Text(emptyMessage)
                     .foregroundStyle(colors.textSecondary)
                     .font(DesignSystem.Fonts.sans(13))
-                    .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
+                    .frame(maxWidth: .infinity, minHeight: DesignSystem.Metrics.scaled(60), alignment: .center)
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 10) {
+                    LazyVStack(spacing: DesignSystem.Metrics.scaled(10)) {
                         ForEach($rows) { $row in
                             KeyValueRowView(
                                 row: $row,
@@ -311,7 +311,7 @@ private struct KeyValueEditor: View {
                         }
                     }
                 }
-                .frame(minHeight: 180)
+                .frame(minHeight: DesignSystem.Metrics.scaled(180))
             }
 
             HStack {
@@ -321,7 +321,7 @@ private struct KeyValueEditor: View {
                         .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                 }
                 .buttonStyle(.plain)
-                .padding(.top, 4)
+                .padding(.top, DesignSystem.Metrics.scaled(4))
             }
         }
     }
@@ -336,31 +336,31 @@ private struct KeyValueRowView: View {
     let onRemove: (UUID) -> Void
 
     var body: some View {
-        HStack(alignment: useMultilineValue ? .top : .center, spacing: 10) {
+        HStack(alignment: useMultilineValue ? .top : .center, spacing: DesignSystem.Metrics.scaled(10)) {
             TextField(keyPlaceholder, text: $row.key)
                 .textFieldStyle(ProxyTextFieldStyle(palette: colors, size: .compact))
-                .frame(width: 180)
+                .frame(width: DesignSystem.Metrics.scaled(180))
 
             if useMultilineValue {
                 ZStack(alignment: .topLeading) {
                     if row.value.isEmpty {
                         Text(valuePlaceholder)
                             .foregroundStyle(colors.textSecondary.opacity(0.7))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 8)
+                            .padding(.horizontal, DesignSystem.Metrics.scaled(6))
+                            .padding(.vertical, DesignSystem.Metrics.scaled(8))
                     }
                     TextEditor(text: $row.value)
                         .font(DesignSystem.Fonts.mono(12))
-                        .frame(minHeight: 48, maxHeight: 140)
-                        .padding(4)
+                        .frame(minHeight: DesignSystem.Metrics.scaled(48), maxHeight: DesignSystem.Metrics.scaled(140))
+                        .padding(DesignSystem.Metrics.scaled(4))
                         .background(Color.clear)
                 }
                 .frame(maxWidth: .infinity)
                 .background(
-                    RoundedRectangle(cornerRadius: 8)
+                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
                         .fill(colors.surfaceElevated)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 8)
+                            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
                                 .stroke(colors.border, lineWidth: 1)
                         )
                 )
@@ -377,12 +377,12 @@ private struct KeyValueRowView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(10)
+        .padding(DesignSystem.Metrics.scaled(10))
         .background(
-            RoundedRectangle(cornerRadius: 10)
+            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
                 .fill(colors.surfaceElevated)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 10)
+                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
                         .stroke(colors.border, lineWidth: 1)
                 )
         )
@@ -401,18 +401,18 @@ private struct RequestMetaEditor: View {
     let colors: DesignSystem.ColorPalette
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .center, spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(10)) {
+            HStack(alignment: .center, spacing: DesignSystem.Metrics.scaled(16)) {
+                VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(4)) {
                     Text("Method")
                         .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                         .foregroundStyle(colors.textSecondary)
                     TextField("GET", text: $method)
                         .textFieldStyle(ProxyTextFieldStyle(palette: colors, size: .compact))
-                        .frame(width: 120)
+                        .frame(width: DesignSystem.Metrics.scaled(120))
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(4)) {
                     Text("URL")
                         .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                         .foregroundStyle(colors.textSecondary)

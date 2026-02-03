@@ -24,18 +24,25 @@ struct ControlButton: View {
     
     var body: some View {
         Button(action: action) {
-            Label(title, systemImage: systemImage)
-                .font(DesignSystem.Fonts.mono(13, weight: .semibold))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 9)
-                .frame(minHeight: 34)
-                .background(background)
-                .foregroundStyle(foreground)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(border, lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+            HStack(spacing: DesignSystem.Metrics.scaled(6)) {
+                Image(systemName: systemImage)
+                Text(title)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                    .allowsTightening(true)
+            }
+            .font(DesignSystem.Fonts.mono(13, weight: .semibold))
+            .padding(.horizontal, DesignSystem.Metrics.scaled(14))
+            .padding(.vertical, DesignSystem.Metrics.scaled(9))
+            .frame(minHeight: DesignSystem.Metrics.scaled(34))
+            .background(background)
+            .foregroundStyle(foreground)
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+                    .stroke(border, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10)))
+            .accessibilityLabel(Text(title))
         }
         .buttonStyle(.plain)
         .opacity(disabled ? 0.55 : 1)
@@ -93,12 +100,12 @@ struct FilterChip: View {
             HStack(spacing: 6) {
                 Circle()
                     .fill(isOn ? color : colors.border)
-                    .frame(width: 10, height: 10)
+                    .frame(width: DesignSystem.Metrics.scaled(10), height: DesignSystem.Metrics.scaled(10))
                 Text(title)
                     .font(DesignSystem.Fonts.mono(12, weight: .semibold))
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, DesignSystem.Metrics.scaled(10))
+            .padding(.vertical, DesignSystem.Metrics.scaled(6))
             .background(
                 RoundedRectangle(cornerRadius: 999)
                     .fill(isOn ? color.opacity(0.16) : colors.surface)

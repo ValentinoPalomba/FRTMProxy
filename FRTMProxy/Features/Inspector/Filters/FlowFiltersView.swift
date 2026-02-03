@@ -6,121 +6,57 @@ struct FlowFiltersView: View {
     let pinnedApps: [PinnedApp]
     let pinnedHosts: [PinnedHost]
     let clientIPs: [String]
-    let onReset: () -> Void
     let onTogglePinnedHost: (PinnedHost) -> Void
     let onRemovePinnedHost: (PinnedHost) -> Void
     let onTogglePinnedApp: (PinnedApp) -> Void
     let onRemovePinnedApp: (PinnedApp) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 12) {
-                SearchField(text: $filter.searchText, placeholder: "Search: keywords, host:, app:, method:, status:, type:, device: (use -term to exclude)", colors: colors)
-                ControlButton(title: "Reset", systemImage: "arrow.uturn.left", style: .ghost(colors), disabled: !hasCustomFilters) {
-                    onReset()
-                }
-            }
-
-            if !pinnedApps.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Pinned apps")
-                        .font(DesignSystem.Fonts.sans(12, weight: .semibold))
-                        .foregroundStyle(colors.textSecondary)
-                    ScrollView(.horizontal) {
-                        HStack(spacing: 8) {
-                            ForEach(pinnedApps) { app in
-                                PinnedAppChip(
-                                    app: app,
-                                    colors: colors,
-                                    onToggle: { onTogglePinnedApp(app) },
-                                    onRemove: { onRemovePinnedApp(app) }
-                                )
-                            }
-                        }
-                        .padding(.vertical, 2)
-                    }
-                    .scrollIndicators(.hidden)
-                }
-            } else {
-                Text("Pin any app from the table to keep it here for quick filtering.")
-                    .font(DesignSystem.Fonts.sans(11))
-                    .foregroundStyle(colors.textSecondary.opacity(0.8))
-            }
-
-            if !pinnedHosts.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Pinned hosts")
-                        .font(DesignSystem.Fonts.sans(12, weight: .semibold))
-                        .foregroundStyle(colors.textSecondary)
-                    ScrollView(.horizontal) {
-                        HStack(spacing: 8) {
-                            ForEach(pinnedHosts) { host in
-                                PinnedHostChip(
-                                    host: host,
-                                    colors: colors,
-                                    onToggle: { onTogglePinnedHost(host) },
-                                    onRemove: { onRemovePinnedHost(host) }
-                                )
-                            }
-                        }
-                        .padding(.vertical, 2)
-                    }
-                    .scrollIndicators(.hidden)
-                }
-            } else {
-                Text("Pin any host from the table to keep it here for quick filtering.")
-                    .font(DesignSystem.Fonts.sans(11))
-                    .foregroundStyle(colors.textSecondary.opacity(0.8))
-            }
-
-            if clientIPs.count > 1 {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Devices")
-                        .font(DesignSystem.Fonts.sans(12, weight: .semibold))
-                        .foregroundStyle(colors.textSecondary)
-                    ScrollView(.horizontal) {
-                        HStack(spacing: 8) {
-                            ForEach(clientIPs, id: \.self) { ip in
-                                DeviceChip(
-                                    ip: ip,
-                                    isActive: filter.activeClientIPs.contains(ip),
-                                    colors: colors
-                                ) {
-                                    filter.toggleClientIP(ip)
-                                }
-                            }
-                        }
-                        .padding(.vertical, 2)
-                    }
-                    .scrollIndicators(.hidden)
-                }
-            }
-
-            HStack(spacing: 8) {
-                FilterChip(
-                    title: "Mapped",
-                    isOn: $filter.showMappedOnly,
-                    color: colors.accent,
+        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(8)) {
+            HStack(spacing: DesignSystem.Metrics.scaled(10)) {
+                SearchField(
+                    text: $filter.searchText,
+                    placeholder: "Search: keywords, host:, app:, method:, status:, type:, device: (use -term to exclude)",
                     colors: colors
                 )
-                FilterChip(
-                    title: "Errori",
-                    isOn: $filter.showErrorsOnly,
-                    color: colors.warning,
-                    colors: colors
-                )
-                Spacer()
+                .frame(minWidth: DesignSystem.Metrics.scaled(160), maxWidth: .infinity)
+                .layoutPriority(0)
+            }
+
+            if !pinnedApps.isEmpty || !pinnedHosts.isEmpty || clientIPs.count > 1 {
+                ScrollView(.horizontal) {
+                    HStack(spacing: DesignSystem.Metrics.scaled(8)) {
+                        ForEach(pinnedApps) { app in
+                            PinnedAppChip(
+                                app: app,
+                                colors: colors,
+                                onToggle: { onTogglePinnedApp(app) },
+                                onRemove: { onRemovePinnedApp(app) }
+                            )
+                        }
+                        ForEach(pinnedHosts) { host in
+                            PinnedHostChip(
+                                host: host,
+                                colors: colors,
+                                onToggle: { onTogglePinnedHost(host) },
+                                onRemove: { onRemovePinnedHost(host) }
+                            )
+                        }
+                        ForEach(clientIPs, id: \.self) { ip in
+                            DeviceChip(
+                                ip: ip,
+                                isActive: filter.activeClientIPs.contains(ip),
+                                colors: colors
+                            ) {
+                                filter.toggleClientIP(ip)
+                            }
+                        }
+                    }
+                    .padding(.vertical, DesignSystem.Metrics.scaled(2))
+                }
+                .scrollIndicators(.hidden)
             }
         }
-    }
-
-    private var hasCustomFilters: Bool {
-        !filter.searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-        filter.showMappedOnly ||
-        filter.showErrorsOnly ||
-        !filter.activePinnedHosts.isEmpty ||
-        !filter.activePinnedApps.isEmpty ||
-        !filter.activeClientIPs.isEmpty
     }
 }
 
@@ -132,15 +68,15 @@ private struct DeviceChip: View {
 
     var body: some View {
         Button(action: onToggle) {
-            HStack(spacing: 6) {
+            HStack(spacing: DesignSystem.Metrics.scaled(6)) {
                 Image(systemName: "iphone")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: DesignSystem.Metrics.scaled(12), weight: .semibold))
                 Text(ip)
                     .font(DesignSystem.Fonts.mono(12, weight: .semibold))
                     .lineLimit(1)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.horizontal, DesignSystem.Metrics.scaled(12))
+            .padding(.vertical, DesignSystem.Metrics.scaled(6))
             .background(
                 RoundedRectangle(cornerRadius: 999, style: .continuous)
                     .fill(isActive ? colors.accent.opacity(0.18) : colors.surface)
@@ -163,15 +99,15 @@ private struct PinnedHostChip: View {
 
     var body: some View {
         Button(action: onToggle) {
-            HStack(spacing: 6) {
+            HStack(spacing: DesignSystem.Metrics.scaled(6)) {
                 Image(systemName: host.isActive ? "pin.fill" : "pin")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: DesignSystem.Metrics.scaled(12), weight: .semibold))
                 Text(host.host)
                     .font(DesignSystem.Fonts.mono(12, weight: .semibold))
                     .lineLimit(1)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.horizontal, DesignSystem.Metrics.scaled(12))
+            .padding(.vertical, DesignSystem.Metrics.scaled(6))
             .background(
                 RoundedRectangle(cornerRadius: 999, style: .continuous)
                     .fill(host.isActive ? colors.accent.opacity(0.18) : colors.surface)
@@ -201,16 +137,16 @@ private struct PinnedAppChip: View {
 
     var body: some View {
         Button(action: onToggle) {
-            HStack(spacing: 6) {
+            HStack(spacing: DesignSystem.Metrics.scaled(6)) {
                 appIcon
                 Image(systemName: app.isActive ? "pin.fill" : "pin")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: DesignSystem.Metrics.scaled(12), weight: .semibold))
                 Text(app.displayName.isEmpty ? app.appID : app.displayName)
                     .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                     .lineLimit(1)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.horizontal, DesignSystem.Metrics.scaled(12))
+            .padding(.vertical, DesignSystem.Metrics.scaled(6))
             .background(
                 RoundedRectangle(cornerRadius: 999, style: .continuous)
                     .fill(app.isActive ? colors.accent.opacity(0.18) : colors.surface)
@@ -236,7 +172,7 @@ private struct PinnedAppChip: View {
         AppBadgeIconView(
             title: app.displayName.isEmpty ? app.appID : app.displayName,
             seed: app.appID,
-            size: 14
+            size: DesignSystem.Metrics.scaled(14)
         )
     }
 }
