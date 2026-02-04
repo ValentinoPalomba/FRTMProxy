@@ -20,7 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct FRTMProxyApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    @StateObject private var proxyViewModel = ProxyViewModel()
+    @StateObject private var proxyViewModel: ProxyViewModel
     @StateObject private var rulesViewModel = MapRuleViewModel()
     @StateObject private var settingsStore = SettingsStore()
     @StateObject private var onboardingManager = OnboardingManager()
@@ -29,8 +29,15 @@ struct FRTMProxyApp: App {
     private let certificateInstaller = SimulatorCertificateInstaller()
     @Environment(\.openWindow) private var openWindow
     private let updaterController: SPUStandardUpdaterController
+    private let launchConfiguration: LaunchConfiguration
     
     init() {
+        let launchConfiguration = LaunchConfiguration.current
+        let proxyService: ProxyServiceProtocol = launchConfiguration.useMockFlows
+            ? ProxyMockService()
+            : MitmproxyService(config: MitmproxyConfig())
+        _proxyViewModel = StateObject(wrappedValue: ProxyViewModel(service: proxyService))
+        self.launchConfiguration = launchConfiguration
         updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
     }
     
@@ -43,6 +50,9 @@ struct FRTMProxyApp: App {
                 .task {
                     appDelegate.proxyViewModel = proxyViewModel
                     proxyViewModel.bind(settings: settingsStore)
+                    if launchConfiguration.autoStartProxy && !proxyViewModel.isRunning {
+                        await proxyViewModel.startProxy(port: settingsStore.defaultPort)
+                    }
                 }
                 .alert(item: $deviceAlert) { alert in
                     Alert(
@@ -144,4 +154,44 @@ private struct DeviceAlert: Identifiable {
     let id = UUID()
     let title: String
     let message: String
+}
+
+private struct LaunchConfiguration {
+    let useMockFlows: Bool
+    let autoStartProxy: Bool
+
+    static var current: LaunchConfiguration {
+        let processInfo = ProcessInfo.processInfo
+        let arguments = Set(processInfo.arguments)
+        let environment = processInfo.environment
+
+        let useMockFlows = arguments.contains("--mock-flows")
+            || boolValue(for: "FRTMPROXY_MOCK_FLOWS", in: environment) == true
+
+        let autoStartProxy: Bool
+        if arguments.contains("--mock-no-autostart") {
+            autoStartProxy = false
+        } else if arguments.contains("--mock-autostart") {
+            autoStartProxy = true
+        } else {
+            autoStartProxy = boolValue(for: "FRTMPROXY_MOCK_AUTOSTART", in: environment) ?? useMockFlows
+        }
+
+        return LaunchConfiguration(useMockFlows: useMockFlows, autoStartProxy: autoStartProxy)
+    }
+
+    private static func boolValue(for key: String, in environment: [String: String]) -> Bool? {
+        guard let rawValue = environment[key]?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() else {
+            return nil
+        }
+
+        switch rawValue {
+        case "1", "true", "yes", "on":
+            return true
+        case "0", "false", "no", "off":
+            return false
+        default:
+            return nil
+        }
+    }
 }
