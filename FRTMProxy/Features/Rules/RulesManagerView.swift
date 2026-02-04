@@ -22,9 +22,8 @@ struct RulesManagerView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 14) {
             header
-            Divider()
             if viewModel.rules.isEmpty {
                 emptyPlaceholder
             } else {
@@ -58,15 +57,11 @@ struct RulesManagerView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Map Local Rules")
-                    .font(DesignSystem.Fonts.mono(20, weight: .semibold))
-                Text("Manage saved mock responses and quickly enable/disable rules.")
-                    .font(DesignSystem.Fonts.mono(13))
-                    .foregroundStyle(colors.textSecondary)
-            }
-            Spacer()
+        ManagerHeaderBar(
+            title: "Map Local Rules",
+            subtitle: "Manage saved mock responses and quickly enable/disable rules.",
+            colors: colors
+        ) {
             ControlButton(
                 title: "Add Rule",
                 systemImage: "plus",
@@ -93,46 +88,39 @@ struct RulesManagerView: View {
     }
 
     private var rulesList: some View {
-        ScrollView {
-            LazyVStack(spacing: 8) {
-                ForEach(viewModel.rules) { rule in
-                    RuleRow(
-                        rule: rule,
-                        colors: colors,
-                        isSelected: viewModel.selection?.key == rule.key,
-                        onSelect: { viewModel.select(rule) },
-                        onDoubleClick: { openEditor(for: rule) },
-                        onToggle: { enabled in
-                            toggle(rule: rule, enabled: enabled)
-                        },
-                        onDelete: {
-                            onDelete(rule.key)
-                            viewModel.removeRule(key: rule.key)
-                        }
-                    )
-                    .contextMenu {
-                        Button("Edit") { openEditor(for: rule) }
-                        Button(rule.isEnabled ? "Disable" : "Enable") {
-                            toggle(rule: rule, enabled: !rule.isEnabled)
-                        }
-                        Divider()
-                        Button("Delete", role: .destructive) {
-                            onDelete(rule.key)
-                            viewModel.removeRule(key: rule.key)
+        ManagerListSurface(colors: colors) {
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(viewModel.rules) { rule in
+                        RuleRow(
+                            rule: rule,
+                            colors: colors,
+                            isSelected: viewModel.selection?.key == rule.key,
+                            onSelect: { viewModel.select(rule) },
+                            onDoubleClick: { openEditor(for: rule) },
+                            onToggle: { enabled in
+                                toggle(rule: rule, enabled: enabled)
+                            },
+                            onDelete: {
+                                onDelete(rule.key)
+                                viewModel.removeRule(key: rule.key)
+                            }
+                        )
+                        .contextMenu {
+                            Button("Edit") { openEditor(for: rule) }
+                            Button(rule.isEnabled ? "Disable" : "Enable") {
+                                toggle(rule: rule, enabled: !rule.isEnabled)
+                            }
+                            Divider()
+                            Button("Delete", role: .destructive) {
+                                onDelete(rule.key)
+                                viewModel.removeRule(key: rule.key)
+                            }
                         }
                     }
                 }
             }
-            .padding(.vertical, 4)
         }
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(colors.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(colors.border.opacity(0.6), lineWidth: 1)
-                )
-        )
     }
 
     private var emptyPlaceholder: some View {
@@ -192,10 +180,10 @@ private struct RuleRow: View {
     let onDelete: () -> Void
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(rule.host)
-                    .font(DesignSystem.Fonts.sans(15, weight: .semibold))
+                    .font(DesignSystem.Fonts.sans(14, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
                 Text(rule.path)
                     .font(DesignSystem.Fonts.mono(12))
@@ -209,24 +197,19 @@ private struct RuleRow: View {
             .toggleStyle(.switch)
             .labelsHidden()
 
-            Button(role: .destructive) {
-                onDelete()
-            } label: {
-                Image(systemName: "trash")
-                    .foregroundStyle(colors.danger)
-            }
-            .buttonStyle(.plain)
+            ManagerDeleteButton(colors: colors, action: onDelete)
         }
-        .padding(14)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(isSelected ? colors.accent.opacity(0.12) : colors.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(isSelected ? colors.accent.opacity(0.4) : colors.border.opacity(0.5), lineWidth: 1)
-                )
+            isSelected ? colors.accent.opacity(0.10) : colors.surface
         )
-        .contentShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(colors.border.opacity(0.7))
+                .frame(height: 1)
+        }
+        .contentShape(Rectangle())
         .gesture(
             TapGesture(count: 2)
                 .onEnded { onDoubleClick() }
@@ -235,13 +218,11 @@ private struct RuleRow: View {
             TapGesture(count: 1)
                 .onEnded { onSelect() }
         )
-        .padding(8)
-
     }
 
     private var statusBadge: some View {
         Text("\(rule.status)")
-            .font(DesignSystem.Fonts.mono(12, weight: .semibold))
+        .font(DesignSystem.Fonts.mono(12, weight: .semibold))
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
             .background(
@@ -307,40 +288,39 @@ private struct RuleEditorSheet: View {
     let onClose: () -> Void
 
     var body: some View {
-        NavigationStack {
-            MapEditorView(
-                viewModel: editorViewModel,
-                colors: colors,
-                allowRequestEditing: false,
-                showsRequestEditor: false,
-                actions: MapEditorActions(
-                    saveLabel: "Save",
-                    saveIcon: "square.and.arrow.down",
-                    onSave: {
-                        guard let payload = editorViewModel.payload(defaultStatus: rule.status) else { return }
-                        let updatedRule = MapRule(
-                            key: rule.key,
-                            host: rule.host,
-                            path: rule.path,
-                            scheme: rule.scheme,
-                            body: payload.responseBody,
-                            status: payload.responseStatus,
-                            headers: payload.responseHeaders,
-                            isEnabled: rule.isEnabled
-                        )
-                        onSave(payload, updatedRule)
-                        onClose()
-                    },
-                    closeLabel: "Close",
-                    closeIcon: "xmark",
-                    onClose: onClose
-                ),
-                isSelectionAvailable: true
-            )
-            .onAppear {
-                editorViewModel.load(rule: rule)
-            }
+        MapEditorView(
+            viewModel: editorViewModel,
+            colors: colors,
+            allowRequestEditing: false,
+            showsRequestEditor: false,
+            actions: MapEditorActions(
+                saveLabel: "Save",
+                saveIcon: "square.and.arrow.down",
+                onSave: {
+                    guard let payload = editorViewModel.payload(defaultStatus: rule.status) else { return }
+                    let updatedRule = MapRule(
+                        key: rule.key,
+                        host: rule.host,
+                        path: rule.path,
+                        scheme: rule.scheme,
+                        body: payload.responseBody,
+                        status: payload.responseStatus,
+                        headers: payload.responseHeaders,
+                        isEnabled: rule.isEnabled
+                    )
+                    onSave(payload, updatedRule)
+                    onClose()
+                },
+                closeLabel: "Close",
+                closeIcon: "xmark",
+                onClose: onClose
+            ),
+            isSelectionAvailable: true
+        )
+        .onAppear {
+            editorViewModel.load(rule: rule)
         }
         .frame(minWidth: 980, minHeight: 700)
+        .background(colors.background)
     }
 }

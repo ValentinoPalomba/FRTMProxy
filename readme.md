@@ -35,6 +35,16 @@ A dedicated section to connect iOS devices:
 
 ---
 
+## License
+
+This project is licensed under the **GNU Affero General Public License v3.0** (`AGPL-3.0-only`).
+
+In short: if you modify FRTMProxy and distribute it, or run it as a network service, you must make the corresponding source code available under the same license.
+
+See `LICENSE` for the full text.
+
+---
+
 ## UI Preview
 
 ### Inspector

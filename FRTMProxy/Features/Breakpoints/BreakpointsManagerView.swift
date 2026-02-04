@@ -20,9 +20,8 @@ struct BreakpointsManagerView: View {
     }
 
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 14) {
             header
-            Divider()
             creationCard
             if breakpointRules.isEmpty {
                 emptyPlaceholder
@@ -36,15 +35,11 @@ struct BreakpointsManagerView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Breakpoints")
-                    .font(DesignSystem.Fonts.mono(20, weight: .semibold))
-                Text("Create and enable persistent breakpoints for requests and responses.")
-                    .font(DesignSystem.Fonts.mono(13))
-                    .foregroundStyle(colors.textSecondary)
-            }
-            Spacer()
+        ManagerHeaderBar(
+            title: "Breakpoints",
+            subtitle: "Create and enable persistent breakpoints for requests and responses.",
+            colors: colors
+        ) {
             ControlButton(title: "Close", systemImage: "xmark", style: .ghost(colors)) {
                 dismiss()
             }
@@ -52,7 +47,7 @@ struct BreakpointsManagerView: View {
     }
 
     private var creationCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("New breakpoint")
                     .font(DesignSystem.Fonts.sans(14, weight: .semibold))
@@ -64,7 +59,7 @@ struct BreakpointsManagerView: View {
                     Label("Use selected flow", systemImage: "cursorarrow.rays")
                         .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.plain)
                 .disabled(viewModel.selectedFlow == nil)
             }
 
@@ -101,50 +96,43 @@ struct BreakpointsManagerView: View {
                 }
             }
         }
-        .padding(16)
-        .surfaceCard(fill: colors.surface, stroke: colors.border.opacity(0.8), shadowOpacity: 0.05)
+        .padding(14)
+        .surfaceCard(fill: colors.surface, stroke: colors.border.opacity(0.8), shadowOpacity: 0.04)
     }
 
     private var rulesList: some View {
-        ScrollView {
-            LazyVStack(spacing: 10) {
-                ForEach(breakpointRules) { rule in
-                    BreakpointRow(
-                        rule: rule,
-                        colors: colors,
-                        onToggleRequest: { value in
-                            viewModel.updateBreakpointPhases(
-                                key: rule.key,
-                                request: value,
-                                response: rule.interceptResponse
-                            )
-                        },
-                        onToggleResponse: { value in
-                            viewModel.updateBreakpointPhases(
-                                key: rule.key,
-                                request: rule.interceptRequest,
-                                response: value
-                            )
-                        },
-                        onToggleEnabled: { enabled in
-                            viewModel.setBreakpointEnabled(rule.key, enabled: enabled)
-                        },
-                        onDelete: {
-                            viewModel.deleteBreakpoint(key: rule.key)
-                        }
-                    )
+        ManagerListSurface(colors: colors) {
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(breakpointRules) { rule in
+                        BreakpointRow(
+                            rule: rule,
+                            colors: colors,
+                            onToggleRequest: { value in
+                                viewModel.updateBreakpointPhases(
+                                    key: rule.key,
+                                    request: value,
+                                    response: rule.interceptResponse
+                                )
+                            },
+                            onToggleResponse: { value in
+                                viewModel.updateBreakpointPhases(
+                                    key: rule.key,
+                                    request: rule.interceptRequest,
+                                    response: value
+                                )
+                            },
+                            onToggleEnabled: { enabled in
+                                viewModel.setBreakpointEnabled(rule.key, enabled: enabled)
+                            },
+                            onDelete: {
+                                viewModel.deleteBreakpoint(key: rule.key)
+                            }
+                        )
+                    }
                 }
             }
-            .padding(.vertical, 4)
         }
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(colors.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(colors.border.opacity(0.6), lineWidth: 1)
-                )
-        )
     }
 
     private var emptyPlaceholder: some View {
@@ -200,13 +188,13 @@ private struct BreakpointRow: View {
     let onDelete: () -> Void
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(rule.host)
-                    .font(DesignSystem.Fonts.sans(15, weight: .semibold))
+                    .font(DesignSystem.Fonts.sans(14, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
-                Text(rule.path)
-                    .font(DesignSystem.Fonts.mono(13))
+                Text(rule.path.isEmpty ? "/" : rule.path)
+                    .font(DesignSystem.Fonts.mono(12))
                     .foregroundStyle(colors.textSecondary)
             }
             Spacer()
@@ -231,21 +219,16 @@ private struct BreakpointRow: View {
             .labelsHidden()
             .toggleStyle(SwitchToggleStyle())
 
-            Button(role: .destructive, action: onDelete) {
-                Image(systemName: "trash")
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(colors.danger)
+            ManagerDeleteButton(colors: colors, action: onDelete)
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(colors.surfaceElevated)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(colors.border.opacity(0.7), lineWidth: 1)
-                )
-        )
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(colors.surface)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(colors.border.opacity(0.7))
+                .frame(height: 1)
+        }
     }
 }
 

@@ -30,9 +30,8 @@ struct CollectionsManagerView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 14) {
             header
-            Divider()
             content
         }
         .padding(20)
@@ -127,13 +126,13 @@ struct CollectionsManagerView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Collections")
-                    .font(DesignSystem.Fonts.mono(22, weight: .semibold))
+                    .font(DesignSystem.Fonts.sans(21, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
                 Text("Group Map Local into exportable collections and enable rule sets in one click.")
-                    .font(DesignSystem.Fonts.mono(13))
+                    .font(DesignSystem.Fonts.sans(13, weight: .medium))
                     .foregroundStyle(colors.textSecondary)
             }
 
@@ -143,56 +142,58 @@ struct CollectionsManagerView: View {
 
             Spacer()
 
-            ControlButton(
-                title: "Start Registration",
-                systemImage: "record.circle",
-                style: .filled(colors),
-                disabled: viewModel.isRecordingCollection
-            ) {
-                pendingName = ""
-                showStartSheet = true
-            }
+            HStack(spacing: 8) {
+                ControlButton(
+                    title: "Start Registration",
+                    systemImage: "record.circle",
+                    style: .filled(colors),
+                    disabled: viewModel.isRecordingCollection
+                ) {
+                    pendingName = ""
+                    showStartSheet = true
+                }
 
-            ControlButton(
-                title: "Stop",
-                systemImage: "stop.circle",
-                style: .destructive(colors),
-                disabled: !viewModel.isRecordingCollection
-            ) {
-                confirmStopRecording = true
-            }
+                ControlButton(
+                    title: "Stop",
+                    systemImage: "stop.circle",
+                    style: .destructive(colors),
+                    disabled: !viewModel.isRecordingCollection
+                ) {
+                    confirmStopRecording = true
+                }
 
-            ControlButton(
-                title: "Import",
-                systemImage: "square.and.arrow.down",
-                style: .ghost(colors)
-            ) {
-                importCollection()
-            }
+                ControlButton(
+                    title: "Import",
+                    systemImage: "square.and.arrow.down",
+                    style: .ghost(colors)
+                ) {
+                    importCollection()
+                }
 
-            ControlButton(
-                title: "Git",
-                systemImage: "arrow.triangle.branch",
-                style: .ghost(colors)
-            ) {
-                showGitSheet = true
-            }
+                ControlButton(
+                    title: "Git",
+                    systemImage: "arrow.triangle.branch",
+                    style: .ghost(colors)
+                ) {
+                    showGitSheet = true
+                }
 
-            ControlButton(
-                title: "Export",
-                systemImage: "square.and.arrow.up",
-                style: .ghost(colors),
-                disabled: selectedCollection == nil
-            ) {
-                exportSelectedCollection()
-            }
+                ControlButton(
+                    title: "Export",
+                    systemImage: "square.and.arrow.up",
+                    style: .ghost(colors),
+                    disabled: selectedCollection == nil
+                ) {
+                    exportSelectedCollection()
+                }
 
-            ControlButton(
-                title: "Close",
-                systemImage: "xmark",
-                style: .ghost(colors)
-            ) {
-                dismiss()
+                ControlButton(
+                    title: "Close",
+                    systemImage: "xmark",
+                    style: .ghost(colors)
+                ) {
+                    dismiss()
+                }
             }
         }
     }
@@ -211,30 +212,32 @@ struct CollectionsManagerView: View {
                     )
                 }
                 if let collection = selectedCollection {
-                    CollectionDetailView(
-                        collection: collection,
-                        colors: colors,
-                        onToggle: { enabled in
-                            viewModel.toggleCollection(collection.id, enabled: enabled)
-                        },
-                        gitPublishDisabled: viewModel.gitCollectionSources.isEmpty,
-                        onGitPublish: {
-                            publishContext = GitPublishContext(collectionID: collection.id)
-                        },
-                        onRename: {
-                            renameInput = collection.name
-                            renameTarget = collection
-                        },
-                        onDelete: {
-                            viewModel.deleteCollection(collection.id)
-                        },
-                        onEditRule: { rule in
-                            openEditor(for: rule, collectionID: collection.id)
-                        },
-                        onDeleteRule: { rule in
-                            viewModel.deleteRule(inCollection: collection.id, ruleKey: rule.key)
-                        }
-                    )
+                    ManagerListSurface(colors: colors) {
+                        CollectionDetailView(
+                            collection: collection,
+                            colors: colors,
+                            onToggle: { enabled in
+                                viewModel.toggleCollection(collection.id, enabled: enabled)
+                            },
+                            gitPublishDisabled: viewModel.gitCollectionSources.isEmpty,
+                            onGitPublish: {
+                                publishContext = GitPublishContext(collectionID: collection.id)
+                            },
+                            onRename: {
+                                renameInput = collection.name
+                                renameTarget = collection
+                            },
+                            onDelete: {
+                                viewModel.deleteCollection(collection.id)
+                            },
+                            onEditRule: { rule in
+                                openEditor(for: rule, collectionID: collection.id)
+                            },
+                            onDeleteRule: { rule in
+                                viewModel.deleteRule(inCollection: collection.id, ruleKey: rule.key)
+                            }
+                        )
+                    }
                 } else {
                     detailPlaceholder
                 }
@@ -244,41 +247,34 @@ struct CollectionsManagerView: View {
     }
 
     private var collectionSidebar: some View {
-        ScrollView {
-            LazyVStack(spacing: 8) {
-                if viewModel.collections.isEmpty {
-                    collectionsPlaceholder
-                } else {
-                    ForEach(viewModel.collections) { collection in
-                        CollectionCard(
-                            collection: collection,
-                            colors: colors,
-                            isSelected: collection.id == selectedCollection?.id,
-                            onSelect: { selectedCollectionID = collection.id },
-                            onToggle: { enabled in
-                                viewModel.toggleCollection(collection.id, enabled: enabled)
-                            },
-                            onRename: {
-                                renameInput = collection.name
-                                renameTarget = collection
-                            },
-                            onDelete: {
-                                viewModel.deleteCollection(collection.id)
-                            }
-                        )
+        ManagerListSurface(colors: colors) {
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    if viewModel.collections.isEmpty {
+                        collectionsPlaceholder
+                    } else {
+                        ForEach(viewModel.collections) { collection in
+                            CollectionCard(
+                                collection: collection,
+                                colors: colors,
+                                isSelected: collection.id == selectedCollection?.id,
+                                onSelect: { selectedCollectionID = collection.id },
+                                onToggle: { enabled in
+                                    viewModel.toggleCollection(collection.id, enabled: enabled)
+                                },
+                                onRename: {
+                                    renameInput = collection.name
+                                    renameTarget = collection
+                                },
+                                onDelete: {
+                                    viewModel.deleteCollection(collection.id)
+                                }
+                            )
+                        }
                     }
                 }
             }
-            .padding(.vertical, 4)
         }
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(colors.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(colors.border.opacity(0.7), lineWidth: 1)
-                )
-        )
     }
 
     private var collectionsPlaceholder: some View {
@@ -299,23 +295,17 @@ struct CollectionsManagerView: View {
     }
 
     private var detailPlaceholder: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "tray")
-                .font(.system(size: 40))
-                .foregroundStyle(colors.textSecondary)
-            Text("Select a collection to view its rules.")
-                .font(DesignSystem.Fonts.sans(15, weight: .semibold))
-                .foregroundStyle(colors.textSecondary)
+        ManagerListSurface(colors: colors) {
+            VStack(spacing: 10) {
+                Image(systemName: "tray")
+                    .font(.system(size: 40))
+                    .foregroundStyle(colors.textSecondary)
+                Text("Select a collection to view its rules.")
+                    .font(DesignSystem.Fonts.sans(15, weight: .semibold))
+                    .foregroundStyle(colors.textSecondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(colors.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(colors.border.opacity(0.6), lineWidth: 1)
-                )
-        )
     }
 
     private func recordingBadge(name: String, count: Int) -> some View {
@@ -407,7 +397,7 @@ private struct CollectionCard: View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(collection.name)
-                    .font(DesignSystem.Fonts.sans(16, weight: .semibold))
+                    .font(DesignSystem.Fonts.sans(14, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
                 Text("\(collection.rules.count) rules • \(collection.createdAt.formatted(date: .abbreviated, time: .shortened))")
                     .font(DesignSystem.Fonts.mono(11))
@@ -420,16 +410,15 @@ private struct CollectionCard: View {
             .toggleStyle(.switch)
             .labelsHidden()
         }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(isSelected ? colors.accent.opacity(0.12) : colors.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(isSelected ? colors.accent.opacity(0.6) : colors.border.opacity(0.6), lineWidth: 1)
-                )
-        )
-        .contentShape(RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(isSelected ? colors.accent.opacity(0.10) : colors.surface)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(colors.border.opacity(0.7))
+                .frame(height: 1)
+        }
+        .contentShape(Rectangle())
         .onTapGesture {
             onSelect()
         }
@@ -627,14 +616,6 @@ private struct CollectionDetailView: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(colors.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(colors.border.opacity(0.6), lineWidth: 1)
-                )
-        )
     }
 }
 
@@ -683,24 +664,17 @@ private struct CollectionRuleRow: View {
                     .padding(6)
             }
             .buttonStyle(.plain)
-            Button(role: .destructive) {
-                onDelete()
-            } label: {
-                Image(systemName: "trash")
-                    .padding(6)
-            }
-            .buttonStyle(.plain)
+            ManagerDeleteButton(colors: colors, action: onDelete)
         }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(colors.surfaceElevated)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(colors.border.opacity(0.6), lineWidth: 1)
-        )
-        .contentShape(RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(colors.surface)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(colors.border.opacity(0.7))
+                .frame(height: 1)
+        }
+        .contentShape(Rectangle())
         .onTapGesture(count: 2, perform: onEdit)
         .contextMenu {
             Button("Edit") { onEdit() }

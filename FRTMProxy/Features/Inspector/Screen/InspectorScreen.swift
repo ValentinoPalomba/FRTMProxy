@@ -1,19 +1,16 @@
 import SwiftUI
 
 struct InspectorScreen: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @EnvironmentObject private var settings: SettingsStore
+
     @ObservedObject var viewModel: ProxyViewModel
     @ObservedObject var rulesViewModel: MapRuleViewModel
     @StateObject private var mapEditorViewModel = MapEditorViewModel()
     @StateObject private var retryEditorViewModel = MapEditorViewModel()
     @StateObject private var breakpointEditorViewModel = MapEditorViewModel()
 
-    @State private var showMapSheet = false
-    @State private var showRulesSheet = false
-    @State private var showCollectionsSheet = false
-    @State private var showRetrySheet = false
-    @State private var showBreakpointSheet = false
-    @State private var showBreakpointsManager = false
-    @State private var showDeviceConnectSheet = false
+    @State private var activeSheet: ActiveSheet?
     @State private var showCommandPalette = false
     @State private var filter = FlowFilter()
     @State private var activeBreakpointPhase: FlowBreakpointPhase = .request
@@ -21,9 +18,6 @@ struct InspectorScreen: View {
     @State private var availableClientIPs: [String] = []
     @State private var filterUpdateTask: Task<Void, Never>?
     @State private var lastSearchText: String = ""
-
-    @Environment(\.colorScheme) private var colorScheme
-    @EnvironmentObject private var settings: SettingsStore
 
     private var colors: DesignSystem.ColorPalette {
         DesignSystem.Colors.palette(for: settings.activeTheme, interfaceStyle: colorScheme)
@@ -33,10 +27,128 @@ struct InspectorScreen: View {
         viewModel.selectedFlow
     }
 
-    var body: some View {
-        let trafficProfiles = TrafficProfileLibrary.presets
+    private var trafficProfiles: [TrafficProfile] {
+        TrafficProfileLibrary.presets
+    }
 
-        let flowExplorer = FlowExplorerSection(
+    private enum ActiveSheet: String, Identifiable {
+        case map
+        case rules
+        case collections
+        case retry
+        case breakpoint
+        case breakpointsManager
+        case deviceConnect
+
+        var id: String { rawValue }
+    }
+
+    var body: some View {
+        mainContent
+            .background(colors.background)
+            .task {
+                updateFilteredFlows()
+            }
+            .onChange(of: viewModel.flows) { _, _ in
+                updateFilteredFlows()
+            }
+            .onChange(of: filter) { _, _ in
+                let searchText = filter.searchText
+                let searchChanged = searchText != lastSearchText
+                lastSearchText = searchText
+                updateFilteredFlows(debounced: searchChanged)
+            }
+            .onDisappear {
+                filterUpdateTask?.cancel()
+            }
+            .overlay {
+                commandPaletteOverlay
+            }
+            .overlay {
+                shortcutOverlay
+            }
+            .animation(.easeOut(duration: 0.18), value: showCommandPalette)
+            .sheet(item: $activeSheet) { sheet in
+                sheetView(for: sheet)
+            }
+            .onChange(of: viewModel.rules) { _, _ in
+                rulesViewModel.load(sortedRules())
+            }
+            .onChange(of: activeSheet) { oldValue, newValue in
+                if oldValue == .breakpoint && newValue != .breakpoint && viewModel.activeBreakpointHit != nil {
+                    viewModel.skipActiveBreakpoint()
+                }
+                if newValue == .rules {
+                    rulesViewModel.load(sortedRules())
+                }
+            }
+            .onChange(of: viewModel.activeBreakpointHit) { _, hit in
+                guard let hit,
+                      let flow = viewModel.flow(withID: hit.flowID) else {
+                    if activeSheet == .breakpoint {
+                        activeSheet = nil
+                    }
+                    return
+                }
+                openBreakpointEditor(for: flow, phase: hit.phase)
+            }
+            .onAppear {
+                syncPinnedHostFilterState()
+                syncPinnedAppFilterState()
+            }
+            .onChange(of: settings.pinnedHosts) { _, _ in
+                syncPinnedHostFilterState()
+            }
+            .onChange(of: settings.pinnedApps) { _, _ in
+                syncPinnedAppFilterState()
+            }
+    }
+
+    private var mainContent: some View {
+        VStack(spacing: 16) {
+            headerBar
+            inspectorContent
+        }
+    }
+
+    private var headerBar: some View {
+        InspectorHeaderBar(
+            colors: colors,
+            isRunning: viewModel.isRunning,
+            filter: $filter,
+            pinnedApps: settings.pinnedApps,
+            pinnedHosts: settings.pinnedHosts,
+            clientIPs: availableClientIPs,
+            onTogglePinnedHost: { togglePinnedHost($0) },
+            onRemovePinnedHost: { removePinnedHost($0) },
+            onTogglePinnedApp: { togglePinnedApp($0) },
+            onRemovePinnedApp: { removePinnedApp($0) },
+            onShowRules: { present(.rules) },
+            onShowBreakpoints: { present(.breakpointsManager) },
+            onShowCollections: { present(.collections) },
+            onShowDeviceConnect: { present(.deviceConnect) },
+            trafficProfiles: trafficProfiles,
+            activeTrafficProfile: viewModel.activeTrafficProfile,
+            onSelectTrafficProfile: { profile in
+                viewModel.selectTrafficProfile(profile)
+                settings.selectedTrafficProfileID = profile.id
+            },
+            onToggleProxy: toggleProxy
+        )
+        .padding(.vertical, DesignSystem.Metrics.scaled(10))
+    }
+
+    @ViewBuilder
+    private var inspectorContent: some View {
+        if let flow = selectedFlow {
+            selectedFlowInspector(flow)
+        } else {
+            flowExplorer
+        }
+    }
+
+    private var flowExplorer: some View {
+        FlowExplorerSection(
             flows: filteredFlows,
             selection: $viewModel.selectedFlowID,
             colors: colors,
@@ -60,170 +172,82 @@ struct InspectorScreen: View {
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .frame(minHeight: flowExplorerMinHeight)
+    }
 
-        let content = VStack(spacing: 16) {
-            InspectorHeaderBar(
-                colors: colors,
-                isRunning: viewModel.isRunning,
-                filter: $filter,
-                pinnedApps: settings.pinnedApps,
-                pinnedHosts: settings.pinnedHosts,
-                clientIPs: availableClientIPs,
-                onTogglePinnedHost: { togglePinnedHost($0) },
-                onRemovePinnedHost: { removePinnedHost($0) },
-                onTogglePinnedApp: { togglePinnedApp($0) },
-                onRemovePinnedApp: { removePinnedApp($0) },
-                onShowRules: { showRulesSheet = true },
-                onShowBreakpoints: { showBreakpointsManager = true },
-                onShowCollections: { showCollectionsSheet = true },
-                onShowDeviceConnect: { showDeviceConnectSheet = true },
-                trafficProfiles: trafficProfiles,
-                activeTrafficProfile: viewModel.activeTrafficProfile,
-                onSelectTrafficProfile: { profile in
-                    viewModel.selectTrafficProfile(profile)
-                    settings.selectedTrafficProfileID = profile.id
-                },
-                onToggleProxy: toggleProxy
-            )
-            .padding(.vertical, DesignSystem.Metrics.scaled(10))
-
-            Group {
-                if let flow = selectedFlow {
-                    VStack(spacing: 0) {
-                        VSplitView {
-                            flowExplorer
-                            FlowInspectorPanel(
-                                flow: flow,
-                                colors: colors,
-                                onMapLocal: openMapEditor,
-                                onCopyUrl: { ClipboardHelper.copy(flow.request?.url) },
-                                onCopyCurl: { ClipboardHelper.copy(flow.curlString) },
-                                onCopyBody: { ClipboardHelper.copy(flow.response?.body) },
-                                isRequestBreakpointEnabled: viewModel.isBreakpointEnabled(for: flow, phase: .request),
-                                isResponseBreakpointEnabled: viewModel.isBreakpointEnabled(for: flow, phase: .response),
-                                onToggleBreakpoint: { phase, enabled in
-                                    viewModel.setBreakpoint(for: flow, phase: phase, enabled: enabled)
-                                }
-                            )
-                            .onboardingTarget(.inspectFlow)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .frame(minHeight: inspectorPanelMinHeight, idealHeight: inspectorPanelIdealHeight)
-                        }
-                        
-                        InspectorBottomBar(
-                            colors: colors,
-                            activeTrafficProfile: viewModel.activeTrafficProfile,
-                            activeMapLocalCount: activeMapLocalCount,
-                            activeCollectionsCount: activeCollectionsCount,
-                            activeBreakpointsCount: activeBreakpointsCount,
-                            onClear: viewModel.clear
-                        )
+    private func selectedFlowInspector(_ flow: MitmFlow) -> some View {
+        VStack(spacing: 0) {
+            VSplitView {
+                flowExplorer
+                FlowInspectorPanel(
+                    flow: flow,
+                    colors: colors,
+                    onMapLocal: openMapEditor,
+                    onCopyUrl: { ClipboardHelper.copy(flow.request?.url) },
+                    onCopyCurl: { ClipboardHelper.copy(flow.curlString) },
+                    onCopyBody: { ClipboardHelper.copy(flow.response?.body) },
+                    isRequestBreakpointEnabled: viewModel.isBreakpointEnabled(for: flow, phase: .request),
+                    isResponseBreakpointEnabled: viewModel.isBreakpointEnabled(for: flow, phase: .response),
+                    onToggleBreakpoint: { phase, enabled in
+                        viewModel.setBreakpoint(for: flow, phase: phase, enabled: enabled)
                     }
-                } else {
-                    flowExplorer
-                }
-            }
-            .frame(maxHeight: .infinity)
-        }
-
-        let contentWithFiltering = content
-        .background(colors.background)
-        .task {
-            updateFilteredFlows()
-        }
-        .onChange(of: viewModel.flows) { _, _ in
-            updateFilteredFlows()
-        }
-        .onChange(of: filter) { _, _ in
-            let searchText = filter.searchText
-            let searchChanged = searchText != lastSearchText
-            lastSearchText = searchText
-            updateFilteredFlows(debounced: searchChanged)
-        }
-        .onDisappear {
-            filterUpdateTask?.cancel()
-        }
-
-        return contentWithFiltering
-        .overlay {
-            if showCommandPalette {
-                CommandPaletteView(
-                    isPresented: $showCommandPalette,
-                    actions: commandPaletteActions,
-                    colors: colors
                 )
-                .transition(.opacity)
-                .zIndex(10)
+                .onboardingTarget(.inspectFlow)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(minHeight: inspectorPanelMinHeight, idealHeight: inspectorPanelIdealHeight)
             }
-        }
-        .overlay {
-            ShortcutHost(
-                isRunning: viewModel.isRunning,
-                hasSelection: selectedFlow != nil,
-                onToggleProxy: toggleProxy,
-                onClear: viewModel.clear,
-                onOpenCommandPalette: { showCommandPalette = true },
-                onMapLocal: openMapEditor,
-                onRetry: {
-                    if let flow = selectedFlow {
-                        openRetryEditor(for: flow)
-                    }
-                },
-                onCopyUrl: { ClipboardHelper.copy(selectedFlow?.request?.url) },
-                onCopyCurl: { ClipboardHelper.copy(selectedFlow?.curlString) }
+
+            InspectorBottomBar(
+                colors: colors,
+                activeTrafficProfile: viewModel.activeTrafficProfile,
+                activeMapLocalCount: activeMapLocalCount,
+                activeCollectionsCount: activeCollectionsCount,
+                activeBreakpointsCount: activeBreakpointsCount,
+                onClear: viewModel.clear
             )
         }
-        .animation(.easeOut(duration: 0.18), value: showCommandPalette)
-        .sheet(isPresented: $showMapSheet) { mapSheet }
-        .sheet(isPresented: $showRulesSheet) { rulesSheet }
-        .sheet(isPresented: $showCollectionsSheet) { collectionsSheet }
-        .sheet(isPresented: $showRetrySheet) { retrySheet }
-        .sheet(isPresented: $showBreakpointSheet) { breakpointSheet }
-        .sheet(isPresented: $showBreakpointsManager) {
-            BreakpointsManagerView(viewModel: viewModel)
-        }
-        .sheet(isPresented: $showDeviceConnectSheet) {
-            DeviceConnectView(proxyPort: viewModel.activePort, proxyIsRunning: viewModel.isRunning)
-                .environmentObject(settings)
-        }
-        .onChange(of: viewModel.rules) { _, _ in
-            rulesViewModel.load(sortedRules())
-        }
-        .onChange(of: showRulesSheet) { _, shown in
-            if shown {
-                rulesViewModel.load(sortedRules())
-            }
-        }
-        .onChange(of: showBreakpointSheet) { _, shown in
-            if !shown, viewModel.activeBreakpointHit != nil {
-                viewModel.skipActiveBreakpoint()
-            }
-        }
-        .onChange(of: viewModel.activeBreakpointHit) { _, hit in
-            guard let hit,
-                  let flow = viewModel.flow(withID: hit.flowID) else {
-                showBreakpointSheet = false
-                return
-            }
-            openBreakpointEditor(for: flow, phase: hit.phase)
-        }
-        .onAppear {
-            syncPinnedHostFilterState()
-            syncPinnedAppFilterState()
-        }
-        .onChange(of: settings.pinnedHosts) { _, _ in
-            syncPinnedHostFilterState()
-        }
-        .onChange(of: settings.pinnedApps) { _, _ in
-            syncPinnedAppFilterState()
+        .frame(maxHeight: .infinity)
+    }
+
+    @ViewBuilder
+    private var commandPaletteOverlay: some View {
+        if showCommandPalette {
+            CommandPaletteView(
+                isPresented: $showCommandPalette,
+                actions: commandPaletteActions,
+                colors: colors
+            )
+            .transition(.opacity)
+            .zIndex(10)
         }
     }
 
-    private func updateFilteredFlows() {
+    private var shortcutOverlay: some View {
+        ShortcutHost(
+            isRunning: viewModel.isRunning,
+            hasSelection: selectedFlow != nil,
+            onToggleProxy: toggleProxy,
+            onClear: viewModel.clear,
+            onOpenCommandPalette: { showCommandPalette = true },
+            onMapLocal: openMapEditor,
+            onRetry: {
+                if let flow = selectedFlow {
+                    openRetryEditor(for: flow)
+                }
+            },
+            onCopyUrl: { ClipboardHelper.copy(selectedFlow?.request?.url) },
+            onCopyCurl: { ClipboardHelper.copy(selectedFlow?.curlString) }
+        )
+    }
+}
+
+private extension InspectorScreen {
+    // MARK: - Filtering
+
+    func updateFilteredFlows() {
         updateFilteredFlows(debounced: false)
     }
 
-    private func updateFilteredFlows(debounced: Bool) {
+    func updateFilteredFlows(debounced: Bool) {
         let flowsSnapshot = viewModel.flows
         let filterSnapshot = filter
 
@@ -246,8 +270,12 @@ struct InspectorScreen: View {
             }
         }
     }
+}
 
-    private func toggleProxy() {
+private extension InspectorScreen {
+    // MARK: - Proxy
+
+    func toggleProxy() {
         if viewModel.isRunning {
             viewModel.stopProxy()
         } else {
@@ -256,8 +284,12 @@ struct InspectorScreen: View {
             }
         }
     }
+}
 
-    private var commandPaletteActions: [CommandPaletteAction] {
+private extension InspectorScreen {
+    // MARK: - Command Palette
+
+    var commandPaletteActions: [CommandPaletteAction] {
         let hasSelection = selectedFlow != nil
         return [
             CommandPaletteAction(
@@ -297,7 +329,7 @@ struct InspectorScreen: View {
                 systemImage: "slider.horizontal.3",
                 keywords: ["rules", "map", "local"]
             ) {
-                showRulesSheet = true
+                present(.rules)
             },
             CommandPaletteAction(
                 title: "Open Breakpoints",
@@ -305,7 +337,7 @@ struct InspectorScreen: View {
                 systemImage: "record.circle",
                 keywords: ["breakpoints", "pause", "intercept"]
             ) {
-                showBreakpointsManager = true
+                present(.breakpointsManager)
             },
             CommandPaletteAction(
                 title: "Open Collections",
@@ -313,7 +345,7 @@ struct InspectorScreen: View {
                 systemImage: "folder",
                 keywords: ["collections", "map", "rules"]
             ) {
-                showCollectionsSheet = true
+                present(.collections)
             },
             CommandPaletteAction(
                 title: "Open Device Setup",
@@ -321,7 +353,7 @@ struct InspectorScreen: View {
                 systemImage: "qrcode",
                 keywords: ["device", "qr", "pair"]
             ) {
-                showDeviceConnectSheet = true
+                present(.deviceConnect)
             },
             CommandPaletteAction(
                 title: "Map Local (Selected Flow)",
@@ -367,92 +399,129 @@ struct InspectorScreen: View {
             }
         ]
     }
+}
 
-    private func openMapEditor() {
+private extension InspectorScreen {
+    // MARK: - Actions
+
+    private func present(_ sheet: ActiveSheet) {
+        activeSheet = sheet
+    }
+
+    private func dismissActiveSheet() {
+        activeSheet = nil
+    }
+
+    func openMapEditor() {
         guard let flow = selectedFlow else { return }
         openMapEditor(flow: flow)
     }
 
-    private func openMapEditor(flow: MitmFlow) {
+    func openMapEditor(flow: MitmFlow) {
         viewModel.selectedFlowID = flow.id
         mapEditorViewModel.load(flow: flow)
-        showMapSheet = true
+        present(.map)
     }
 
-    private func openRetryEditor(for flow: MitmFlow) {
+    func openRetryEditor(for flow: MitmFlow) {
         viewModel.selectedFlowID = flow.id
         retryEditorViewModel.load(flow: flow)
-        showRetrySheet = true
+        present(.retry)
     }
     
-    private func openBreakpointEditor(for flow: MitmFlow, phase: FlowBreakpointPhase) {
+    func openBreakpointEditor(for flow: MitmFlow, phase: FlowBreakpointPhase) {
         viewModel.selectedFlowID = flow.id
         breakpointEditorViewModel.load(flow: flow)
         activeBreakpointPhase = phase
-        showBreakpointSheet = true
+        present(.breakpoint)
     }
 
-    private func pinHost(host: String) {
+    func pinHost(host: String) {
         settings.pinHost(host)
         syncPinnedHostFilterState()
     }
 
-    private func removePinnedHost(_ host: PinnedHost) {
+    func removePinnedHost(_ host: PinnedHost) {
         settings.unpinHost(host.host)
         syncPinnedHostFilterState()
     }
 
-    private func removePinnedHost(byHostName host: String) {
+    func removePinnedHost(byHostName host: String) {
         settings.unpinHost(host)
         syncPinnedHostFilterState()
     }
 
-    private func togglePinnedHost(_ host: PinnedHost) {
+    func togglePinnedHost(_ host: PinnedHost) {
         settings.togglePinnedHostSelection(host.host)
         syncPinnedHostFilterState()
     }
 
-    private func syncPinnedHostFilterState() {
+    func syncPinnedHostFilterState() {
         let activeHosts = settings.pinnedHosts
             .filter { $0.isActive }
             .map(\.host)
         filter.updateActivePinnedHosts(activeHosts)
     }
 
-    private func syncPinnedAppFilterState() {
+    func syncPinnedAppFilterState() {
         let activeApps = settings.pinnedApps
             .filter { $0.isActive }
             .map(\.appID)
         filter.updateActivePinnedApps(activeApps)
     }
 
-    private func togglePinnedApp(_ app: PinnedApp) {
+    func togglePinnedApp(_ app: PinnedApp) {
         settings.togglePinnedAppSelection(app.appID)
         syncPinnedAppFilterState()
     }
 
-    private func removePinnedApp(_ app: PinnedApp) {
+    func removePinnedApp(_ app: PinnedApp) {
         settings.unpinApp(app.appID)
         syncPinnedAppFilterState()
     }
 
-    private func pinApp(app: FlowClientApp) {
+    func pinApp(app: FlowClientApp) {
         settings.pinApp(app)
         syncPinnedAppFilterState()
     }
 
-    private func unpinApp(appID: String) {
+    func unpinApp(appID: String) {
         settings.unpinApp(appID)
         syncPinnedAppFilterState()
     }
 
-    private func filterApp(app: FlowClientApp) {
+    func filterApp(app: FlowClientApp) {
         settings.pinApp(app)
         settings.activateOnlyPinnedApp(app.id)
         syncPinnedAppFilterState()
     }
+}
 
-    private var rulesSheet: some View {
+private extension InspectorScreen {
+    // MARK: - Sheets
+
+    @ViewBuilder
+    private func sheetView(for sheet: ActiveSheet) -> some View {
+        switch sheet {
+        case .map:
+            mapSheet
+        case .rules:
+            rulesSheet
+        case .collections:
+            collectionsSheet
+        case .retry:
+            retrySheet
+        case .breakpoint:
+            breakpointSheet
+        case .breakpointsManager:
+            BreakpointsManagerView(viewModel: viewModel)
+        case .deviceConnect:
+            DeviceConnectView(proxyPort: viewModel.activePort, proxyIsRunning: viewModel.isRunning)
+                .environmentObject(settings)
+        }
+    }
+
+    var rulesSheet: some View {
         RulesManagerView(
             viewModel: rulesViewModel,
             onUpdate: { key, body, status, headers, enabled in
@@ -476,11 +545,11 @@ struct InspectorScreen: View {
         )
     }
 
-    private var collectionsSheet: some View {
+    var collectionsSheet: some View {
         CollectionsManagerView(viewModel: viewModel)
     }
 
-    private var mapSheet: some View {
+    var mapSheet: some View {
         NavigationStack {
             MapEditorView(
                 viewModel: mapEditorViewModel,
@@ -500,7 +569,7 @@ struct InspectorScreen: View {
                         mapEditorViewModel.markSynced()
                     },
                     onClose: {
-                        showMapSheet = false
+                        dismissActiveSheet()
                     }
                 ),
                 isSelectionAvailable: viewModel.selectedFlowID != nil,
@@ -517,7 +586,7 @@ struct InspectorScreen: View {
         .frame(minWidth: 1280, minHeight: 800, maxHeight: 800)
     }
 
-    private var retrySheet: some View {
+    var retrySheet: some View {
         NavigationStack {
             MapEditorView(
                 viewModel: retryEditorViewModel,
@@ -531,11 +600,11 @@ struct InspectorScreen: View {
                         guard let payload = retryEditorViewModel.retryPayload() else { return }
                         viewModel.retryFlow(with: payload)
                         retryEditorViewModel.markSynced()
-                        showRetrySheet = false
+                        dismissActiveSheet()
                     },
                     closeLabel: "Close",
                     closeIcon: "xmark",
-                    onClose: { showRetrySheet = false }
+                    onClose: { dismissActiveSheet() }
                 ),
                 isSelectionAvailable: retryEditorViewModel.hasSelection,
                 titlePrefix: "Retry"
@@ -544,7 +613,7 @@ struct InspectorScreen: View {
         .frame(minWidth: 1280, minHeight: 800)
     }
     
-    private var breakpointSheet: some View {
+    var breakpointSheet: some View {
         NavigationStack {
             MapEditorView(
                 viewModel: breakpointEditorViewModel,
@@ -570,170 +639,30 @@ struct InspectorScreen: View {
         }
         .frame(minWidth: 1100, minHeight: 720)
     }
+}
 
-    private func sortedRules() -> [MapRule] {
+private extension InspectorScreen {
+    // MARK: - Derived State
+
+    func sortedRules() -> [MapRule] {
         viewModel.rules.values.sorted(by: { $0.key < $1.key })
     }
 
-    private var activeMapLocalCount: Int {
+    var activeMapLocalCount: Int {
         viewModel.rules.values.filter(\.isEnabled).count
     }
 
-    private var activeCollectionsCount: Int {
+    var activeCollectionsCount: Int {
         viewModel.collections.filter(\.isEnabled).count
     }
 
-    private var activeBreakpointsCount: Int {
+    var activeBreakpointsCount: Int {
         viewModel.breakpointRules.values.filter {
             $0.isEnabled && ($0.interceptRequest || $0.interceptResponse)
         }.count
     }
 
-    private var flowExplorerMinHeight: CGFloat { DesignSystem.Metrics.scaled(260) }
-    private var inspectorPanelMinHeight: CGFloat { DesignSystem.Metrics.scaled(260) }
-    private var inspectorPanelIdealHeight: CGFloat { DesignSystem.Metrics.scaled(340) }
-}
-
-private struct InspectorBottomBar: View {
-    let colors: DesignSystem.ColorPalette
-    let activeTrafficProfile: TrafficProfile
-    let activeMapLocalCount: Int
-    let activeCollectionsCount: Int
-    let activeBreakpointsCount: Int
-    let onClear: () -> Void
-
-    private var hasActiveModifiers: Bool {
-        activeMapLocalCount > 0 || activeCollectionsCount > 0 || activeBreakpointsCount > 0
-    }
-
-    var body: some View {
-        HStack(spacing: DesignSystem.Metrics.scaled(10)) {
-            ControlButton(title: "Clear", systemImage: "trash", style: .ghost(colors), disabled: false) {
-                onClear()
-            }
-
-            Spacer(minLength: DesignSystem.Metrics.scaled(12))
-
-            HStack(spacing: DesignSystem.Metrics.scaled(8)) {
-                TrafficProfileStatusItem(
-                    profile: activeTrafficProfile,
-                    colors: colors
-                )
-
-                if activeMapLocalCount > 0 {
-                    ModifierStatusItem(
-                        title: "Map Local",
-                        systemImage: "app.badge",
-                        count: activeMapLocalCount,
-                        tint: colors.accent,
-                        colors: colors
-                    )
-                }
-
-                if activeCollectionsCount > 0 {
-                    ModifierStatusItem(
-                        title: "Collections",
-                        systemImage: "folder",
-                        count: activeCollectionsCount,
-                        tint: colors.accentSecondary,
-                        colors: colors
-                    )
-                }
-
-                if activeBreakpointsCount > 0 {
-                    ModifierStatusItem(
-                        title: "Breakpoints",
-                        systemImage: "record.circle",
-                        count: activeBreakpointsCount,
-                        tint: colors.danger,
-                        colors: colors
-                    )
-                }
-
-                if !hasActiveModifiers {
-                    Text("No active modifiers")
-                        .font(DesignSystem.Fonts.sans(12, weight: .medium))
-                        .foregroundStyle(colors.textSecondary)
-                        .lineLimit(1)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .trailing)
-        }
-        .padding(.horizontal, DesignSystem.Metrics.scaled(10))
-        .padding(.vertical, DesignSystem.Metrics.scaled(4))
-        .background(
-            Rectangle()
-                .fill(colors.surface.opacity(0.97))
-                .overlay(alignment: .top) {
-                    Rectangle()
-                        .fill(colors.border.opacity(0.9))
-                        .frame(height: 1)
-                }
-        )
-    }
-}
-
-private struct TrafficProfileStatusItem: View {
-    let profile: TrafficProfile
-    let colors: DesignSystem.ColorPalette
-
-    private var tint: Color {
-        profile.isDisabled ? colors.textSecondary : colors.warning
-    }
-
-    private var label: String {
-        profile.isDisabled ? "Profile: Off" : "Profile: \(profile.name)"
-    }
-
-    var body: some View {
-        HStack(spacing: DesignSystem.Metrics.scaled(5)) {
-            Image(systemName: profile.systemImageName)
-                .font(.system(size: DesignSystem.Metrics.scaled(11), weight: .semibold))
-            Text(label)
-                .font(DesignSystem.Fonts.sans(11, weight: .semibold))
-                .lineLimit(1)
-                .truncationMode(.tail)
-        }
-        .foregroundStyle(tint)
-        .padding(.horizontal, DesignSystem.Metrics.scaled(8))
-        .padding(.vertical, DesignSystem.Metrics.scaled(4))
-        .background(
-            Capsule(style: .continuous)
-                .fill(colors.surfaceElevated)
-                .overlay(
-                    Capsule(style: .continuous)
-                        .stroke(tint.opacity(0.45), lineWidth: 1)
-                )
-        )
-        .fixedSize(horizontal: true, vertical: false)
-    }
-}
-
-private struct ModifierStatusItem: View {
-    let title: String
-    let systemImage: String
-    let count: Int
-    let tint: Color
-    let colors: DesignSystem.ColorPalette
-
-    var body: some View {
-        HStack(spacing: DesignSystem.Metrics.scaled(5)) {
-            Image(systemName: systemImage)
-                .font(.system(size: DesignSystem.Metrics.scaled(11), weight: .semibold))
-            Text("\(title): \(count)")
-                .font(DesignSystem.Fonts.sans(11, weight: .semibold))
-                .lineLimit(1)
-        }
-        .foregroundStyle(tint)
-        .padding(.horizontal, DesignSystem.Metrics.scaled(8))
-        .padding(.vertical, DesignSystem.Metrics.scaled(4))
-        .background(
-            Capsule(style: .continuous)
-                .fill(colors.surfaceElevated)
-                .overlay(
-                    Capsule(style: .continuous)
-                        .stroke(tint.opacity(0.45), lineWidth: 1)
-                )
-        )
-    }
+    var flowExplorerMinHeight: CGFloat { DesignSystem.Metrics.scaled(260) }
+    var inspectorPanelMinHeight: CGFloat { DesignSystem.Metrics.scaled(260) }
+    var inspectorPanelIdealHeight: CGFloat { DesignSystem.Metrics.scaled(340) }
 }
