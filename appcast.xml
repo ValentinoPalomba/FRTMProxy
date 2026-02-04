@@ -3,6 +3,15 @@
     <channel>
         <title>FRTMProxy</title>
         <item>
+            <title>1.5.0</title>
+            <pubDate>Wed, 04 Feb 2026 11:02:40 +0100</pubDate>
+            <link>https://github.com/ValentinoPalomba/FRTMProxy/releases</link>
+            <sparkle:version>1.5.0</sparkle:version>
+            <sparkle:shortVersionString>1.5.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.1</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/ValentinoPalomba/FRTMProxy/releases/download/v1.5/FRTMProxy-1.5.0.zip" length="42412946" type="application/octet-stream" sparkle:edSignature="rgNCFAQOVpsGsZcb2srKAid38muoasTg4zeDTgOnhB2nmmoBTnqL/zil4blMjMS6tUZDSCzph6j371wTB7kMAQ=="/>
+        </item>
+        <item>
             <title>1.4.0</title>
             <pubDate>Sun, 01 Feb 2026 09:15:18 +0100</pubDate>
             <link>https://github.com/ValentinoPalomba/FRTMProxy/releases</link>
