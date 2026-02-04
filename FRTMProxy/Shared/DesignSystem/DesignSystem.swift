@@ -1,9 +1,62 @@
+import Foundation
 import SwiftUI
 
 enum DesignSystem {
+    enum InterfaceScale: String, CaseIterable, Identifiable, Codable {
+        case small
+        case medium
+        case large
+
+        var id: String { rawValue }
+
+        var label: String {
+            switch self {
+            case .small: return "S"
+            case .medium: return "M"
+            case .large: return "L"
+            }
+        }
+
+        var summary: String {
+            switch self {
+            case .small:
+                return "Compact size for dense layouts."
+            case .medium:
+                return "Balanced size (default)."
+            case .large:
+                return "Comfortable size with larger spacing."
+            }
+        }
+
+        var factor: CGFloat {
+            switch self {
+            case .small: return 0.75
+            case .medium: return 0.85
+            case .large: return 1.0
+            }
+        }
+
+        static func option(with id: String?) -> Self {
+            guard let id, let value = Self(rawValue: id) else {
+                return .medium
+            }
+            return value
+        }
+    }
+
     enum Metrics {
-        static let scale: CGFloat = 0.85
-        static let scaleFont: CGFloat = 0.90
+        static let interfaceScaleStorageKey = "settings.interfaceScale"
+        private static var interfaceScale = InterfaceScale.option(
+            with: UserDefaults.standard.string(forKey: interfaceScaleStorageKey)
+        )
+
+        static var scale: CGFloat {
+            interfaceScale.factor
+        }
+
+        static func applyInterfaceScale(_ option: InterfaceScale) {
+            interfaceScale = option
+        }
 
         static func scaled(_ value: CGFloat) -> CGFloat {
             value * scale

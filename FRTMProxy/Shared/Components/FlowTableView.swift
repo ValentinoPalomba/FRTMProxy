@@ -173,12 +173,12 @@ private struct KeyEventMonitorView: NSViewRepresentable {
 }
 
 private enum ColumnWidths {
-    static let method: CGFloat = DesignSystem.Metrics.scaled(86)
-    static let status: CGFloat = DesignSystem.Metrics.scaled(112)
-    static let app: CGFloat = DesignSystem.Metrics.scaled(210)
-    static let host: CGFloat = DesignSystem.Metrics.scaled(220)
-    static let map: CGFloat = DesignSystem.Metrics.scaled(64)
-    static let time: CGFloat = DesignSystem.Metrics.scaled(118)
+    static var method: CGFloat { DesignSystem.Metrics.scaled(86) }
+    static var status: CGFloat { DesignSystem.Metrics.scaled(112) }
+    static var app: CGFloat { DesignSystem.Metrics.scaled(210) }
+    static var host: CGFloat { DesignSystem.Metrics.scaled(220) }
+    static var map: CGFloat { DesignSystem.Metrics.scaled(64) }
+    static var time: CGFloat { DesignSystem.Metrics.scaled(118) }
 }
 
 private struct FlowTableHeader: View {

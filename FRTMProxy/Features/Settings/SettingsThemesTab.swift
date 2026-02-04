@@ -10,6 +10,11 @@ struct SettingsThemesTab: View {
             subtitle: "Choose an appearance preset for the app UI and inspector panels.",
             colors: colors
         ) {
+            InterfaceScaleSection(
+                selection: $settings.interfaceScaleID,
+                colors: colors
+            )
+
             ThemePickerSection(
                 title: "Automatic",
                 subtitle: "Match macOS appearance and keep the app's original colors.",
@@ -34,5 +39,57 @@ struct SettingsThemesTab: View {
                 colors: colors
             )
         }
+    }
+}
+
+private struct InterfaceScaleSection: View {
+    @Binding var selection: String
+    let colors: DesignSystem.ColorPalette
+
+    private var selectedScale: DesignSystem.InterfaceScale {
+        DesignSystem.InterfaceScale.option(with: selection)
+    }
+
+    var body: some View {
+        SettingsCard(
+            title: "Interface Scale",
+            subtitle: "Choose the global UI density. M matches the current default.",
+            colors: colors
+        ) {
+            VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(10)) {
+                HStack(spacing: DesignSystem.Metrics.scaled(8)) {
+                    ForEach(DesignSystem.InterfaceScale.allCases) { option in
+                        scaleButton(option)
+                    }
+                }
+
+                Text(selectedScale.summary)
+                    .font(DesignSystem.Fonts.sans(11, weight: .medium))
+                    .foregroundStyle(colors.textSecondary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func scaleButton(_ option: DesignSystem.InterfaceScale) -> some View {
+        let isSelected = selection == option.id
+        Button {
+            selection = option.id
+        } label: {
+            Text(option.label)
+                .font(DesignSystem.Fonts.mono(12, weight: .bold))
+                .foregroundStyle(isSelected ? colors.accent : colors.textPrimary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, DesignSystem.Metrics.scaled(8))
+                .background(
+                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10), style: .continuous)
+                        .fill(isSelected ? colors.accent.opacity(0.12) : colors.surfaceElevated)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10), style: .continuous)
+                        .stroke(isSelected ? colors.accent.opacity(0.7) : colors.border.opacity(0.8), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
     }
 }

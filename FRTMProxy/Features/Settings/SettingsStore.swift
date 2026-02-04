@@ -6,6 +6,13 @@ final class SettingsStore: ObservableObject {
         didSet { defaults.set(selectedThemeID, forKey: themeKey) }
     }
 
+    @Published var interfaceScaleID: String {
+        didSet {
+            defaults.set(interfaceScaleID, forKey: interfaceScaleKey)
+            DesignSystem.Metrics.applyInterfaceScale(activeInterfaceScale)
+        }
+    }
+
     @Published var gitAuthorName: String {
         didSet { defaults.set(gitAuthorName, forKey: gitAuthorNameKey) }
     }
@@ -57,6 +64,7 @@ final class SettingsStore: ObservableObject {
 
     private let defaults = UserDefaults.standard
     private let themeKey = "settings.theme"
+    private let interfaceScaleKey = DesignSystem.Metrics.interfaceScaleStorageKey
     private let gitAuthorNameKey = "settings.gitAuthorName"
     private let gitAuthorEmailKey = "settings.gitAuthorEmail"
     private let portKey = "settings.defaultPort"
@@ -74,6 +82,10 @@ final class SettingsStore: ObservableObject {
         ThemeLibrary.theme(with: selectedThemeID)
     }
 
+    var activeInterfaceScale: DesignSystem.InterfaceScale {
+        DesignSystem.InterfaceScale.option(with: interfaceScaleID)
+    }
+
     var activeTrafficProfile: TrafficProfile {
         TrafficProfileLibrary.profile(with: selectedTrafficProfileID)
     }
@@ -81,6 +93,8 @@ final class SettingsStore: ObservableObject {
     init() {
         let storedThemeID = defaults.string(forKey: themeKey)
         self.selectedThemeID = ThemeLibrary.theme(with: storedThemeID).id
+        let storedInterfaceScaleID = defaults.string(forKey: interfaceScaleKey)
+        self.interfaceScaleID = DesignSystem.InterfaceScale.option(with: storedInterfaceScaleID).id
         self.gitAuthorName = defaults.string(forKey: gitAuthorNameKey) ?? ""
         self.gitAuthorEmail = defaults.string(forKey: gitAuthorEmailKey) ?? ""
 
@@ -97,6 +111,8 @@ final class SettingsStore: ObservableObject {
 
         self.alertsEnabled = defaults.bool(forKey: alertsEnabledKey)
         self.alertRules = SettingsStore.loadAlertRules(from: defaults, key: alertRulesKey)
+
+        DesignSystem.Metrics.applyInterfaceScale(activeInterfaceScale)
     }
 
     func pinHost(_ rawHost: String) {
