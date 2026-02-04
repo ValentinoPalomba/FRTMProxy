@@ -1,6 +1,76 @@
+import Foundation
 import SwiftUI
 
 enum DesignSystem {
+    enum InterfaceScale: String, CaseIterable, Identifiable, Codable {
+        case small
+        case medium
+        case large
+
+        var id: String { rawValue }
+
+        var label: String {
+            switch self {
+            case .small: return "S"
+            case .medium: return "M"
+            case .large: return "L"
+            }
+        }
+
+        var summary: String {
+            switch self {
+            case .small:
+                return "Compact size for dense layouts."
+            case .medium:
+                return "Balanced size (default)."
+            case .large:
+                return "Comfortable size with larger spacing."
+            }
+        }
+
+        var factor: CGFloat {
+            switch self {
+            case .small: return 0.75
+            case .medium: return 0.85
+            case .large: return 1.0
+            }
+        }
+
+        static func option(with id: String?) -> Self {
+            guard let id, let value = Self(rawValue: id) else {
+                return .medium
+            }
+            return value
+        }
+    }
+
+    enum Metrics {
+        static let interfaceScaleStorageKey = "settings.interfaceScale"
+        private static var interfaceScale = InterfaceScale.option(
+            with: UserDefaults.standard.string(forKey: interfaceScaleStorageKey)
+        )
+
+        static var scale: CGFloat {
+            interfaceScale.factor
+        }
+
+        static func applyInterfaceScale(_ option: InterfaceScale) {
+            interfaceScale = option
+        }
+
+        static func scaled(_ value: CGFloat) -> CGFloat {
+            value * scale
+        }
+
+        static func font(_ value: CGFloat) -> CGFloat {
+            value * scale
+        }
+
+        static func cornerRadius(_ value: CGFloat) -> CGFloat {
+            value * scale
+        }
+    }
+
     struct ColorPalette {
         let background: Color
         let surface: Color
@@ -58,10 +128,10 @@ enum DesignSystem {
 
     enum Fonts {
         static func mono(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
-            .system(size: size, weight: weight, design: .monospaced)
+            .system(size: Metrics.font(size), weight: weight, design: .monospaced)
         }
         static func sans(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
-            .system(size: size, weight: weight, design: .rounded)
+            .system(size: Metrics.font(size), weight: weight, design: .rounded)
         }
     }
 }

@@ -4,6 +4,7 @@ struct SearchField: View {
     @Binding var text: String
     let placeholder: String
     let colors: DesignSystem.ColorPalette
+    var size: ProxyTextFieldStyle.Size = .compact
 
     var body: some View {
         ZStack(alignment: .trailing) {
@@ -11,7 +12,8 @@ struct SearchField: View {
                 .textFieldStyle(
                     ProxyTextFieldStyle(
                         palette: colors,
-                        leadingIcon: "magnifyingglass"
+                        leadingIcon: "magnifyingglass",
+                        size: size
                     )
                 )
             if !text.isEmpty {
@@ -22,8 +24,9 @@ struct SearchField: View {
                         .foregroundStyle(colors.textSecondary)
                 }
                 .buttonStyle(.plain)
-                .padding(.trailing, 12)
+                .padding(.trailing, DesignSystem.Metrics.scaled(12))
             }
         }
+        .frame(height: DesignSystem.Metrics.scaled(34))
     }
 }

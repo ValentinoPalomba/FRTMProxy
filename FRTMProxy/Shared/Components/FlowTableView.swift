@@ -19,9 +19,9 @@ struct FlowTableView: View {
     
     var body: some View {
         if flows.isEmpty {
-            VStack(spacing: 12) {
+            VStack(spacing: DesignSystem.Metrics.scaled(12)) {
                 Image(systemName: "antenna.radiowaves.left.and.right")
-                    .font(.system(size: 42))
+                    .font(.system(size: DesignSystem.Metrics.scaled(42)))
                     .foregroundStyle(colors.textSecondary)
                 Text(emptyMessage)
                     .font(DesignSystem.Fonts.mono(15, weight: .semibold))
@@ -173,12 +173,12 @@ private struct KeyEventMonitorView: NSViewRepresentable {
 }
 
 private enum ColumnWidths {
-    static let method: CGFloat = 86
-    static let status: CGFloat = 112
-    static let app: CGFloat = 210
-    static let host: CGFloat = 220
-    static let map: CGFloat = 64
-    static let time: CGFloat = 118
+    static var method: CGFloat { DesignSystem.Metrics.scaled(86) }
+    static var status: CGFloat { DesignSystem.Metrics.scaled(112) }
+    static var app: CGFloat { DesignSystem.Metrics.scaled(210) }
+    static var host: CGFloat { DesignSystem.Metrics.scaled(220) }
+    static var map: CGFloat { DesignSystem.Metrics.scaled(64) }
+    static var time: CGFloat { DesignSystem.Metrics.scaled(118) }
 }
 
 private struct FlowTableHeader: View {
@@ -190,8 +190,8 @@ private struct FlowTableHeader: View {
             compactHeader
             minimalHeader
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 9)
+        .padding(.horizontal, DesignSystem.Metrics.scaled(14))
+        .padding(.vertical, DesignSystem.Metrics.scaled(9))
         .background(colors.surfaceElevated)
         .overlay(
             Rectangle()
@@ -274,8 +274,8 @@ private struct FlowTableRow: View {
     var body: some View {
         Button(action: onSelect) {
             regularRow
-            .padding(.horizontal, 14)
-            .padding(.vertical, 7)
+            .padding(.horizontal, DesignSystem.Metrics.scaled(14))
+            .padding(.vertical, DesignSystem.Metrics.scaled(4))
             .background(rowBackground)
             .contentShape(.rect)
         }
@@ -345,7 +345,7 @@ private struct FlowTableRow: View {
             if flow.isMapped {
                 Image(systemName: "pencil.and.outline")
                     .foregroundStyle(colors.accent)
-                    .padding(6)
+                    .padding(DesignSystem.Metrics.scaled(6))
                     .background(
                         Circle().fill(colors.accent.opacity(0.12))
                     )
@@ -379,7 +379,7 @@ private struct FlowTableRow: View {
             if isHostPinned {
                 Image(systemName: "pin.fill")
                     .foregroundStyle(colors.accent)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: DesignSystem.Metrics.scaled(11), weight: .semibold))
             }
         }
         .help(flow.host)
@@ -414,7 +414,7 @@ private struct FlowTableRow: View {
                             if isAppPinned {
                                 Image(systemName: "pin.fill")
                                     .foregroundStyle(colors.accent)
-                                    .font(.system(size: 11, weight: .semibold))
+                                    .font(.system(size: DesignSystem.Metrics.scaled(11), weight: .semibold))
                             }
                         }
                         if !ip.isEmpty {
@@ -437,7 +437,7 @@ private struct FlowTableRow: View {
         AppBadgeIconView(
             title: flow.clientApp?.displayName ?? "",
             seed: flow.clientApp?.id,
-            size: 18
+            size: DesignSystem.Metrics.scaled(18)
         )
     }
 

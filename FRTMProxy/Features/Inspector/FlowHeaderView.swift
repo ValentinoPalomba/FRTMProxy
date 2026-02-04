@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct FlowHeaderView: View {
-    let flow: MitmFlow
     let colors: DesignSystem.ColorPalette
     let onMapLocal: (() -> Void)?
     let onCopyUrl: (() -> Void)?
@@ -12,129 +11,33 @@ struct FlowHeaderView: View {
     let onToggleBreakpoint: ((FlowBreakpointPhase, Bool) -> Void)?
     @State private var showBreakpointMenu = false
 
-    private var clientLabel: String? {
-        let appName = flow.clientApp?.displayName.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        if !appName.isEmpty { return appName }
-        let ip = flow.clientIP
-        return ip.isEmpty ? nil : ip
-    }
-
-    private var clientIcon: String {
-        let appName = flow.clientApp?.displayName.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return appName.isEmpty ? "iphone" : "app.badge"
-    }
-    
-    var styledURLText: Text? {
-        guard
-            let urlString = flow.request?.url,
-            let url = URL(string: urlString)
-        else { return nil }
-
-        var attributed = AttributedString(urlString)
-
-        if let host = url.host,
-           let range = attributed.range(of: host) {
-            attributed[range].foregroundColor = colors.accent
-        }
-
-        if !url.path.isEmpty,
-           let range = attributed.range(of: url.path) {
-            attributed[range].foregroundColor = colors.success
-        }
-
-        return Text(attributed)
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    if let text = styledURLText {
-                        text
-                            .font(DesignSystem.Fonts.mono(12))
-                            .textSelection(.enabled)
-                            .lineLimit(2)
-                            .minimumScaleFactor(0.8)
-                    } else {
-                        (
-                            Text(flow.host)
-                                .foregroundStyle(colors.accent)
-                            +
-                            Text(flow.path)
-                                .foregroundStyle(colors.success)
-                        )
-                        .font(DesignSystem.Fonts.mono(12))
-                        .lineLimit(1)
-                    }
-
-                    HStack(spacing: 10) {
-                        if !flow.formattedTimestamp.isEmpty {
-                            HStack(spacing: 4) {
-                                Image(systemName: "clock")
-                                Text(flow.formattedTimestamp)
-                            }
-                            .font(DesignSystem.Fonts.mono(11))
-                            .foregroundStyle(colors.textSecondary)
-                        }
-
-                        if let clientLabel {
-                            HStack(spacing: 6) {
-                                Image(systemName: clientIcon)
-                                Text(clientLabel)
-                            }
-                            .font(.footnote.weight(.semibold))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(
-                                Capsule().fill(colors.surfaceElevated)
-                            )
-                            .foregroundStyle(colors.textSecondary)
-                        }
-
-                        if flow.isMapped {
-                            HStack(spacing: 6) {
-                                Image(systemName: "pencil.and.outline")
-                                Text("Mapped")
-                            }
-                            .font(.footnote.weight(.semibold))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(
-                                Capsule().fill(colors.accent.opacity(0.12))
-                            )
-                            .foregroundStyle(colors.accent)
-                        }
-                    }
+        HStack {
+            Spacer(minLength: 0)
+            HStack(spacing: DesignSystem.Metrics.scaled(6)) {
+                if let onMapLocal {
+                    ControlButton(title: "Map Local", systemImage: "app.badge", style: .ghost(colors)) { onMapLocal() }
+                        .onboardingTarget(.mapResponse)
                 }
-
-                Spacer()
-
-                HStack(spacing: 6) {
-                    
-                    if let onMapLocal {
-                        ControlButton(title: "Map Local", systemImage: "app.badge", style: .ghost(colors)) { onMapLocal() }
-                            .onboardingTarget(.mapResponse)
-                    }
-                    if let toggle = onToggleBreakpoint {
-                        BreakpointSelectorButton(
-                            colors: colors,
-                            isPresented: $showBreakpointMenu,
-                            isRequestEnabled: isRequestBreakpointEnabled,
-                            isResponseEnabled: isResponseBreakpointEnabled,
-                            onToggle: toggle
-                        )
-                    }
+                if let toggle = onToggleBreakpoint {
+                    BreakpointSelectorButton(
+                        colors: colors,
+                        isPresented: $showBreakpointMenu,
+                        isRequestEnabled: isRequestBreakpointEnabled,
+                        isResponseEnabled: isResponseBreakpointEnabled,
+                        onToggle: toggle
+                    )
                 }
-                .padding(6)
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(colors.surfaceElevated)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(colors.border.opacity(0.7), lineWidth: 1)
-                        )
-                )
             }
+            .padding(DesignSystem.Metrics.scaled(6))
+            .background(
+                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(12), style: .continuous)
+                    .fill(colors.surfaceElevated)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(12))
+                            .stroke(colors.border.opacity(0.7), lineWidth: 1)
+                    )
+            )
         }
     }
 }
@@ -156,20 +59,20 @@ private struct BreakpointSelectorButton: View {
         } label: {
             Label("Breakpoint", systemImage: hasBreakpointEnabled ? "record.circle.fill" : "record.circle")
                 .font(DesignSystem.Fonts.mono(13, weight: .semibold))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 9)
-                .frame(minHeight: 34)
+                .padding(.horizontal, DesignSystem.Metrics.scaled(14))
+                .padding(.vertical, DesignSystem.Metrics.scaled(9))
+                .frame(minHeight: DesignSystem.Metrics.scaled(34))
                 .background(hasBreakpointEnabled ? colors.accent.opacity(0.9) : colors.surface)
                 .foregroundStyle(hasBreakpointEnabled ? Color.black.opacity(0.9) : colors.textPrimary)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 10)
+                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
                         .stroke(hasBreakpointEnabled ? colors.accent : colors.border, lineWidth: 1)
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10)))
         }
         .buttonStyle(.plain)
         .popover(isPresented: $isPresented, arrowEdge: .bottom) {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(14)) {
                 Text("Pause")
                     .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                     .foregroundStyle(colors.textSecondary)
@@ -190,10 +93,10 @@ private struct BreakpointSelectorButton: View {
                     onToggle(.response, !isResponseEnabled)
                 }
             }
-            .padding(16)
-            .frame(width: 240)
+            .padding(DesignSystem.Metrics.scaled(16))
+            .frame(width: DesignSystem.Metrics.scaled(240))
             .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(16), style: .continuous)
                     .fill(colors.surface)
                     .shadow(color: Color.black.opacity(0.18), radius: 18, y: 8)
             )
@@ -210,11 +113,11 @@ private struct BreakpointToggleRow: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 12) {
+            HStack(spacing: DesignSystem.Metrics.scaled(12)) {
                 Image(systemName: isEnabled ? "checkmark.circle.fill" : "circle")
                     .foregroundStyle(isEnabled ? colors.accent : colors.border)
-                    .font(.system(size: 18))
-                VStack(alignment: .leading, spacing: 2) {
+                    .font(.system(size: DesignSystem.Metrics.scaled(18)))
+                VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(2)) {
                     Text(title)
                         .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                         .foregroundStyle(colors.textPrimary)
@@ -224,12 +127,12 @@ private struct BreakpointToggleRow: View {
                 }
                 Spacer()
             }
-            .padding(12)
+            .padding(DesignSystem.Metrics.scaled(12))
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(12))
                     .fill(colors.surfaceElevated)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
+                        RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(12))
                             .stroke(isEnabled ? colors.accent : colors.border.opacity(0.8), lineWidth: 1)
                     )
             )
