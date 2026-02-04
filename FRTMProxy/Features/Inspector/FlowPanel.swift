@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 struct FlowPanel: View {
@@ -9,6 +10,7 @@ struct FlowPanel: View {
     let bodyFlow: String?
     let emptyText: String
     let isMapped: Bool
+    let showsParserSelector: Bool
     let colors: DesignSystem.ColorPalette
 
     @State private var detailTab: DetailTab = .body
@@ -41,7 +43,13 @@ struct FlowPanel: View {
                 case .query:
                     QueryParametersList(parameters: queryParameters, colors: colors)
                 case .body:
-                    BodyInspector(payload: bodyFlow, headers: headers, emptyText: emptyText, colors: colors)
+                    BodyInspector(
+                        payload: bodyFlow,
+                        headers: headers,
+                        emptyText: emptyText,
+                        showsParserSelector: showsParserSelector,
+                        colors: colors
+                    )
                 }
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -245,11 +253,13 @@ private struct BodyInspector: View {
     let payload: String?
     let headers: [String: String]
     let emptyText: String
+    let showsParserSelector: Bool
     let colors: DesignSystem.ColorPalette
 
     private let imagePreviewHeight: CGFloat = DesignSystem.Metrics.scaled(240)
 
     @State private var mode: BodyMode = .pretty
+    @State private var parser: PrettyParser = .json
     @State private var renderedText: String = ""
     @State private var renderedImage: NSImage?
     @State private var cache = BodyRenderCache(source: nil)
@@ -269,7 +279,12 @@ private struct BodyInspector: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(12)) {
-            BodyModePicker(mode: $mode, modes: availableModes, colors: colors)
+            BodyModePicker(
+                mode: $mode,
+                modes: availableModes,
+                parser: showsParserSelector ? $parser : nil,
+                colors: colors
+            )
 
             if renderedText.isEmpty && renderedImage == nil {
                 Text(emptyText)
@@ -286,7 +301,8 @@ private struct BodyInspector: View {
                     } else {
                         CodeEditorView(
                             text: $renderedText,
-                            isEditable: false
+                            isEditable: false,
+                            mimeType: editorMimeType
                         )
                         .frame(minHeight: 0, maxHeight: .infinity, alignment: .top)
                         .padding(DesignSystem.Metrics.scaled(10))
@@ -309,6 +325,9 @@ private struct BodyInspector: View {
             refreshIfNeeded()
         }
         .onChange(of: mode) { _ in
+            refreshIfNeeded()
+        }
+        .onChange(of: parser) { _ in
             refreshIfNeeded()
         }
     }
@@ -339,11 +358,22 @@ private struct BodyInspector: View {
         case .raw:
             renderedText = raw
         case .pretty:
-            renderedText = cache.prettyPrinted ?? cache.pretty()
+            renderedText = cache.prettyPrinted(parser: parser) ?? cache.pretty(using: parser)
         case .hex:
             renderedText = cache.hexDump ?? cache.hex(contentTypeHint: contentType)
         case .image:
             renderedText = raw
+        }
+    }
+
+    private var editorMimeType: String {
+        switch mode {
+        case .hex:
+            return "text/plain"
+        case .raw, .pretty:
+            return parser.mimeType
+        case .image:
+            return "text/plain"
         }
     }
 }
@@ -351,6 +381,7 @@ private struct BodyInspector: View {
 private struct BodyModePicker: View {
     @Binding var mode: BodyMode
     let modes: [BodyMode]
+    let parser: Binding<PrettyParser>?
     let colors: DesignSystem.ColorPalette
 
     var body: some View {
@@ -375,24 +406,82 @@ private struct BodyModePicker: View {
                 }
                 .buttonStyle(.plain)
             }
+
+            if let parser {
+                Spacer(minLength: DesignSystem.Metrics.scaled(10))
+                PrettyParserPicker(parser: parser, colors: colors)
+            }
+        }
+    }
+}
+
+private struct PrettyParserPicker: View {
+    @Binding var parser: PrettyParser
+    let colors: DesignSystem.ColorPalette
+
+    var body: some View {
+        HStack(spacing: DesignSystem.Metrics.scaled(6)) {
+            Text("Parser")
+                .font(DesignSystem.Fonts.sans(11, weight: .semibold))
+                .foregroundStyle(colors.textSecondary)
+
+            ForEach(PrettyParser.allCases, id: \.self) { option in
+                Button {
+                    parser = option
+                } label: {
+                    Text(option.label)
+                        .font(DesignSystem.Fonts.sans(11, weight: parser == option ? .semibold : .medium))
+                        .foregroundStyle(parser == option ? colors.textPrimary : colors.textSecondary)
+                        .padding(.horizontal, DesignSystem.Metrics.scaled(8))
+                        .padding(.vertical, DesignSystem.Metrics.scaled(4))
+                        .background(
+                            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
+                                .fill(parser == option ? colors.surfaceElevated : colors.surface.opacity(0.4))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
+                                .stroke(parser == option ? colors.border.opacity(0.9) : colors.border.opacity(0.4), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 }
 
 private struct BodyRenderCache {
     let source: String?
-    private(set) var prettyPrinted: String?
+    private(set) var prettyPrintedJSON: String?
+    private(set) var prettyPrintedXML: String?
     private(set) var hexDump: String?
 
     init(source: String?) {
         self.source = source
     }
 
-    mutating func pretty() -> String {
-        if let prettyPrinted { return prettyPrinted }
-        // Cache the expensive JSON formatting so the view doesn't recompute on every body toggle.
-        let pretty = BodyRenderCache.makePretty(from: source) ?? (source ?? "")
-        prettyPrinted = pretty
+    func prettyPrinted(parser: PrettyParser) -> String? {
+        switch parser {
+        case .json:
+            return prettyPrintedJSON
+        case .xml:
+            return prettyPrintedXML
+        }
+    }
+
+    mutating func pretty(using parser: PrettyParser) -> String {
+        if let cached = prettyPrinted(parser: parser) {
+            return cached
+        }
+
+        let pretty = BodyRenderCache.makePretty(from: source, parser: parser) ?? (source ?? "")
+
+        switch parser {
+        case .json:
+            prettyPrintedJSON = pretty
+        case .xml:
+            prettyPrintedXML = pretty
+        }
+
         return pretty
     }
 
@@ -403,7 +492,16 @@ private struct BodyRenderCache {
         return hex
     }
 
-    private static func makePretty(from source: String?) -> String? {
+    private static func makePretty(from source: String?, parser: PrettyParser) -> String? {
+        switch parser {
+        case .json:
+            return makeJSONPretty(from: source)
+        case .xml:
+            return makeXMLPretty(from: source)
+        }
+    }
+
+    private static func makeJSONPretty(from source: String?) -> String? {
         guard let source,
               let data = source.data(using: .utf8),
               let jsonObject = try? JSONSerialization.jsonObject(with: data),
@@ -411,6 +509,13 @@ private struct BodyRenderCache {
               let prettyString = String(data: prettyData, encoding: .utf8)
         else { return nil }
         return prettyString
+    }
+
+    private static func makeXMLPretty(from source: String?) -> String? {
+        guard let source else { return nil }
+        guard let document = try? XMLDocument(xmlString: source, options: .nodePreserveAll) else { return nil }
+        let data = document.xmlData(options: .nodePrettyPrint)
+        return String(data: data, encoding: .utf8)
     }
 
     private static func makeHex(from source: String?) -> String? {
@@ -450,6 +555,25 @@ private enum BodyMode: CaseIterable {
         case .raw: return "Raw"
         case .pretty: return "Pretty"
         case .hex: return "Hex"
+        }
+    }
+}
+
+private enum PrettyParser: CaseIterable {
+    case json
+    case xml
+
+    var label: String {
+        switch self {
+        case .json: return "JSON"
+        case .xml: return "XML"
+        }
+    }
+
+    var mimeType: String {
+        switch self {
+        case .json: return "application/json"
+        case .xml: return "application/xml"
         }
     }
 }

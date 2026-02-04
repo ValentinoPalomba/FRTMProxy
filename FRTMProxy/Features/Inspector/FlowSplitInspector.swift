@@ -33,6 +33,7 @@ struct FlowSplitInspector: View {
                     bodyFlow: flow.request?.body,
                     emptyText: "Request non disponibile",
                     isMapped: false,
+                    showsParserSelector: false,
                     colors: colors
                 )
                 .id("\(flow.id)-request")
@@ -47,6 +48,7 @@ struct FlowSplitInspector: View {
                     bodyFlow: flow.response?.body,
                     emptyText: "Response non disponibile",
                     isMapped: flow.isMapped,
+                    showsParserSelector: true,
                     colors: colors
                 )
                 .id("\(flow.id)-response")

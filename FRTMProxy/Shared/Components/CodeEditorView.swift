@@ -7,6 +7,7 @@ import WebKit
 struct CodeEditorView: NSViewRepresentable {
     @Binding var text: String
     let isEditable: Bool
+    var mimeType: String = "application/json"
     var minHeight: CGFloat = 0
 
     @Environment(\.colorScheme) var colorScheme
@@ -41,6 +42,7 @@ struct CodeEditorView: NSViewRepresentable {
             webView: webView,
             text: text,
             isEditable: isEditable,
+            mimeType: mimeType,
             isDarkMode: colorScheme == .dark
         )
     }
@@ -53,6 +55,7 @@ final class Coordinator: NSObject, CodeMirrorWebViewDelegate {
     private var isSyncingFromParent = false
     private var lastAppliedText: String = ""
     private var didConfigureEditor = false
+    private var lastAppliedMimeType: String = ""
     private weak var registeredWebView: CodeMirrorWebView?
 
     init(parent: CodeEditorView) {
@@ -92,14 +95,19 @@ final class Coordinator: NSObject, CodeMirrorWebViewDelegate {
         webView: CodeMirrorWebView,
         text: String,
         isEditable: Bool,
+        mimeType: String,
         isDarkMode: Bool
     ) {
         if !didConfigureEditor {
             webView.setLineWrapping(true)
             webView.setTabInsertsSpaces(true)
             webView.setFontSize(13)
-            webView.setMimeType("application/json")
             didConfigureEditor = true
+        }
+
+        if lastAppliedMimeType != mimeType {
+            lastAppliedMimeType = mimeType
+            webView.setMimeType(mimeType)
         }
 
         webView.setReadonly(!isEditable)
@@ -119,6 +127,7 @@ final class Coordinator: NSObject, CodeMirrorWebViewDelegate {
             webView: sender,
             text: parent.text,
             isEditable: parent.isEditable,
+            mimeType: parent.mimeType,
             isDarkMode: parent.colorScheme == .dark
         )
     }
