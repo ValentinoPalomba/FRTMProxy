@@ -23,16 +23,16 @@ struct FlowPanel: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(16)) {
+        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(12)) {
             FlowPanelHeader(
                 title: title,
                 method: method,
                 status: status,
                 isMapped: isMapped,
-                colors: colors
+                colors: colors,
+                tabs: tabs,
+                selection: $detailTab
             )
-
-            FlowPanelTabs(selection: $detailTab, tabs: tabs, colors: colors)
 
             Group {
                 switch detailTab {
@@ -46,12 +46,12 @@ struct FlowPanel: View {
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
-        .padding(DesignSystem.Metrics.scaled(16))
+        .padding(DesignSystem.Metrics.scaled(12))
         .background(
-            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(16), style: .continuous)
+            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(14), style: .continuous)
                 .fill(colors.surface)
                 .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(16))
+                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(14))
                         .stroke(colors.border.opacity(0.65), lineWidth: 1)
                 )
         )
@@ -73,33 +73,39 @@ private struct FlowPanelHeader: View {
     let status: Int?
     let isMapped: Bool
     let colors: DesignSystem.ColorPalette
+    let tabs: [DetailTab]
+    @Binding var selection: DetailTab
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(8)) {
-            HStack(alignment: .center, spacing: DesignSystem.Metrics.scaled(12)) {
-                Text(title)
-                    .font(DesignSystem.Fonts.sans(16, weight: .semibold))
-                    .foregroundStyle(colors.textPrimary)
+        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(6)) {
+            HStack(alignment: .center, spacing: DesignSystem.Metrics.scaled(10)) {
+                HStack(spacing: DesignSystem.Metrics.scaled(8)) {
+                    Text(title)
+                        .font(DesignSystem.Fonts.sans(15, weight: .semibold))
+                        .foregroundStyle(colors.textPrimary)
 
-                if let method {
-                    MethodBadge(method: method)
-                }
+                    if let method {
+                        MethodBadge(method: method)
+                    }
 
-                if let status {
-                    StatusBadge(status: status, colors: colors)
+                    if let status {
+                        StatusBadge(status: status, colors: colors)
+                    }
+
+                    if isMapped {
+                        Label("Mapped", systemImage: "pencil.and.outline")
+                            .font(DesignSystem.Fonts.sans(12, weight: .semibold))
+                            .padding(.horizontal, DesignSystem.Metrics.scaled(8))
+                            .padding(.vertical, DesignSystem.Metrics.scaled(4))
+                            .background(colors.accent.opacity(0.12))
+                            .foregroundStyle(colors.accent)
+                            .clipShape(Capsule())
+                    }
                 }
 
                 Spacer()
 
-                if isMapped {
-                    Label("Mapped", systemImage: "pencil.and.outline")
-                        .font(DesignSystem.Fonts.sans(12, weight: .semibold))
-                        .padding(.horizontal, DesignSystem.Metrics.scaled(10))
-                        .padding(.vertical, DesignSystem.Metrics.scaled(6))
-                        .background(colors.accent.opacity(0.12))
-                        .foregroundStyle(colors.accent)
-                        .clipShape(Capsule())
-                }
+                FlowPanelInlineTabs(tabs: tabs, selection: $selection, colors: colors)
             }
 
             Divider().overlay(colors.border.opacity(0.5))
@@ -128,44 +134,34 @@ private struct MethodBadge: View {
     }
 }
 
-private struct FlowPanelTabs: View {
-    @Binding var selection: DetailTab
+private struct FlowPanelInlineTabs: View {
     let tabs: [DetailTab]
+    @Binding var selection: DetailTab
     let colors: DesignSystem.ColorPalette
 
     var body: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: DesignSystem.Metrics.scaled(6)) {
             ForEach(tabs, id: \.self) { tab in
                 Button {
                     selection = tab
                 } label: {
                     Text(tab.rawValue)
-                        .font(DesignSystem.Fonts.sans(13, weight: selection == tab ? .semibold : .medium))
+                        .font(DesignSystem.Fonts.sans(12, weight: selection == tab ? .semibold : .medium))
                         .foregroundStyle(selection == tab ? colors.textPrimary : colors.textSecondary)
-                        .padding(.horizontal, DesignSystem.Metrics.scaled(16))
-                        .padding(.vertical, DesignSystem.Metrics.scaled(7))
-                        .frame(minHeight: DesignSystem.Metrics.scaled(30))
+                        .padding(.horizontal, DesignSystem.Metrics.scaled(8))
+                        .padding(.vertical, DesignSystem.Metrics.scaled(4))
                         .background(
-                            Group {
-                                if selection == tab {
-                                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10), style: .continuous)
-                                        .fill(colors.surfaceElevated)
-                                }
-                            }
+                            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8), style: .continuous)
+                                .fill(selection == tab ? colors.surfaceElevated : colors.surface.opacity(0.4))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
+                                .stroke(selection == tab ? colors.border.opacity(0.9) : colors.border.opacity(0.4), lineWidth: 1)
                         )
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(DesignSystem.Metrics.scaled(4))
-        .background(
-            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10), style: .continuous)
-                .fill(colors.surface.opacity(0.6))
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(12))
-                        .stroke(colors.border.opacity(0.7), lineWidth: 1)
-                )
-        )
     }
 }
 

@@ -11,7 +11,6 @@ struct InspectorHeaderBar: View {
     let onRemovePinnedHost: (PinnedHost) -> Void
     let onTogglePinnedApp: (PinnedApp) -> Void
     let onRemovePinnedApp: (PinnedApp) -> Void
-    let onClear: () -> Void
     let onShowRules: () -> Void
     let onShowBreakpoints: () -> Void
     let onShowCollections: () -> Void
@@ -49,9 +48,6 @@ struct InspectorHeaderBar: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack(spacing: DesignSystem.Metrics.scaled(8)) {
-                ControlButton(title: "Clear", systemImage: "trash", style: .ghost(colors), disabled: false) {
-                    onClear()
-                }
                 ManageMenuButton(
                     colors: colors,
                     trafficProfiles: trafficProfiles,

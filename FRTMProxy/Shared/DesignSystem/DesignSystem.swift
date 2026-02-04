@@ -3,6 +3,7 @@ import SwiftUI
 enum DesignSystem {
     enum Metrics {
         static let scale: CGFloat = 0.85
+        static let scaleFont: CGFloat = 0.90
 
         static func scaled(_ value: CGFloat) -> CGFloat {
             value * scale

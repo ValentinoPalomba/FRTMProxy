@@ -275,7 +275,7 @@ private struct FlowTableRow: View {
         Button(action: onSelect) {
             regularRow
             .padding(.horizontal, DesignSystem.Metrics.scaled(14))
-            .padding(.vertical, DesignSystem.Metrics.scaled(7))
+            .padding(.vertical, DesignSystem.Metrics.scaled(4))
             .background(rowBackground)
             .contentShape(.rect)
         }
