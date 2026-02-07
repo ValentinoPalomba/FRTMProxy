@@ -11,7 +11,7 @@ final class DeviceConnectViewModel: ObservableObject {
     @Published private(set) var errorMessage: String?
 
     private let server = DevicePairingHTTPServer()
-    private let certificateLoader = MitmproxyCertificateLoader()
+    private let certificateLoader = ProxyCoreCertificateLoader()
     private var proxyPort: Int = 8080
     private var rootCADER: Data?
     private var refreshTask: Task<Void, Never>?
@@ -45,15 +45,18 @@ final class DeviceConnectViewModel: ObservableObject {
     }
 
     func start() {
-        do {
-            rootCADER = try certificateLoader.loadRootCADER()
-            refreshWiFiSSID()
-            pushConfigToServer()
-            errorMessage = nil
-            server.start()
-            startRefreshingSSID()
-        } catch {
-            errorMessage = error.localizedDescription
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                self.rootCADER = try await self.certificateLoader.loadRootCADER()
+                self.refreshWiFiSSID()
+                self.pushConfigToServer()
+                self.errorMessage = nil
+                self.server.start()
+                self.startRefreshingSSID()
+            } catch {
+                self.errorMessage = error.localizedDescription
+            }
         }
     }
 
@@ -255,7 +258,7 @@ struct DeviceConnectView: View {
                 Text("Physical device profile")
                     .font(DesignSystem.Fonts.mono(16, weight: .bold))
                     .foregroundStyle(colors.textPrimary)
-                Text("Includes proxy settings and the mitmproxy CA for the detected Wi‑Fi network.")
+                Text("Includes proxy settings and the FRTMProxy Root CA for the detected Wi‑Fi network.")
                     .font(DesignSystem.Fonts.sans(12, weight: .medium))
                     .foregroundStyle(colors.textSecondary)
             }
@@ -263,7 +266,7 @@ struct DeviceConnectView: View {
             VStack(alignment: .leading, spacing: 10) {
                 instructionRow(index: 1, text: "Scan the QR code with Camera/Safari and download the configuration profile.")
                 instructionRow(index: 2, text: "Go to Settings → Profile Downloaded, install it and confirm with the device passcode.")
-                instructionRow(index: 3, text: "Trust the mitmproxy CA under Settings → General → About → Certificate Trust Settings.")
+                instructionRow(index: 3, text: "Trust the FRTMProxy Root CA under Settings → General → About → Certificate Trust Settings.")
             }
 
             QRCodeView(text: model.connectionURL?.absoluteString ?? "", size: 240)

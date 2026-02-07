@@ -96,7 +96,7 @@ struct FRTMProxyApp: App {
             CommandMenu("Device") {
                 Button(action: installMitmproxyCertificateOnSimulator) {
                     Label {
-                        Text(isInstallingSimulatorCertificate ? "Installing Certificate…" : "Install mitmproxy Certificate on Simulator")
+                        Text(isInstallingSimulatorCertificate ? "Installing Certificate…" : "Install proxy Certificate on Simulator")
                     } icon: {
                         Image(systemName: isInstallingSimulatorCertificate ? "hourglass" : "iphone.badge.checkmark")
                     }
@@ -134,16 +134,16 @@ struct FRTMProxyApp: App {
         isInstallingSimulatorCertificate = true
         let installer = certificateInstaller
 
-        DispatchQueue.global(qos: .userInitiated).async {
+        Task.detached(priority: .userInitiated) {
             let result: Result<String, Error>
             do {
-                let message = try installer.installCertificateOnBootedSimulators()
+                let message = try await installer.installCertificateOnBootedSimulators()
                 result = .success(message)
             } catch {
                 result = .failure(error)
             }
 
-            DispatchQueue.main.async {
+            await MainActor.run {
                 self.isInstallingSimulatorCertificate = false
                 switch result {
                 case .success(let message):

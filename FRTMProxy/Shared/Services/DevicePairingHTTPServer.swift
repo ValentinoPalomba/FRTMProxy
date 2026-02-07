@@ -497,7 +497,7 @@ final class DevicePairingHTTPServer {
                   <span class="step-index">3</span>
                   <div class="step-body">
                     <strong>Enable trust for the CA.</strong>
-                    <p>Settings → General → About → Certificate Trust Settings → enable the mitmproxy CA.</p>
+                    <p>Settings → General → About → Certificate Trust Settings → enable the FRTMProxy Root CA.</p>
                   </div>
                 </li>
               </ol>

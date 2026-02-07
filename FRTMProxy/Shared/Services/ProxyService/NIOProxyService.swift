@@ -1,6 +1,9 @@
 import Combine
 import Foundation
 import ProxyCore
+#if canImport(zlib)
+import zlib
+#endif
 
 @MainActor
 final class NIOProxyService: ObservableObject, ProxyServiceProtocol {
@@ -38,7 +41,7 @@ final class NIOProxyService: ObservableObject, ProxyServiceProtocol {
         }
 
         let config = ProxyConfiguration(
-            listenHost: "127.0.0.1",
+            listenHost: "0.0.0.0",
             listenPort: selectedPort,
             enableMITM: true,
             enableHTTP2: true,
@@ -284,7 +287,12 @@ final class NIOProxyService: ObservableObject, ProxyServiceProtocol {
 
     private func mergeRequest(_ req: ProxyRequest) {
         let now = req.timestamp.timeIntervalSince1970
-        let bodyString = req.bodyPreview.flatMap { String(data: $0, encoding: .utf8) }
+        let bodyString = BodyPreviewRenderer.render(
+            data: req.bodyPreview,
+            headers: req.headers,
+            isTruncated: req.bodyIsTruncated,
+            rawBodySize: req.rawBodySize
+        )
 
         let incoming = MitmFlow(
             id: req.id,
@@ -317,7 +325,12 @@ final class NIOProxyService: ObservableObject, ProxyServiceProtocol {
 
     private func mergeResponse(_ res: ProxyResponse) {
         let now = res.timestamp.timeIntervalSince1970
-        let bodyString = res.bodyPreview.flatMap { String(data: $0, encoding: .utf8) }
+        let bodyString = BodyPreviewRenderer.render(
+            data: res.bodyPreview,
+            headers: res.headers,
+            isTruncated: res.bodyIsTruncated,
+            rawBodySize: res.rawBodySize
+        )
 
         let response = MitmFlow.Response(
             status: res.statusCode,
@@ -378,13 +391,23 @@ final class NIOProxyService: ObservableObject, ProxyServiceProtocol {
             breakpoint: nil
         )
 
-        let requestBodyString = request.bodyPreview.flatMap { String(data: $0, encoding: .utf8) }
+        let requestBodyString = BodyPreviewRenderer.render(
+            data: request.bodyPreview,
+            headers: request.headers,
+            isTruncated: request.bodyIsTruncated,
+            rawBodySize: request.rawBodySize
+        )
         flow.request = MitmFlow.Request(method: request.method, url: request.url, headers: request.headers, body: requestBodyString)
         flow.client = flow.client ?? request.client.map { MitmFlow.Client(ip: $0.ip, port: $0.port) }
 
         if let response {
             let responseTimestamp = response.timestamp.timeIntervalSince1970
-            let responseBodyString = response.bodyPreview.flatMap { String(data: $0, encoding: .utf8) }
+            let responseBodyString = BodyPreviewRenderer.render(
+                data: response.bodyPreview,
+                headers: response.headers,
+                isTruncated: response.bodyIsTruncated,
+                rawBodySize: response.rawBodySize
+            )
             flow.response = MitmFlow.Response(status: response.statusCode, headers: response.headers, body: responseBodyString)
             flow.event = "response"
             flow.timestamp = flow.timestamp ?? responseTimestamp
@@ -405,6 +428,182 @@ final class NIOProxyService: ObservableObject, ProxyServiceProtocol {
 
     private static func hostAllowRegex(for host: String) -> String {
         "(^|\\\\.)" + NSRegularExpression.escapedPattern(for: host) + "$"
+    }
+}
+
+// MARK: - Body preview decoding
+
+private enum BodyPreviewRenderer {
+    private static let maxRenderedTextBytes = 2 * 1024 * 1024 // keep UI responsive
+
+    static func render(data: Data?, headers: [String: String], isTruncated: Bool, rawBodySize: Int?) -> String? {
+        guard var data, !data.isEmpty else { return nil }
+
+        let wireBytes = rawBodySize ?? data.count
+        let wirePreviewBytes = data.count
+        let previewIsIncompleteOnWire = isTruncated || wireBytes > wirePreviewBytes
+
+        let contentType = firstHeader(headers, name: "content-type") ?? ""
+        let contentEncoding = firstHeader(headers, name: "content-encoding") ?? ""
+
+        // Best-effort decompression for common encodings so the UI doesn't show blank bodies for large responses.
+        if !contentEncoding.isEmpty, let decompressed = decompressBestEffort(data, contentEncoding: contentEncoding) {
+            data = decompressed
+        }
+
+        let didTruncateForUI = data.count > maxRenderedTextBytes
+        // Keep memory bounded in the UI layer even if ProxyCore captured up to 4MB.
+        if data.count > maxRenderedTextBytes {
+            data = data.prefix(maxRenderedTextBytes)
+        }
+
+        let mime = contentType
+            .split(separator: ";", maxSplits: 1)
+            .first
+            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) } ?? ""
+
+        if isLikelyText(mime: mime, fullContentType: contentType) {
+            var text = decodeText(data, contentType: contentType) ?? decodeLatin1(data)
+            if previewIsIncompleteOnWire || didTruncateForUI {
+                text.append("\n\n[Preview] truncated (wire bytes: \(wireBytes))")
+            }
+            return text
+        }
+
+        // Non-text: show at least something (instead of nil -> "Response non disponibile").
+        if let utf8 = String(data: data, encoding: .utf8) {
+            var text = utf8
+            if previewIsIncompleteOnWire || didTruncateForUI {
+                text.append("\n\n[Preview] truncated (wire bytes: \(wireBytes))")
+            }
+            return text
+        }
+
+        let effectiveMime = mime.isEmpty ? "application/octet-stream" : mime
+        return "<\(wireBytes) bytes> (\(effectiveMime))"
+    }
+
+    private static func firstHeader(_ headers: [String: String], name: String) -> String? {
+        if let direct = headers[name] { return direct }
+        let target = name.lowercased()
+        for (k, v) in headers where k.lowercased() == target {
+            return v
+        }
+        return nil
+    }
+
+    private static func isLikelyText(mime: String, fullContentType: String) -> Bool {
+        let m = mime.lowercased()
+        if m.hasPrefix("text/") { return true }
+        if m.contains("json") { return true }
+        if m.contains("xml") { return true }
+        if m.contains("javascript") { return true }
+        if m.contains("x-www-form-urlencoded") { return true }
+        if m.contains("graphql") { return true }
+
+        // Some servers omit content-type for APIs; treat as text if it declares a charset.
+        if fullContentType.lowercased().contains("charset=") { return true }
+        return false
+    }
+
+    private static func decodeText(_ data: Data, contentType: String) -> String? {
+        // Prefer explicit charset if present.
+        let lower = contentType.lowercased()
+        if let charsetRange = lower.range(of: "charset=") {
+            let after = lower[charsetRange.upperBound...]
+            let token = after.split(separator: ";", maxSplits: 1).first.map(String.init) ?? ""
+            let charset = token.trimmingCharacters(in: .whitespacesAndNewlines)
+            switch charset {
+            case "utf-8", "utf8":
+                return String(data: data, encoding: .utf8)
+            case "iso-8859-1", "latin1":
+                return decodeLatin1(data)
+            default:
+                break
+            }
+        }
+        return String(data: data, encoding: .utf8)
+    }
+
+    private static func decodeLatin1(_ data: Data) -> String {
+        // ISO-8859-1 is a 1:1 byte-to-scalar mapping (0...255).
+        var scalars = String.UnicodeScalarView()
+        scalars.reserveCapacity(data.count)
+        for byte in data {
+            scalars.append(UnicodeScalar(Int(byte))!)
+        }
+        return String(scalars)
+    }
+
+    private static func decompressBestEffort(_ data: Data, contentEncoding: String) -> Data? {
+        let encodings = contentEncoding
+            .lowercased()
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+        if encodings.contains("gzip") {
+            return inflate(data, windowBits: 15 + 32) // gzip/zlib auto-detect
+        }
+        if encodings.contains("deflate") {
+            // Try zlib wrapper first, then raw DEFLATE as fallback.
+            return inflate(data, windowBits: 15) ?? inflate(data, windowBits: -15)
+        }
+        return nil
+    }
+
+    private static func inflate(_ data: Data, windowBits: Int32) -> Data? {
+        #if !canImport(zlib)
+        return nil
+        #else
+        if data.isEmpty { return nil }
+
+        var stream = z_stream()
+        stream.zalloc = nil
+        stream.zfree = nil
+        stream.opaque = nil
+
+        let initStatus = inflateInit2_(&stream, windowBits, ZLIB_VERSION, Int32(MemoryLayout<z_stream>.size))
+        guard initStatus == Z_OK else { return nil }
+        defer { inflateEnd(&stream) }
+
+        let chunkSize = 16 * 1024
+        var output = Data()
+        output.reserveCapacity(min(data.count, chunkSize))
+
+        return data.withUnsafeBytes { (input: UnsafeRawBufferPointer) -> Data? in
+            guard let baseAddress = input.bindMemory(to: Bytef.self).baseAddress else { return nil }
+            stream.next_in = UnsafeMutablePointer(mutating: baseAddress)
+            stream.avail_in = uInt(data.count)
+
+            var status: Int32 = Z_OK
+            while status == Z_OK && output.count < maxRenderedTextBytes {
+                let capacity = min(chunkSize, maxRenderedTextBytes - output.count)
+                var chunk = Data(count: capacity)
+                let produced = chunk.withUnsafeMutableBytes { (out: UnsafeMutableRawBufferPointer) -> Int in
+                    guard let outBase = out.bindMemory(to: Bytef.self).baseAddress else { return 0 }
+                    stream.next_out = outBase
+                    stream.avail_out = uInt(capacity)
+                    status = zlib.inflate(&stream, Z_NO_FLUSH)
+                    return capacity - Int(stream.avail_out)
+                }
+
+                if produced > 0 {
+                    chunk.count = produced
+                    output.append(chunk)
+                }
+
+                if status == Z_STREAM_END {
+                    break
+                }
+
+                if stream.avail_in == 0 {
+                    break
+                }
+            }
+
+            return output.isEmpty ? nil : output
+        }
+        #endif
     }
 }
 

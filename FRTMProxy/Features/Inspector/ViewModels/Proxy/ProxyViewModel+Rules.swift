@@ -88,13 +88,16 @@ extension ProxyViewModel {
     }
 
     func retryFlow(with payload: MapEditorRetryPayload) {
-        service.retryFlow(
-            flowID: payload.flowID,
-            method: payload.method,
-            url: payload.url,
-            body: payload.body,
-            headers: payload.headers
-        )
+        let service = service
+        Task { @MainActor in
+            service.retryFlow(
+                flowID: payload.flowID,
+                method: payload.method,
+                url: payload.url,
+                body: payload.body,
+                headers: payload.headers
+            )
+        }
     }
 
     func applyMapLocal(
@@ -104,10 +107,12 @@ extension ProxyViewModel {
         status: Int,
         headers: [String: String]
     ) {
-        if let requestBody, let flowID = selectedFlow?.id {
-            service.mockRequest(for: flowID, body: requestBody, headers: requestHeaders)
-        }
-        if let flowID = selectedFlow?.id {
+        guard let flowID = selectedFlow?.id else { return }
+        let service = service
+        Task { @MainActor in
+            if let requestBody {
+                service.mockRequest(for: flowID, body: requestBody, headers: requestHeaders)
+            }
             service.mockResponse(for: flowID, body: responseBody, status: status, headers: headers)
         }
     }
@@ -211,16 +216,20 @@ extension ProxyViewModel {
         let oldKeys = Set(appliedRules.keys)
         let newKeys = Set(merged.keys)
         let removedKeys = oldKeys.subtracting(newKeys)
-        for key in removedKeys {
-            service.deleteRule(forKey: key)
+        let rulesToApply = orderedKeys.compactMap { merged[$0] }.filter { rule in
+            guard let existing = appliedRules[rule.key] else { return true }
+            return existing != rule
         }
 
-        for key in orderedKeys {
-            guard let rule = merged[key] else { continue }
-            if let existing = appliedRules[key], existing == rule {
-                continue
+        let service = service
+        Task { @MainActor in
+            for key in removedKeys {
+                service.deleteRule(forKey: key)
             }
-            service.mockRule(rule)
+
+            for rule in rulesToApply {
+                service.mockRule(rule)
+            }
         }
 
         appliedRules = merged

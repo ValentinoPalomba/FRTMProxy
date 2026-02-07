@@ -94,10 +94,12 @@ final class ProxyViewModel: ObservableObject {
         }
     }
 
+    @MainActor
     func stopProxy() {
         service.stopProxy()
     }
 
+    @MainActor
     func clear() {
         flows.removeAll()
         selectedFlowID = nil

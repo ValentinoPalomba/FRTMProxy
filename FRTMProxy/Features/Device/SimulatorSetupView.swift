@@ -16,15 +16,16 @@ final class SimulatorSetupViewModel: ObservableObject {
         statusMessage = nil
         errorMessage = nil
 
+        let installer = self.installer
         Task.detached(priority: .userInitiated) { [weak self] in
             do {
-                let devices = try self?.installer.bootedSimulators() ?? []
-                await MainActor.run {
+                let devices = try installer.bootedSimulators()
+                await MainActor.run { [weak self] in
                     self?.bootedSimulators = devices
                     self?.isRefreshing = false
                 }
             } catch {
-                await MainActor.run {
+                await MainActor.run { [weak self] in
                     self?.bootedSimulators = []
                     self?.isRefreshing = false
                     self?.errorMessage = error.localizedDescription
@@ -39,17 +40,18 @@ final class SimulatorSetupViewModel: ObservableObject {
         statusMessage = nil
         errorMessage = nil
 
+        let installer = self.installer
         Task.detached(priority: .userInitiated) { [weak self] in
             do {
-                let message = try self?.installer.installCertificateOnBootedSimulators() ?? ""
-                let devices = try self?.installer.bootedSimulators() ?? []
-                await MainActor.run {
+                let message = try await installer.installCertificateOnBootedSimulators()
+                let devices = try installer.bootedSimulators()
+                await MainActor.run { [weak self] in
                     self?.bootedSimulators = devices
                     self?.isInstalling = false
                     self?.statusMessage = message.isEmpty ? "Certificate installed successfully." : message
                 }
             } catch {
-                await MainActor.run {
+                await MainActor.run { [weak self] in
                     self?.isInstalling = false
                     self?.errorMessage = error.localizedDescription
                 }
@@ -85,7 +87,7 @@ struct SimulatorSetupView: View {
             Text("iOS Simulator")
                 .font(DesignSystem.Fonts.mono(16, weight: .bold))
                 .foregroundStyle(colors.textPrimary)
-            Text("Install the mitmproxy certificate on booted simulators with one click.")
+            Text("Install the FRTMProxy Root CA on booted simulators with one click.")
                 .font(DesignSystem.Fonts.sans(12, weight: .medium))
                 .foregroundStyle(colors.textSecondary)
         }
@@ -94,7 +96,7 @@ struct SimulatorSetupView: View {
     private var instructionList: some View {
         VStack(alignment: .leading, spacing: 8) {
             instructionRow(1, "Launch at least one simulator from Xcode so it appears as booted.")
-            instructionRow(2, "Press “Install certificate” to push the mitmproxy CA into every booted simulator.")
+            instructionRow(2, "Press “Install certificate” to push the FRTMProxy Root CA into every booted simulator.")
             instructionRow(3, "Restart the target app inside the simulator to pick up the new certificate.")
         }
     }

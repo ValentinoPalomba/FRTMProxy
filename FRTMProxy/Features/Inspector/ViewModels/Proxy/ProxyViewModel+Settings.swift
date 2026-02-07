@@ -165,7 +165,10 @@ extension ProxyViewModel {
         }
         activeTrafficProfile = profile
         if isRunning {
-            service.applyTrafficProfile(profile)
+            let service = service
+            Task { @MainActor in
+                service.applyTrafficProfile(profile)
+            }
         }
     }
 }

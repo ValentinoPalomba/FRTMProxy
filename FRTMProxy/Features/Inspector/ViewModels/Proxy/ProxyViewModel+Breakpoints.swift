@@ -103,6 +103,7 @@ extension ProxyViewModel {
     func continueActiveBreakpoint(using editor: MapEditorViewModel) {
         guard let hit = activeBreakpointHit,
               let flow = flow(withID: hit.flowID) else { return }
+        let service = service
 
         switch hit.phase {
         case .request:
@@ -113,12 +114,14 @@ extension ProxyViewModel {
                 headers: retryPayload.headers,
                 body: retryPayload.body
             )
-            service.resumeBreakpoint(
-                flowID: hit.flowID,
-                phase: .request,
-                requestPayload: requestPayload,
-                responsePayload: nil
-            )
+            Task { @MainActor in
+                service.resumeBreakpoint(
+                    flowID: hit.flowID,
+                    phase: .request,
+                    requestPayload: requestPayload,
+                    responsePayload: nil
+                )
+            }
         case .response:
             let defaultStatus = flow.response?.status ?? 200
             guard let payload = editor.payload(defaultStatus: defaultStatus) else { return }
@@ -127,12 +130,14 @@ extension ProxyViewModel {
                 headers: payload.responseHeaders,
                 body: payload.responseBody
             )
-            service.resumeBreakpoint(
-                flowID: hit.flowID,
-                phase: .response,
-                requestPayload: nil,
-                responsePayload: responsePayload
-            )
+            Task { @MainActor in
+                service.resumeBreakpoint(
+                    flowID: hit.flowID,
+                    phase: .response,
+                    requestPayload: nil,
+                    responsePayload: responsePayload
+                )
+            }
         }
 
         consumeActiveBreakpoint()
@@ -141,6 +146,7 @@ extension ProxyViewModel {
     func skipActiveBreakpoint() {
         guard let hit = activeBreakpointHit,
               let flow = flow(withID: hit.flowID) else { return }
+        let service = service
         switch hit.phase {
         case .request:
             guard let request = flow.request else { return }
@@ -150,12 +156,14 @@ extension ProxyViewModel {
                 headers: request.headers,
                 body: request.body
             )
-            service.resumeBreakpoint(
-                flowID: hit.flowID,
-                phase: .request,
-                requestPayload: payload,
-                responsePayload: nil
-            )
+            Task { @MainActor in
+                service.resumeBreakpoint(
+                    flowID: hit.flowID,
+                    phase: .request,
+                    requestPayload: payload,
+                    responsePayload: nil
+                )
+            }
         case .response:
             guard let response = flow.response else { return }
             let payload = BreakpointResponsePayload(
@@ -163,12 +171,14 @@ extension ProxyViewModel {
                 headers: response.headers ?? [:],
                 body: response.body ?? ""
             )
-            service.resumeBreakpoint(
-                flowID: hit.flowID,
-                phase: .response,
-                requestPayload: nil,
-                responsePayload: payload
-            )
+            Task { @MainActor in
+                service.resumeBreakpoint(
+                    flowID: hit.flowID,
+                    phase: .response,
+                    requestPayload: nil,
+                    responsePayload: payload
+                )
+            }
         }
         consumeActiveBreakpoint()
     }
@@ -195,15 +205,20 @@ extension ProxyViewModel {
         let newKeys = Set(merged.keys)
 
         let removedKeys = oldKeys.subtracting(newKeys)
-        for key in removedKeys {
-            service.deleteBreakpointRule(forKey: key)
+        let updatedRules = merged.filter { key, rule in
+            guard let existing = appliedBreakpointRules[key] else { return true }
+            return existing != rule
         }
 
-        for (key, rule) in merged {
-            if let existing = appliedBreakpointRules[key], existing == rule {
-                continue
+        let service = service
+        Task { @MainActor in
+            for key in removedKeys {
+                service.deleteBreakpointRule(forKey: key)
             }
-            service.updateBreakpointRule(rule)
+
+            for (_, rule) in updatedRules {
+                service.updateBreakpointRule(rule)
+            }
         }
 
         appliedBreakpointRules = merged

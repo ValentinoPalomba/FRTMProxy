@@ -3,35 +3,42 @@ import Foundation
 
 extension ProxyViewModel {
     func bind() {
-        service.flowsPublisher
-            .map { map in
-                map.values.sorted(by: { ($0.timestamp ?? 0) > ($1.timestamp ?? 0) })
-            }
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] sorted in
-                guard let self else { return }
-                let enriched = self.enrichFlowsWithCachedApps(sorted)
-                self.flows = enriched
-                if self.selectedFlowID == nil {
-                    self.selectedFlowID = enriched.first?.id
-                }
-                self.captureRecordingRules(from: enriched)
-                self.enqueueBreakpointHits(from: enriched)
-                self.resolveClientAppsIfNeeded(in: enriched)
-                self.processAlerts(in: enriched)
-            }
-            .store(in: &cancellables)
+        Task { @MainActor [weak self] in
+            guard let self else { return }
 
-        service.isRunningPublisher
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] running in
-                guard let self else { return }
-                self.isRunning = running
-                if running {
-                    self.service.applyTrafficProfile(self.activeTrafficProfile)
+            self.service.flowsPublisher
+                .map { map in
+                    map.values.sorted(by: { ($0.timestamp ?? 0) > ($1.timestamp ?? 0) })
                 }
-            }
-            .store(in: &cancellables)
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] sorted in
+                    guard let self else { return }
+                    let enriched = self.enrichFlowsWithCachedApps(sorted)
+                    self.flows = enriched
+                    if self.selectedFlowID == nil {
+                        self.selectedFlowID = enriched.first?.id
+                    }
+                    self.captureRecordingRules(from: enriched)
+                    self.enqueueBreakpointHits(from: enriched)
+                    self.resolveClientAppsIfNeeded(in: enriched)
+                    self.processAlerts(in: enriched)
+                }
+                .store(in: &self.cancellables)
+
+            self.service.isRunningPublisher
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] running in
+                    guard let self else { return }
+                    self.isRunning = running
+                    if running {
+                        Task { @MainActor [weak self] in
+                            guard let self else { return }
+                            self.service.applyTrafficProfile(self.activeTrafficProfile)
+                        }
+                    }
+                }
+                .store(in: &self.cancellables)
+        }
 
         service.onLog = { [weak self] text in
             DispatchQueue.main.async {

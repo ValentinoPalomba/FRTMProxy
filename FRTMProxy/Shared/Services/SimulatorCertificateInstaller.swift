@@ -22,13 +22,13 @@ struct SimulatorCertificateInstaller {
         }
     }
 
-    func installCertificateOnBootedSimulators() throws -> String {
+    func installCertificateOnBootedSimulators() async throws -> String {
         let booted = try bootedSimulators()
         guard !booted.isEmpty else {
             throw InstallerError.simctlFailed("no booted simulators")
         }
 
-        let certificateDER = try MitmproxyCertificateLoader().loadRootCADER()
+        let certificateDER = try await ProxyCoreCertificateLoader().loadRootCADER()
         let temporaryURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("frtmproxy-sim-ca-\(UUID().uuidString).cer")
         try certificateDER.write(to: temporaryURL, options: [.atomic])
@@ -56,7 +56,7 @@ struct SimulatorCertificateInstaller {
                 installedOn.append(device.name)
             }
 
-            if verifyMitmproxyCertPresent(udid: device.udid) == true {
+            if verifyProxyCoreCertPresent(udid: device.udid) == true {
                 verifiedOn.append(device.name)
             }
         }
@@ -105,11 +105,11 @@ struct SimulatorCertificateInstaller {
         var udid: String
     }
 
-    private func verifyMitmproxyCertPresent(udid: String) -> Bool? {
+    private func verifyProxyCoreCertPresent(udid: String) -> Bool? {
         do {
             let result = try runCommand(
                 executable: "/usr/bin/xcrun",
-                arguments: ["simctl", "spawn", udid, "security", "find-certificate", "-a", "-c", "mitmproxy"]
+                arguments: ["simctl", "spawn", udid, "security", "find-certificate", "-a", "-c", "ProxyCore CA"]
             )
             if result.status != 0 {
                 return nil
