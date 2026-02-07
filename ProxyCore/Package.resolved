@@ -1,24 +1,6 @@
 {
-  "originHash" : "831d0f55a328df637da87bc44ae03f8cffbfad52e2559d06d0a508a99270f4ac",
+  "originHash" : "121cbab120708989fe56c0b45c6966bc5b89839b507b442f5e878c195711115d",
   "pins" : [
-    {
-      "identity" : "codemirror-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ValentinoPalomba/CodeMirror-Swift",
-      "state" : {
-        "branch" : "master",
-        "revision" : "8c7de3641032ee8e91ce77da4ecc5fb320fe792d"
-      }
-    },
-    {
-      "identity" : "sparkle",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/sparkle-project/Sparkle",
-      "state" : {
-        "revision" : "5581748cef2bae787496fe6d61139aebe0a451f6",
-        "version" : "2.8.1"
-      }
-    },
     {
       "identity" : "swift-asn1",
       "kind" : "remoteSourceControl",

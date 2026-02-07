@@ -62,23 +62,23 @@ struct MapRule: Identifiable, Hashable, Codable, Sendable {
     }
 }
 
-struct FlowBreakpointMetadata: Codable, Equatable {
+struct FlowBreakpointMetadata: Codable, Equatable, Sendable {
     let phase: FlowBreakpointPhase
     let state: FlowBreakpointState
     let key: String
 }
 
-enum FlowBreakpointPhase: String, Codable, CaseIterable {
+enum FlowBreakpointPhase: String, Codable, CaseIterable, Sendable {
     case request
     case response
 }
 
-enum FlowBreakpointState: String, Codable {
+enum FlowBreakpointState: String, Codable, Sendable {
     case waiting
     case released
 }
 
-struct FlowBreakpointRule: Identifiable, Codable, Hashable {
+struct FlowBreakpointRule: Identifiable, Codable, Hashable, Sendable {
     let key: String
     let host: String
     let path: String
@@ -140,14 +140,14 @@ struct FlowBreakpointRule: Identifiable, Codable, Hashable {
     }
 }
 
-struct BreakpointRequestPayload: Codable {
+struct BreakpointRequestPayload: Codable, Sendable {
     let method: String
     let url: String
     let headers: [String: String]
     let body: String?
 }
 
-struct BreakpointResponsePayload: Codable {
+struct BreakpointResponsePayload: Codable, Sendable {
     let status: Int
     let headers: [String: String]
     let body: String

@@ -7,11 +7,24 @@ struct SettingsProxyTab: View {
     var body: some View {
         SettingsTabScaffold(
             title: "Proxy",
-            subtitle: "Startup behavior and system proxy integration for the embedded mitmproxy.",
+            subtitle: "Startup behavior and system proxy integration for the proxy engine.",
             colors: colors
         ) {
             SettingsCard(title: "Behavior", colors: colors) {
                 VStack(alignment: .leading, spacing: 14) {
+                    HStack(spacing: 12) {
+                        Text("Engine")
+                            .font(DesignSystem.Fonts.sans(13, weight: .semibold))
+                            .foregroundStyle(colors.textPrimary)
+                        Spacer()
+                        Picker("", selection: $settings.selectedProxyEngineID) {
+                            ForEach(ProxyEngineChoice.allCases) { engine in
+                                Text(engine.displayName).tag(engine.id)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .frame(width: 220, alignment: .trailing)
+                    }
                     Toggle(isOn: $settings.autoStartProxy) {
                         Text("Start proxy automatically")
                             .font(DesignSystem.Fonts.sans(13, weight: .medium))
@@ -53,13 +66,13 @@ struct SettingsProxyTab: View {
                             }
                     }
 
-                    Text("Port used when starting the embedded mitmproxy. Range 1024–65535.")
+                    Text("Port used when starting the proxy engine. Range 1024–65535.")
                         .font(DesignSystem.Fonts.mono(11))
                         .foregroundStyle(colors.textSecondary)
                     Text("When enabled, macOS routes HTTP and HTTPS traffic to localhost on the selected port.")
                         .font(DesignSystem.Fonts.mono(11))
                         .foregroundStyle(colors.textSecondary)
-                    Text("When enabled, mitmproxy only MITMs active pinned hosts; all other HTTPS traffic is tunneled. Restart the proxy to apply changes.")
+                    Text("When enabled, the proxy only MITMs active pinned hosts; all other HTTPS traffic is tunneled. Restart the proxy to apply changes.")
                         .font(DesignSystem.Fonts.mono(11))
                         .foregroundStyle(colors.textSecondary)
                 }

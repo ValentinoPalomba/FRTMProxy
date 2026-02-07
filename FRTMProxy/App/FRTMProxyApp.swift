@@ -22,7 +22,7 @@ struct FRTMProxyApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var proxyViewModel: ProxyViewModel
     @StateObject private var rulesViewModel = MapRuleViewModel()
-    @StateObject private var settingsStore = SettingsStore()
+    @StateObject private var settingsStore: SettingsStore
     @StateObject private var onboardingManager = OnboardingManager()
     @State private var deviceAlert: DeviceAlert?
     @State private var isInstallingSimulatorCertificate = false
@@ -33,9 +33,21 @@ struct FRTMProxyApp: App {
     
     init() {
         let launchConfiguration = LaunchConfiguration.current
-        let proxyService: ProxyServiceProtocol = launchConfiguration.useMockFlows
-            ? ProxyMockService()
-            : MitmproxyService(config: MitmproxyConfig())
+        let settings = SettingsStore()
+        _settingsStore = StateObject(wrappedValue: settings)
+
+        let proxyService: ProxyServiceProtocol
+        if launchConfiguration.useMockFlows {
+            proxyService = ProxyMockService()
+        } else {
+            switch settings.activeProxyEngine {
+            case .swiftNIO:
+                proxyService = NIOProxyService()
+            case .mitmproxy:
+                proxyService = NIOProxyService()
+            }
+        }
+
         _proxyViewModel = StateObject(wrappedValue: ProxyViewModel(service: proxyService))
         self.launchConfiguration = launchConfiguration
         updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)

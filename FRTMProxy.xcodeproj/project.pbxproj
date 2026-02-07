@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A954E8E62F37D76E005EC0C4 /* ProxyCore in Frameworks */ = {isa = PBXBuildFile; productRef = E6A0C0DF2F3A4B5C6D7E8F91 /* ProxyCore */; };
 		E67F14CC2ECD9C7000807063 /* CodeMirror in Frameworks */ = {isa = PBXBuildFile; productRef = E67F14CB2ECD9C7000807063 /* CodeMirror */; };
 		E6EE46392F2ACED1009AA367 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = E6EE46382F2ACED1009AA367 /* Sparkle */; };
 		E6EE47E02F2AD4EC009AA367 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = E6EE47DF2F2AD4EC009AA367 /* Info.plist */; };
@@ -43,6 +44,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A954E8E62F37D76E005EC0C4 /* ProxyCore in Frameworks */,
 				E6EE46392F2ACED1009AA367 /* Sparkle in Frameworks */,
 				E67F14CC2ECD9C7000807063 /* CodeMirror in Frameworks */,
 			);
@@ -90,6 +92,7 @@
 			packageProductDependencies = (
 				E67F14CB2ECD9C7000807063 /* CodeMirror */,
 				E6EE46382F2ACED1009AA367 /* Sparkle */,
+				E6A0C0DF2F3A4B5C6D7E8F91 /* ProxyCore */,
 			);
 			productName = FRTMProxy;
 			productReference = E6538F3F2ECB60D70013CCA6 /* FRTMProxy.app */;
@@ -122,6 +125,7 @@
 			packageReferences = (
 				E67F14CA2ECD9C6F00807063 /* XCRemoteSwiftPackageReference "CodeMirror-Swift" */,
 				E6EE46372F2ACED1009AA367 /* XCRemoteSwiftPackageReference "Sparkle" */,
+				E6A0C0DE2F3A4B5C6D7E8F90 /* XCLocalSwiftPackageReference "ProxyCore" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E6538F402ECB60D70013CCA6 /* Products */;
@@ -287,6 +291,7 @@
 				CURRENT_PROJECT_VERSION = 1.5.0;
 				DEVELOPMENT_ASSET_PATHS = "\"FRTMProxy/Preview Content\"";
 				DEVELOPMENT_TEAM = 8JS222QZL3;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -319,6 +324,7 @@
 				CURRENT_PROJECT_VERSION = 1.5.0;
 				DEVELOPMENT_ASSET_PATHS = "\"FRTMProxy/Preview Content\"";
 				DEVELOPMENT_TEAM = 8JS222QZL3;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -362,6 +368,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		E6A0C0DE2F3A4B5C6D7E8F90 /* XCLocalSwiftPackageReference "ProxyCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ProxyCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		E67F14CA2ECD9C6F00807063 /* XCRemoteSwiftPackageReference "CodeMirror-Swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -386,6 +399,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = E67F14CA2ECD9C6F00807063 /* XCRemoteSwiftPackageReference "CodeMirror-Swift" */;
 			productName = CodeMirror;
+		};
+		E6A0C0DF2F3A4B5C6D7E8F91 /* ProxyCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E6A0C0DE2F3A4B5C6D7E8F90 /* XCLocalSwiftPackageReference "ProxyCore" */;
+			productName = ProxyCore;
 		};
 		E6EE46382F2ACED1009AA367 /* Sparkle */ = {
 			isa = XCSwiftPackageProductDependency;
