@@ -36,6 +36,12 @@ struct OnboardingOverlay: View {
     @State private var highlightScale: CGFloat = 0.9
     @State private var highlightOpacity: Double = 0
     @State private var tooltipSize: CGSize = .zero
+    @State private var macCATrustStatus: MacCertificateInstaller.TrustStatus?
+    @State private var macCAActionMessage: String?
+    @State private var macCAErrorMessage: String?
+    @State private var isInstallingMacCA: Bool = false
+
+    private let macCertificateInstaller = MacCertificateInstaller()
 
     private var step: OnboardingStep { manager.currentStep }
     private var colors: DesignSystem.ColorPalette {
@@ -73,9 +79,11 @@ struct OnboardingOverlay: View {
             .onPreferenceChange(TooltipSizePreferenceKey.self) { tooltipSize = $0 }
             .onAppear {
                 animateIn()
+                refreshMacCATrustStatusIfNeeded()
             }
             .onChange(of: step) { _, _ in
                 animateStepChange()
+                refreshMacCATrustStatusIfNeeded()
             }
         }
         .ignoresSafeArea()
@@ -140,8 +148,12 @@ struct OnboardingOverlay: View {
                 .foregroundStyle(colors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
 
+            if step == .trustCertificate {
+                certificateTrustSection
+            }
+
             HStack(spacing: 12) {
-                secondaryButton(title: "Salta") {
+                secondaryButton(title: "Skip") {
                     manager.skipOnboarding()
                 }
 
@@ -150,11 +162,11 @@ struct OnboardingOverlay: View {
                 progressDots
 
                 if isLastStep {
-                    primaryButton(title: "Inizia", color: colors.success) {
+                    primaryButton(title: "Done", color: colors.success) {
                         manager.completeOnboarding()
                     }
                 } else {
-                    primaryButton(title: "Avanti", color: colors.accent) {
+                    primaryButton(title: "Next", color: colors.accent) {
                         manager.nextStep()
                     }
                 }
@@ -221,10 +233,12 @@ struct OnboardingOverlay: View {
 
     private var stepIcon: String {
         switch step {
+        case .trustCertificate:
+            return "checkmark.shield.fill"
         case .startProxy:
             return "play.circle.fill"
-        case .macOSProxyOverride:
-            return "globe"
+        case .configureWiFiProxy:
+            return "wifi"
         case .viewTraffic:
             return "list.bullet.rectangle.fill"
         case .filterResults:
@@ -342,6 +356,114 @@ struct OnboardingOverlay: View {
             tooltipOpacity = 1.0
             highlightScale = 1.0
             highlightOpacity = 1.0
+        }
+    }
+
+    private var certificateTrustSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if let status = macCATrustStatus {
+                let title = status.isTrusted
+                    ? "ProxyCore Root CA is trusted on this Mac."
+                    : "ProxyCore Root CA is not trusted on this Mac."
+                let icon = status.isTrusted ? "checkmark.seal.fill" : "exclamationmark.shield.fill"
+                let tint = status.isTrusted ? colors.success : colors.warning
+
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: icon)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(tint)
+                        .padding(8)
+                        .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(title)
+                            .font(DesignSystem.Fonts.sans(12, weight: .semibold))
+                            .foregroundStyle(colors.textPrimary)
+                        Text("SHA1: \(status.sha1Hex)")
+                            .font(DesignSystem.Fonts.mono(11))
+                            .foregroundStyle(colors.textSecondary)
+                    }
+                }
+                .padding(10)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(tint.opacity(0.08))
+                )
+            } else if macCAErrorMessage == nil {
+                Text("Checking certificate trust…")
+                    .font(DesignSystem.Fonts.mono(11))
+                    .foregroundStyle(colors.textSecondary)
+            }
+
+            if let message = macCAActionMessage {
+                Text(message)
+                    .font(DesignSystem.Fonts.mono(11))
+                    .foregroundStyle(colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let message = macCAErrorMessage {
+                Text(message)
+                    .font(DesignSystem.Fonts.mono(11))
+                    .foregroundStyle(colors.danger)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            HStack(spacing: 10) {
+                primaryButton(
+                    title: isInstallingMacCA ? "Installing…" : "Install & Trust",
+                    color: colors.accent
+                ) {
+                    installMacCA()
+                }
+                .disabled(isInstallingMacCA)
+
+                secondaryButton(title: "Check again") {
+                    refreshMacCATrustStatus()
+                }
+                .disabled(isInstallingMacCA)
+            }
+
+            Text("Note: Firefox uses its own certificate store. You may need to enable enterprise roots or import the CA manually.")
+                .font(DesignSystem.Fonts.mono(10))
+                .foregroundStyle(colors.textSecondary.opacity(0.9))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.top, 2)
+    }
+
+    private func refreshMacCATrustStatusIfNeeded() {
+        guard step == .trustCertificate else { return }
+        refreshMacCATrustStatus()
+    }
+
+    private func refreshMacCATrustStatus() {
+        macCAActionMessage = nil
+        macCAErrorMessage = nil
+        Task { @MainActor in
+            do {
+                macCATrustStatus = try await macCertificateInstaller.trustStatus()
+            } catch {
+                macCAErrorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func installMacCA() {
+        guard !isInstallingMacCA else { return }
+        isInstallingMacCA = true
+        macCAActionMessage = nil
+        macCAErrorMessage = nil
+
+        Task { @MainActor in
+            do {
+                let message = try await macCertificateInstaller.installTrustedRootCA()
+                macCAActionMessage = message
+                macCATrustStatus = try await macCertificateInstaller.trustStatus()
+            } catch {
+                macCAErrorMessage = error.localizedDescription
+            }
+            isInstallingMacCA = false
         }
     }
 }

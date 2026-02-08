@@ -1,23 +1,21 @@
 import Foundation
-import Security
-import SystemConfiguration
 
 enum MacOSProxyOverrideError: LocalizedError {
-    case authorizationFailed(OSStatus)
-    case preferencesUnavailable
-    case commitFailed
-    case applyFailed
+    case commandFailed(String)
+    case invalidServiceList
+    case snapshotEncodingFailed
+    case snapshotDecodingFailed
 
     var errorDescription: String? {
         switch self {
-        case .authorizationFailed(let status):
-            return "macOS proxy override failed: authorization error (\(status))."
-        case .preferencesUnavailable:
-            return "macOS proxy override failed: unable to access network preferences."
-        case .commitFailed:
-            return "macOS proxy override failed: unable to save proxy settings."
-        case .applyFailed:
-            return "macOS proxy override failed: unable to apply proxy settings."
+        case .commandFailed(let message):
+            return "networksetup failed: \(message)"
+        case .invalidServiceList:
+            return "Unable to retrieve network services."
+        case .snapshotEncodingFailed:
+            return "Failed to encode proxy snapshot."
+        case .snapshotDecodingFailed:
+            return "Failed to decode proxy snapshot."
         }
     }
 }
@@ -38,236 +36,157 @@ struct MacOSProxySnapshot: Codable {
 }
 
 actor MacOSProxyOverrideManager {
+
     static let shared = MacOSProxyOverrideManager()
 
     private let snapshotKey = "settings.macosProxyOverride.snapshot"
     private let defaults = UserDefaults.standard
-    private let overrideHosts: Set<String> = ["localhost", "127.0.0.1"]
+
+    // MARK: - Public
 
     func enableProxy(host: String, port: Int) throws {
-        let (preferences, authorization) = try authorizedPreferences()
-        defer { AuthorizationFree(authorization, [.destroyRights]) }
-
-        let services = (SCNetworkServiceCopyAll(preferences) as? [SCNetworkService]) ?? []
+        let services = try listNetworkServices()
         var snapshot = loadSnapshot() ?? MacOSProxySnapshot(services: [:])
-        var snapshotUpdated = false
 
         for service in services {
-            guard SCNetworkServiceGetEnabled(service) else { continue }
-            guard let serviceID = SCNetworkServiceGetServiceID(service) as String? else { continue }
-            guard let proxyProtocol = SCNetworkServiceCopyProtocol(service, kSCNetworkProtocolTypeProxies) else { continue }
-
-            let currentConfig = SCNetworkProtocolGetConfiguration(proxyProtocol) as? [String: Any] ?? [:]
-            if snapshot.services[serviceID] == nil {
-                let serviceSnapshot = MacOSProxySnapshot.ServiceSettings(
-                    http: proxySettings(from: currentConfig,
-                                        enableKey: kSCPropNetProxiesHTTPEnable,
-                                        hostKey: kSCPropNetProxiesHTTPProxy,
-                                        portKey: kSCPropNetProxiesHTTPPort),
-                    https: proxySettings(from: currentConfig,
-                                         enableKey: kSCPropNetProxiesHTTPSEnable,
-                                         hostKey: kSCPropNetProxiesHTTPSProxy,
-                                         portKey: kSCPropNetProxiesHTTPSPort)
-                )
-                snapshot.services[serviceID] = serviceSnapshot
-                snapshotUpdated = true
+            if snapshot.services[service] == nil {
+                snapshot.services[service] = try captureServiceSnapshot(service)
             }
 
-            var updatedConfig = currentConfig
-            applyOverride(host: host, port: port, to: &updatedConfig)
-            SCNetworkProtocolSetConfiguration(proxyProtocol, updatedConfig as CFDictionary)
+            try runNetworkSetup([
+                "-setwebproxy", service, host, "\(port)"
+            ])
+            try runNetworkSetup([
+                "-setsecurewebproxy", service, host, "\(port)"
+            ])
+            try runNetworkSetup([
+                "-setwebproxystate", service, "on"
+            ])
+            try runNetworkSetup([
+                "-setsecurewebproxystate", service, "on"
+            ])
         }
 
-        try commitChanges(preferences)
-        if snapshotUpdated {
-            persistSnapshot(snapshot)
-        }
+        persistSnapshot(snapshot)
     }
 
     func disableProxy() throws {
-        let (preferences, authorization) = try authorizedPreferences()
-        defer { AuthorizationFree(authorization, [.destroyRights]) }
-
-        let services = (SCNetworkServiceCopyAll(preferences) as? [SCNetworkService]) ?? []
-
-        if let snapshot = loadSnapshot() {
-            for service in services {
-                guard SCNetworkServiceGetEnabled(service) else { continue }
-                guard let serviceID = SCNetworkServiceGetServiceID(service) as String? else { continue }
-                guard let serviceSnapshot = snapshot.services[serviceID] else { continue }
-                guard let proxyProtocol = SCNetworkServiceCopyProtocol(service, kSCNetworkProtocolTypeProxies) else { continue }
-
-                var config = SCNetworkProtocolGetConfiguration(proxyProtocol) as? [String: Any] ?? [:]
-                applySnapshot(serviceSnapshot, to: &config)
-                SCNetworkProtocolSetConfiguration(proxyProtocol, config as CFDictionary)
-            }
-
-            try commitChanges(preferences)
-            clearSnapshot()
+        guard let snapshot = loadSnapshot() else {
+            try disableProxyWithoutSnapshot()
             return
         }
 
-        var didUpdate = false
+        for (service, settings) in snapshot.services {
+            try restore(service: service, settings: settings)
+        }
+
+        clearSnapshot()
+    }
+
+    // MARK: - Snapshot Capture
+
+    private func captureServiceSnapshot(_ service: String) throws -> MacOSProxySnapshot.ServiceSettings {
+        let http = try readProxy(service: service, secure: false)
+        let https = try readProxy(service: service, secure: true)
+        return .init(http: http, https: https)
+    }
+
+    private func readProxy(service: String, secure: Bool) throws -> MacOSProxySnapshot.ProxySettings {
+        let flag = secure ? "-getsecurewebproxy" : "-getwebproxy"
+        let output = try runNetworkSetup([flag, service])
+
+        let enabled = output.contains("Enabled: Yes")
+
+        let host = parseValue(from: output, key: "Server")
+        let portString = parseValue(from: output, key: "Port")
+        let port = portString.flatMap { Int($0) }
+
+        return .init(enabled: enabled, host: host, port: port)
+    }
+
+    // MARK: - Restore
+
+    private func restore(service: String, settings: MacOSProxySnapshot.ServiceSettings) throws {
+        try restoreProxy(service: service, settings: settings.http, secure: false)
+        try restoreProxy(service: service, settings: settings.https, secure: true)
+    }
+
+    private func restoreProxy(service: String,
+                              settings: MacOSProxySnapshot.ProxySettings,
+                              secure: Bool) throws {
+
+        let setFlag = secure ? "-setsecurewebproxy" : "-setwebproxy"
+        let stateFlag = secure ? "-setsecurewebproxystate" : "-setwebproxystate"
+
+        if let host = settings.host, let port = settings.port {
+            try runNetworkSetup([setFlag, service, host, "\(port)"])
+        }
+
+        try runNetworkSetup([
+            stateFlag, service, settings.enabled ? "on" : "off"
+        ])
+    }
+
+    private func disableProxyWithoutSnapshot() throws {
+        let services = try listNetworkServices()
+
         for service in services {
-            guard SCNetworkServiceGetEnabled(service) else { continue }
-            guard let proxyProtocol = SCNetworkServiceCopyProtocol(service, kSCNetworkProtocolTypeProxies) else { continue }
-
-            var config = SCNetworkProtocolGetConfiguration(proxyProtocol) as? [String: Any] ?? [:]
-            if disableOverrideIfPresent(in: &config) {
-                didUpdate = true
-                SCNetworkProtocolSetConfiguration(proxyProtocol, config as CFDictionary)
-            }
-        }
-
-        if didUpdate {
-            try commitChanges(preferences)
+            try runNetworkSetup(["-setwebproxystate", service, "off"])
+            try runNetworkSetup(["-setsecurewebproxystate", service, "off"])
         }
     }
 
-    private func authorizedPreferences() throws -> (SCPreferences, AuthorizationRef) {
-        var authorization: AuthorizationRef?
-        let createStatus = AuthorizationCreate(nil, nil, [], &authorization)
-        guard createStatus == errAuthorizationSuccess, let authorization else {
-            throw MacOSProxyOverrideError.authorizationFailed(createStatus)
-        }
-        var shouldFreeAuthorization = true
-        defer {
-            if shouldFreeAuthorization {
-                AuthorizationFree(authorization, [.destroyRights])
-            }
+    // MARK: - Helpers
+
+    private func listNetworkServices() throws -> [String] {
+        let output = try runNetworkSetup(["-listallnetworkservices"])
+        let lines = output
+            .split(separator: "\n")
+            .map { String($0) }
+            .filter { !$0.contains("(*)") } // ignore disabled
+            .filter { !$0.isEmpty }
+
+        guard !lines.isEmpty else {
+            throw MacOSProxyOverrideError.invalidServiceList
         }
 
-        let flags: AuthorizationFlags = [.interactionAllowed, .extendRights, .preAuthorize]
-        let rightsStatus = "system.preferences.network".withCString { namePointer in
-            var authItem = AuthorizationItem(name: namePointer, valueLength: 0, value: nil, flags: 0)
-            var authRights = AuthorizationRights(count: 1, items: &authItem)
-            return AuthorizationCopyRights(authorization, &authRights, nil, flags, nil)
-        }
-        guard rightsStatus == errAuthorizationSuccess else {
-            throw MacOSProxyOverrideError.authorizationFailed(rightsStatus)
-        }
-
-        guard let preferences = SCPreferencesCreateWithAuthorization(
-            nil,
-            "io.frtmproxy" as CFString,
-            nil,
-            authorization
-        ) else {
-            throw MacOSProxyOverrideError.preferencesUnavailable
-        }
-
-        shouldFreeAuthorization = false
-        return (preferences, authorization)
+        return lines
     }
 
-    private func commitChanges(_ preferences: SCPreferences) throws {
-        guard SCPreferencesCommitChanges(preferences) else {
-            throw MacOSProxyOverrideError.commitFailed
-        }
-        guard SCPreferencesApplyChanges(preferences) else {
-            throw MacOSProxyOverrideError.applyFailed
-        }
-    }
+    @discardableResult
+    private func runNetworkSetup(_ arguments: [String]) throws -> String {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/sbin/networksetup")
+        process.arguments = arguments
 
-    private func proxySettings(
-        from config: [String: Any],
-        enableKey: CFString,
-        hostKey: CFString,
-        portKey: CFString
-    ) -> MacOSProxySnapshot.ProxySettings {
-        let enabled = (config[enableKey as String] as? NSNumber)?.boolValue ?? false
-        let host = config[hostKey as String] as? String
-        let port = (config[portKey as String] as? NSNumber)?.intValue
-        return MacOSProxySnapshot.ProxySettings(enabled: enabled, host: host, port: port)
-    }
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
 
-    private func applySnapshot(_ snapshot: MacOSProxySnapshot.ServiceSettings, to config: inout [String: Any]) {
-        applyProxySettings(
-            snapshot.http,
-            enableKey: kSCPropNetProxiesHTTPEnable,
-            hostKey: kSCPropNetProxiesHTTPProxy,
-            portKey: kSCPropNetProxiesHTTPPort,
-            to: &config
-        )
-        applyProxySettings(
-            snapshot.https,
-            enableKey: kSCPropNetProxiesHTTPSEnable,
-            hostKey: kSCPropNetProxiesHTTPSProxy,
-            portKey: kSCPropNetProxiesHTTPSPort,
-            to: &config
-        )
-    }
+        try process.run()
+        process.waitUntilExit()
 
-    private func applyOverride(host: String, port: Int, to config: inout [String: Any]) {
-        applyProxySettings(
-            MacOSProxySnapshot.ProxySettings(enabled: true, host: host, port: port),
-            enableKey: kSCPropNetProxiesHTTPEnable,
-            hostKey: kSCPropNetProxiesHTTPProxy,
-            portKey: kSCPropNetProxiesHTTPPort,
-            to: &config
-        )
-        applyProxySettings(
-            MacOSProxySnapshot.ProxySettings(enabled: true, host: host, port: port),
-            enableKey: kSCPropNetProxiesHTTPSEnable,
-            hostKey: kSCPropNetProxiesHTTPSProxy,
-            portKey: kSCPropNetProxiesHTTPSPort,
-            to: &config
-        )
-    }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        let output = String(decoding: data, as: UTF8.self)
 
-    private func applyProxySettings(
-        _ settings: MacOSProxySnapshot.ProxySettings,
-        enableKey: CFString,
-        hostKey: CFString,
-        portKey: CFString,
-        to config: inout [String: Any]
-    ) {
-        config[enableKey as String] = settings.enabled ? 1 : 0
-
-        if let host = settings.host {
-            config[hostKey as String] = host
-        } else {
-            config.removeValue(forKey: hostKey as String)
+        guard process.terminationStatus == 0 else {
+            throw MacOSProxyOverrideError.commandFailed(output)
         }
 
-        if let port = settings.port {
-            config[portKey as String] = port
-        } else {
-            config.removeValue(forKey: portKey as String)
-        }
+        return output
     }
 
-    private func disableOverrideIfPresent(in config: inout [String: Any]) -> Bool {
-        let httpChanged = clearProxyIfOverride(
-            enableKey: kSCPropNetProxiesHTTPEnable,
-            hostKey: kSCPropNetProxiesHTTPProxy,
-            portKey: kSCPropNetProxiesHTTPPort,
-            config: &config
-        )
-        let httpsChanged = clearProxyIfOverride(
-            enableKey: kSCPropNetProxiesHTTPSEnable,
-            hostKey: kSCPropNetProxiesHTTPSProxy,
-            portKey: kSCPropNetProxiesHTTPSPort,
-            config: &config
-        )
-        return httpChanged || httpsChanged
+    private func parseValue(from output: String, key: String) -> String? {
+        output
+            .split(separator: "\n")
+            .first(where: { $0.contains("\(key):") })?
+            .split(separator: ":")
+            .dropFirst()
+            .joined(separator: ":")
+            .trimmingCharacters(in: .whitespaces)
     }
 
-    private func clearProxyIfOverride(
-        enableKey: CFString,
-        hostKey: CFString,
-        portKey: CFString,
-        config: inout [String: Any]
-    ) -> Bool {
-        guard let host = config[hostKey as String] as? String,
-              overrideHosts.contains(host) else {
-            return false
-        }
-        config[enableKey as String] = 0
-        config.removeValue(forKey: hostKey as String)
-        config.removeValue(forKey: portKey as String)
-        return true
-    }
+    // MARK: - Persistence
 
     private func loadSnapshot() -> MacOSProxySnapshot? {
         guard let data = defaults.data(forKey: snapshotKey),

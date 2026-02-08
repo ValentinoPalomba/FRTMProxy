@@ -26,27 +26,24 @@ struct FRTMProxyApp: App {
     @StateObject private var onboardingManager = OnboardingManager()
     @State private var deviceAlert: DeviceAlert?
     @State private var isInstallingSimulatorCertificate = false
+    @State private var isInstallingMacCertificate = false
+    @State private var shouldPromptMacCertificateTrust = false
+    @State private var macCertificateSHA1ForPrompt: String = ""
     private let certificateInstaller = SimulatorCertificateInstaller()
+    private let macCertificateInstaller = MacCertificateInstaller()
     @Environment(\.openWindow) private var openWindow
     private let updaterController: SPUStandardUpdaterController
     private let launchConfiguration: LaunchConfiguration
+    private let macCertificatePromptedSHA1Key = "settings.proxycoreMacCA.promptedSHA1"
     
     init() {
         let launchConfiguration = LaunchConfiguration.current
         let settings = SettingsStore()
         _settingsStore = StateObject(wrappedValue: settings)
 
-        let proxyService: ProxyServiceProtocol
-        if launchConfiguration.useMockFlows {
-            proxyService = ProxyMockService()
-        } else {
-            switch settings.activeProxyEngine {
-            case .swiftNIO:
-                proxyService = NIOProxyService()
-            case .mitmproxy:
-                proxyService = NIOProxyService()
-            }
-        }
+        let proxyService: ProxyServiceProtocol = launchConfiguration.useMockFlows
+            ? ProxyMockService()
+            : NIOProxyService()
 
         _proxyViewModel = StateObject(wrappedValue: ProxyViewModel(service: proxyService))
         self.launchConfiguration = launchConfiguration
@@ -65,6 +62,10 @@ struct FRTMProxyApp: App {
                     if launchConfiguration.autoStartProxy && !proxyViewModel.isRunning {
                         await proxyViewModel.startProxy(port: settingsStore.defaultPort)
                     }
+
+                    // If the user enabled macOS proxy override, make sure the proxy CA is trusted,
+                    // otherwise browsers will show TLS warnings for every intercepted HTTPS request.
+                    await checkMacCertificateTrustOnLaunchIfNeeded()
                 }
                 .alert(item: $deviceAlert) { alert in
                     Alert(
@@ -72,6 +73,23 @@ struct FRTMProxyApp: App {
                         message: Text(alert.message),
                         dismissButton: .default(Text("OK"))
                     )
+                }
+                .alert("Trust Proxy Certificate", isPresented: $shouldPromptMacCertificateTrust) {
+                    Button("Install & Trust") {
+                        shouldPromptMacCertificateTrust = false
+                        installProxyCoreCertificateOnMac()
+                    }
+                    Button("Not now", role: .cancel) {
+                        shouldPromptMacCertificateTrust = false
+                    }
+                } message: {
+                    Text("""
+                    To intercept HTTPS on this Mac, you must trust the ProxyCore Root CA.
+
+                    SHA1: \(macCertificateSHA1ForPrompt)
+
+                    Note: Firefox uses its own certificate store (you may need to enable enterprise roots or import the CA manually).
+                    """)
                 }
         }
         .windowStyle(.hiddenTitleBar)
@@ -94,7 +112,16 @@ struct FRTMProxyApp: App {
                 .keyboardShortcut("f", modifiers: [.command])
             }
             CommandMenu("Device") {
-                Button(action: installMitmproxyCertificateOnSimulator) {
+                Button(action: installProxyCoreCertificateOnMac) {
+                    Label {
+                        Text(isInstallingMacCertificate ? "Installing Certificate…" : "Install proxy Certificate on Mac")
+                    } icon: {
+                        Image(systemName: isInstallingMacCertificate ? "hourglass" : "checkmark.shield")
+                    }
+                }
+                .disabled(isInstallingMacCertificate)
+
+                Button(action: installProxyCertificateOnSimulator) {
                     Label {
                         Text(isInstallingSimulatorCertificate ? "Installing Certificate…" : "Install proxy Certificate on Simulator")
                     } icon: {
@@ -129,7 +156,7 @@ struct FRTMProxyApp: App {
         .windowToolbarStyle(.unifiedCompact)
     }
 
-    private func installMitmproxyCertificateOnSimulator() {
+    private func installProxyCertificateOnSimulator() {
         guard !isInstallingSimulatorCertificate else { return }
         isInstallingSimulatorCertificate = true
         let installer = certificateInstaller
@@ -158,6 +185,61 @@ struct FRTMProxyApp: App {
                     )
                 }
             }
+        }
+    }
+
+    private func installProxyCoreCertificateOnMac() {
+        guard !isInstallingMacCertificate else { return }
+        isInstallingMacCertificate = true
+        let installer = macCertificateInstaller
+
+        Task.detached(priority: .userInitiated) {
+            let result: Result<String, Error>
+            do {
+                let message = try await installer.installTrustedRootCA()
+                result = .success(message)
+            } catch {
+                result = .failure(error)
+            }
+
+            await MainActor.run {
+                self.isInstallingMacCertificate = false
+                switch result {
+                case .success(let message):
+                    self.deviceAlert = DeviceAlert(
+                        title: "Operation completed",
+                        message: message
+                    )
+                case .failure(let error):
+                    self.deviceAlert = DeviceAlert(
+                        title: "Installation failed",
+                        message: error.localizedDescription
+                    )
+                }
+            }
+        }
+    }
+
+    @MainActor
+    private func checkMacCertificateTrustOnLaunchIfNeeded() async {
+        guard settingsStore.overrideMacOSProxy else { return }
+
+        do {
+            let status = try await macCertificateInstaller.trustStatus()
+            let defaults = UserDefaults.standard
+            let previouslyPromptedSHA1 = defaults.string(forKey: macCertificatePromptedSHA1Key)
+
+            // Avoid nagging: only prompt once per CA fingerprint.
+            guard previouslyPromptedSHA1 != status.sha1Hex else { return }
+            defaults.set(status.sha1Hex, forKey: macCertificatePromptedSHA1Key)
+
+            guard !status.isTrusted else { return }
+
+            macCertificateSHA1ForPrompt = status.sha1Hex
+            shouldPromptMacCertificateTrust = true
+        } catch {
+            // If we can't determine status, don't block app startup.
+            return
         }
     }
 }

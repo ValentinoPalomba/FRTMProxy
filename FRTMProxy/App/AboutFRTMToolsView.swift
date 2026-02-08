@@ -40,7 +40,7 @@ struct AboutFRTMToolsView: View {
             Text("About FRTMTools")
                 .font(DesignSystem.Fonts.mono(22, weight: .bold))
                 .foregroundStyle(colors.textPrimary)
-            Text("All-in-one toolkit for debugging HTTPS traffic with mitmproxy, SwiftUI and plenty of quality-of-life utilities.")
+            Text("All-in-one toolkit for debugging HTTPS traffic with ProxyCore (SwiftNIO), SwiftUI and plenty of quality-of-life utilities.")
                 .font(DesignSystem.Fonts.sans(13, weight: .medium))
                 .foregroundStyle(colors.textSecondary)
         }

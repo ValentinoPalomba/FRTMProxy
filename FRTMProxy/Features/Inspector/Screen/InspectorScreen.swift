@@ -294,10 +294,10 @@ private extension InspectorScreen {
         return [
             CommandPaletteAction(
                 title: "Start Proxy",
-                subtitle: "Start the embedded mitmproxy",
+                subtitle: "Start ProxyCore engine",
                 systemImage: "play.fill",
                 shortcut: "⌘⌥P",
-                keywords: ["start", "proxy", "mitm"],
+                keywords: ["start", "proxy", "core"],
                 isEnabled: !viewModel.isRunning
             ) {
                 Task { @MainActor in

@@ -154,6 +154,12 @@ struct DeviceConnectView: View {
     @StateObject private var model = DeviceConnectViewModel()
     @StateObject private var locationPermission = LocationPermissionManager.shared
     @State private var selectedTab: ConnectTab = .device
+    @State private var macCATrustStatus: MacCertificateInstaller.TrustStatus?
+    @State private var isInstallingMacCA = false
+    @State private var macCAStatusMessage: String?
+    @State private var macCAErrorMessage: String?
+
+    private let macCertificateInstaller = MacCertificateInstaller()
 
     private var colors: DesignSystem.ColorPalette {
         DesignSystem.Colors.palette(for: settings.activeTheme, interfaceStyle: colorScheme)
@@ -184,6 +190,7 @@ struct DeviceConnectView: View {
             locationPermission.requestWhenInUseIfNeeded()
             model.setProxyPort(proxyPort)
             model.start()
+            refreshMacCATrustStatus()
         }
         .onDisappear {
             model.stop()
@@ -370,6 +377,33 @@ struct DeviceConnectView: View {
                 )
             }
 
+            if let status = macCATrustStatus, !status.isTrusted {
+                VStack(alignment: .leading, spacing: 10) {
+                    callout(
+                        "ProxyCore Root CA is not trusted on this Mac. Browsers will mark every intercepted HTTPS site as insecure.\nSHA1: \(status.sha1Hex)",
+                        icon: "exclamationmark.shield",
+                        tint: colors.warning
+                    )
+
+                    ControlButton(
+                        title: isInstallingMacCA ? "Installing…" : "Install & trust certificate on Mac",
+                        systemImage: "checkmark.shield",
+                        style: .filled(colors),
+                        disabled: isInstallingMacCA
+                    ) {
+                        installMacCA()
+                    }
+                }
+            }
+
+            if let message = macCAStatusMessage {
+                callout(message, icon: "checkmark.seal.fill", tint: colors.success)
+            }
+
+            if let message = macCAErrorMessage {
+                callout(message, icon: "xmark.octagon.fill", tint: colors.danger)
+            }
+
             if !proxyIsRunning {
                 callout(
                     "The main proxy is currently stopped. Start it before redirecting traffic from the device.",
@@ -421,6 +455,34 @@ struct DeviceConnectView: View {
 
     private var needsSSIDOverride: Bool {
         model.detectedWiFiSSID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func refreshMacCATrustStatus() {
+        Task { @MainActor in
+            do {
+                macCATrustStatus = try await macCertificateInstaller.trustStatus()
+            } catch {
+                macCAErrorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func installMacCA() {
+        guard !isInstallingMacCA else { return }
+        isInstallingMacCA = true
+        macCAStatusMessage = nil
+        macCAErrorMessage = nil
+
+        Task { @MainActor in
+            do {
+                let message = try await macCertificateInstaller.installTrustedRootCA()
+                macCAStatusMessage = message
+                macCATrustStatus = try await macCertificateInstaller.trustStatus()
+            } catch {
+                macCAErrorMessage = error.localizedDescription
+            }
+            isInstallingMacCA = false
+        }
     }
 
     private func tabButton(for tab: ConnectTab) -> some View {

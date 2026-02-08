@@ -103,6 +103,8 @@ private struct ManageMenuButton: View {
                 .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10)))
         }
         .buttonStyle(.plain)
+        .onboardingTarget(.manageMenu)
+        .onboardingTarget(.configureWiFiProxy)
         .popover(isPresented: $isPresented, arrowEdge: .bottom) {
             VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(14)) {
                 Text("Quick actions")

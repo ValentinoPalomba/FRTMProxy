@@ -12,6 +12,7 @@ final class HTTP2MITMClientStreamHandler: ChannelInboundHandler, RemovableChanne
     private let eventBus: ProxyEventBus
     private let interceptors: [any ProxyInterceptor]
     private let processInfoProvider: ProcessInfoProvider
+    private let trafficController: TrafficProfileController
 
     private let upstreamMultiplexer: HTTP2StreamMultiplexer
 
@@ -35,6 +36,7 @@ final class HTTP2MITMClientStreamHandler: ChannelInboundHandler, RemovableChanne
         eventBus: ProxyEventBus,
         interceptors: [any ProxyInterceptor],
         processInfoProvider: ProcessInfoProvider,
+        trafficController: TrafficProfileController,
         upstreamMultiplexer: HTTP2StreamMultiplexer,
         authorityFallback: String,
         scheme: String = "https"
@@ -43,6 +45,7 @@ final class HTTP2MITMClientStreamHandler: ChannelInboundHandler, RemovableChanne
         self.eventBus = eventBus
         self.interceptors = interceptors
         self.processInfoProvider = processInfoProvider
+        self.trafficController = trafficController
         self.upstreamMultiplexer = upstreamMultiplexer
         self.authorityFallback = authorityFallback
         self.scheme = scheme
@@ -206,6 +209,7 @@ final class HTTP2MITMClientStreamHandler: ChannelInboundHandler, RemovableChanne
                         configuration: self.configuration,
                         eventBus: self.eventBus,
                         interceptors: self.interceptors,
+                        trafficController: self.trafficController,
                         request: updatedRequest,
                         requestID: updatedRequest.id,
                         streamID: self.streamID,
@@ -246,12 +250,19 @@ final class HTTP2MITMClientStreamHandler: ChannelInboundHandler, RemovableChanne
             overrideContentLength: !updatedRequest.bodyIsTruncated && (bodyBuffer.readableBytes > 0 || (updatedRequest.bodyPreview?.isEmpty == false))
         )
 
-        upstreamStream.eventLoop.execute {
-            upstreamStream.write(NIOAny(HTTPClientRequestPart.head(upstreamHead)), promise: nil)
-            if let bodyToSend, bodyToSend.readableBytes > 0 {
-                upstreamStream.write(NIOAny(HTTPClientRequestPart.body(.byteBuffer(bodyToSend))), promise: nil)
+        let delay = trafficController.delayFuture(
+            direction: .uplink,
+            byteCount: bodyToSend?.readableBytes ?? 0,
+            on: upstreamStream.eventLoop
+        )
+        delay.whenComplete { _ in
+            upstreamStream.eventLoop.execute {
+                upstreamStream.write(NIOAny(HTTPClientRequestPart.head(upstreamHead)), promise: nil)
+                if let bodyToSend, bodyToSend.readableBytes > 0 {
+                    upstreamStream.write(NIOAny(HTTPClientRequestPart.body(.byteBuffer(bodyToSend))), promise: nil)
+                }
+                upstreamStream.writeAndFlush(NIOAny(HTTPClientRequestPart.end(nil)), promise: nil)
             }
-            upstreamStream.writeAndFlush(NIOAny(HTTPClientRequestPart.end(nil)), promise: nil)
         }
     }
 
@@ -384,6 +395,7 @@ final class HTTP2MITMUpstreamStreamHandler: ChannelInboundHandler, RemovableChan
     private let configuration: ProxyConfiguration
     private let eventBus: ProxyEventBus
     private let interceptors: [any ProxyInterceptor]
+    private let trafficController: TrafficProfileController
 
     private let request: ProxyRequest
     private let requestID: String
@@ -411,6 +423,7 @@ final class HTTP2MITMUpstreamStreamHandler: ChannelInboundHandler, RemovableChan
         configuration: ProxyConfiguration,
         eventBus: ProxyEventBus,
         interceptors: [any ProxyInterceptor],
+        trafficController: TrafficProfileController,
         request: ProxyRequest,
         requestID: String,
         streamID: Int?,
@@ -419,6 +432,7 @@ final class HTTP2MITMUpstreamStreamHandler: ChannelInboundHandler, RemovableChan
         self.configuration = configuration
         self.eventBus = eventBus
         self.interceptors = interceptors
+        self.trafficController = trafficController
         self.request = request
         self.requestID = requestID
         self.streamID = streamID
@@ -470,6 +484,9 @@ final class HTTP2MITMUpstreamStreamHandler: ChannelInboundHandler, RemovableChan
                         status: head.status
                     )
                     outHead.headers = head.headers
+                    if let profileID = self.trafficController.profileHeaderValue() {
+                        outHead.headers.replaceOrAdd(name: "x-frtraffic-profile", value: profileID)
+                    }
                     self.clientStream.write(NIOAny(HTTPServerResponsePart.head(outHead)), promise: nil)
                 }
             }
@@ -591,32 +608,56 @@ final class HTTP2MITMUpstreamStreamHandler: ChannelInboundHandler, RemovableChan
             }
         }
 
+        if let profileID = trafficController.profileHeaderValue() {
+            proxyResponse.headers["x-frtraffic-profile"] = profileID
+        }
+
+        if trafficController.shouldInjectPacketLoss() {
+            let message = "Simulated packet loss (traffic profile)"
+            let data = Data(message.utf8)
+            proxyResponse.statusCode = 598
+            proxyResponse.bodyPreview = data
+            proxyResponse.bodyIsTruncated = false
+            proxyResponse.rawBodySize = data.count
+            ensureContentTypePlainText(&proxyResponse.headers)
+        }
+
         let outBody = proxyResponse.bodyPreview ?? Data()
         let outHeaders = proxyResponse.headers
         let outStatus = proxyResponse.statusCode
 
-        clientStream.eventLoop.execute {
-            var outHead = HTTPResponseHead(
-                version: HTTPVersion(major: 2, minor: 0),
-                status: HTTPResponseStatus(statusCode: outStatus)
-            )
-            outHead.headers = HTTPHeaders()
-            for (k, v) in outHeaders {
-                outHead.headers.add(name: k, value: v)
-            }
-            outHead.headers.remove(name: "transfer-encoding")
-            outHead.headers.replaceOrAdd(name: "content-length", value: "\(outBody.count)")
+        let delay = trafficController.delayFuture(direction: .downlink, byteCount: outBody.count, on: clientStream.eventLoop)
+        delay.whenComplete { _ in
+            self.clientStream.eventLoop.execute {
+                var outHead = HTTPResponseHead(
+                    version: HTTPVersion(major: 2, minor: 0),
+                    status: HTTPResponseStatus(statusCode: outStatus)
+                )
+                outHead.headers = HTTPHeaders()
+                for (k, v) in outHeaders {
+                    outHead.headers.add(name: k, value: v)
+                }
+                outHead.headers.remove(name: "transfer-encoding")
+                outHead.headers.replaceOrAdd(name: "content-length", value: "\(outBody.count)")
 
-            self.clientStream.write(NIOAny(HTTPServerResponsePart.head(outHead)), promise: nil)
-            if !outBody.isEmpty {
-                var buf = self.clientStream.allocator.buffer(capacity: outBody.count)
-                buf.writeBytes(outBody)
-                self.clientStream.write(NIOAny(HTTPServerResponsePart.body(.byteBuffer(buf))), promise: nil)
+                self.clientStream.write(NIOAny(HTTPServerResponsePart.head(outHead)), promise: nil)
+                if !outBody.isEmpty {
+                    var buf = self.clientStream.allocator.buffer(capacity: outBody.count)
+                    buf.writeBytes(outBody)
+                    self.clientStream.write(NIOAny(HTTPServerResponsePart.body(.byteBuffer(buf))), promise: nil)
+                }
+                self.clientStream.writeAndFlush(NIOAny(HTTPServerResponsePart.end(nil)), promise: nil)
             }
-            self.clientStream.writeAndFlush(NIOAny(HTTPServerResponsePart.end(nil)), promise: nil)
+
+            self.eventBus.emit(.response(proxyResponse))
         }
+    }
 
-        eventBus.emit(.response(proxyResponse))
+    private func ensureContentTypePlainText(_ headers: inout [String: String]) {
+        for (k, _) in headers where k.lowercased() == "content-type" {
+            return
+        }
+        headers["content-type"] = "text/plain; charset=utf-8"
     }
 
     private func emitAndInterceptResponse(head: HTTPResponseHead) async {

@@ -19,6 +19,7 @@ final class Socks5HandshakeHandler: ChannelInboundHandler, RemovableChannelHandl
     private let interceptors: [any ProxyInterceptor]
     private let certificateAuthority: CertificateAuthority
     private let processInfoProvider: ProcessInfoProvider
+    private let trafficController: TrafficProfileController
     private let group: EventLoopGroup
 
     private var state: State = .greeting
@@ -30,6 +31,7 @@ final class Socks5HandshakeHandler: ChannelInboundHandler, RemovableChannelHandl
         interceptors: [any ProxyInterceptor],
         certificateAuthority: CertificateAuthority,
         processInfoProvider: ProcessInfoProvider,
+        trafficController: TrafficProfileController,
         group: EventLoopGroup
     ) {
         self.configuration = configuration
@@ -37,6 +39,7 @@ final class Socks5HandshakeHandler: ChannelInboundHandler, RemovableChannelHandl
         self.interceptors = interceptors
         self.certificateAuthority = certificateAuthority
         self.processInfoProvider = processInfoProvider
+        self.trafficController = trafficController
         self.group = group
     }
 
@@ -164,6 +167,7 @@ final class Socks5HandshakeHandler: ChannelInboundHandler, RemovableChannelHandl
                     interceptors: interceptors,
                     certificateAuthority: certificateAuthority,
                     processInfoProvider: processInfoProvider,
+                    trafficController: trafficController,
                     group: group,
                     targetHost: host,
                     targetPort: port,

@@ -12,6 +12,7 @@ final class HTTP1FrontendHandler: ChannelInboundHandler, RemovableChannelHandler
     private let interceptors: [any ProxyInterceptor]
     private let certificateAuthority: CertificateAuthority
     private let processInfoProvider: ProcessInfoProvider
+    private let trafficController: TrafficProfileController
     private let group: EventLoopGroup
 
     private var currentHead: HTTPRequestHead?
@@ -30,6 +31,7 @@ final class HTTP1FrontendHandler: ChannelInboundHandler, RemovableChannelHandler
         interceptors: [any ProxyInterceptor],
         certificateAuthority: CertificateAuthority,
         processInfoProvider: ProcessInfoProvider,
+        trafficController: TrafficProfileController,
         group: EventLoopGroup
     ) {
         self.configuration = configuration
@@ -37,6 +39,7 @@ final class HTTP1FrontendHandler: ChannelInboundHandler, RemovableChannelHandler
         self.interceptors = interceptors
         self.certificateAuthority = certificateAuthority
         self.processInfoProvider = processInfoProvider
+        self.trafficController = trafficController
         self.group = group
     }
 
@@ -132,6 +135,7 @@ final class HTTP1FrontendHandler: ChannelInboundHandler, RemovableChannelHandler
             interceptors: interceptors,
             certificateAuthority: certificateAuthority,
             processInfoProvider: processInfoProvider,
+            trafficController: trafficController,
             group: group,
             targetHost: targetHost,
             targetPort: targetPort,
@@ -236,12 +240,19 @@ final class HTTP1FrontendHandler: ChannelInboundHandler, RemovableChannelHandler
                             overrideContentLength: !requestToSend.bodyIsTruncated && (bodySize > 0 || (requestToSend.bodyPreview?.isEmpty == false))
                         )
 
-                        upstream.eventLoop.execute {
-                            upstream.write(NIOAny(HTTPClientRequestPart.head(headToSend)), promise: nil)
-                            if let bodyToSend, bodyToSend.readableBytes > 0 {
-                                upstream.write(NIOAny(HTTPClientRequestPart.body(.byteBuffer(bodyToSend))), promise: nil)
+                        let delay = self.trafficController.delayFuture(
+                            direction: .uplink,
+                            byteCount: bodyToSend?.readableBytes ?? 0,
+                            on: upstream.eventLoop
+                        )
+                        delay.whenComplete { _ in
+                            upstream.eventLoop.execute {
+                                upstream.write(NIOAny(HTTPClientRequestPart.head(headToSend)), promise: nil)
+                                if let bodyToSend, bodyToSend.readableBytes > 0 {
+                                    upstream.write(NIOAny(HTTPClientRequestPart.body(.byteBuffer(bodyToSend))), promise: nil)
+                                }
+                                upstream.writeAndFlush(NIOAny(HTTPClientRequestPart.end(nil)), promise: nil)
                             }
-                            upstream.writeAndFlush(NIOAny(HTTPClientRequestPart.end(nil)), promise: nil)
                         }
                     }.flatMapError { error in
                         self.eventBus.emit(.error(ProxyErrorEvent(requestID: requestID, message: String(describing: error))))
@@ -297,12 +308,19 @@ final class HTTP1FrontendHandler: ChannelInboundHandler, RemovableChannelHandler
                                     overrideContentLength: !requestToSend.bodyIsTruncated && (bodySize > 0 || (requestToSend.bodyPreview?.isEmpty == false))
                                 )
 
-                                upstream.eventLoop.execute {
-                                    upstream.write(NIOAny(HTTPClientRequestPart.head(headToSend)), promise: nil)
-                                    if let bodyToSend, bodyToSend.readableBytes > 0 {
-                                        upstream.write(NIOAny(HTTPClientRequestPart.body(.byteBuffer(bodyToSend))), promise: nil)
+                                let delay = self.trafficController.delayFuture(
+                                    direction: .uplink,
+                                    byteCount: bodyToSend?.readableBytes ?? 0,
+                                    on: upstream.eventLoop
+                                )
+                                delay.whenComplete { _ in
+                                    upstream.eventLoop.execute {
+                                        upstream.write(NIOAny(HTTPClientRequestPart.head(headToSend)), promise: nil)
+                                        if let bodyToSend, bodyToSend.readableBytes > 0 {
+                                            upstream.write(NIOAny(HTTPClientRequestPart.body(.byteBuffer(bodyToSend))), promise: nil)
+                                        }
+                                        upstream.writeAndFlush(NIOAny(HTTPClientRequestPart.end(nil)), promise: nil)
                                     }
-                                    upstream.writeAndFlush(NIOAny(HTTPClientRequestPart.end(nil)), promise: nil)
                                 }
                             }.flatMapError { error in
                                 self.eventBus.emit(.error(ProxyErrorEvent(requestID: requestID, message: String(describing: error))))
@@ -333,6 +351,7 @@ final class HTTP1FrontendHandler: ChannelInboundHandler, RemovableChannelHandler
                         configuration: self.configuration,
                         eventBus: self.eventBus,
                         interceptors: self.interceptors,
+                        trafficController: self.trafficController,
                         request: request,
                         clientChannel: clientChannel
                     ))

@@ -61,10 +61,6 @@ final class SettingsStore: ObservableObject {
         didSet { persistAlertRules() }
     }
 
-    @Published var selectedProxyEngineID: String {
-        didSet { defaults.set(selectedProxyEngineID, forKey: proxyEngineKey) }
-    }
-
     private let defaults = UserDefaults.standard
     private let themeKey = "settings.theme"
     private let interfaceScaleKey = DesignSystem.Metrics.interfaceScaleStorageKey
@@ -80,7 +76,6 @@ final class SettingsStore: ObservableObject {
     private let trafficProfileKey = "settings.trafficProfile"
     private let alertsEnabledKey = "settings.alertsEnabled"
     private let alertRulesKey = "settings.alertRules"
-    private let proxyEngineKey = "settings.proxyEngine"
 
     var activeTheme: AppTheme {
         ThemeLibrary.theme(with: selectedThemeID)
@@ -92,10 +87,6 @@ final class SettingsStore: ObservableObject {
 
     var activeTrafficProfile: TrafficProfile {
         TrafficProfileLibrary.profile(with: selectedTrafficProfileID)
-    }
-
-    var activeProxyEngine: ProxyEngineChoice {
-        ProxyEngineChoice.engine(with: selectedProxyEngineID)
     }
 
     init() {
@@ -119,9 +110,6 @@ final class SettingsStore: ObservableObject {
 
         self.alertsEnabled = defaults.bool(forKey: alertsEnabledKey)
         self.alertRules = SettingsStore.loadAlertRules(from: defaults, key: alertRulesKey)
-
-        let storedProxyEngineID = defaults.string(forKey: proxyEngineKey)
-        self.selectedProxyEngineID = ProxyEngineChoice.engine(with: storedProxyEngineID).id
 
         DesignSystem.Metrics.applyInterfaceScale(activeInterfaceScale)
     }

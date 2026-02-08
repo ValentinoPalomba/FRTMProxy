@@ -35,7 +35,7 @@ final class NIOProxyService: ObservableObject, ProxyServiceProtocol {
         if restrictToHosts {
             hostFilter.whitelistEnabled = true
             hostFilter.whitelistPatterns = hosts.map(Self.hostAllowRegex(for:))
-            // When whitelisting, ignore the default blacklist to match mitmproxy allow_hosts behavior.
+            // When whitelisting, ignore the default blacklist to match legacy allow_hosts behavior.
             hostFilter.blacklistEnabled = false
             hostFilter.blacklistPatterns = []
         }
@@ -151,7 +151,25 @@ final class NIOProxyService: ObservableObject, ProxyServiceProtocol {
     }
 
     func applyTrafficProfile(_ profile: TrafficProfile) {
-        onLog?("[TRAFFIC] profile \(profile.name) (not yet enforced by ProxyCore)\n")
+        guard let engine else {
+            onLog?("[TRAFFIC] profile \(profile.name) skipped (proxy not running)\n")
+            return
+        }
+
+        let coreProfile = ProxyCore.TrafficProfile(
+            id: profile.id,
+            latencyMs: profile.latencyMs,
+            jitterMs: profile.jitterMs,
+            downstreamKbps: profile.downstreamKbps,
+            upstreamKbps: profile.upstreamKbps,
+            packetLoss: profile.packetLoss
+        )
+
+        Task { [engine] in
+            await engine.setTrafficProfile(coreProfile)
+        }
+
+        onLog?("[TRAFFIC] profile \(profile.name) activated\n")
     }
 
     func retryFlow(flowID: String, method: String, url: String, body: String?, headers: [String: String]) {
@@ -172,35 +190,24 @@ final class NIOProxyService: ObservableObject, ProxyServiceProtocol {
         flows[retryID] = flow
         onLog?("[RETRY] sending \(method) \(url)\n")
 
-        Task { [weak self] in
-            guard let self else { return }
-            guard let targetURL = URL(string: url) else { return }
-            var req = URLRequest(url: targetURL)
-            req.httpMethod = method
-            req.httpBody = body?.data(using: .utf8)
-            for (k, v) in headers { req.setValue(v, forHTTPHeaderField: k) }
+        guard let engine else {
+            onLog?("[RETRY] proxy engine not running\n")
+            return
+        }
 
+        Task { [weak self, engine] in
             do {
-                let (data, response) = try await URLSession.shared.data(for: req)
-                let http = response as? HTTPURLResponse
-                let status = http?.statusCode ?? 0
-                var resHeaders: [String: String] = [:]
-                if let http {
-                    for (k, v) in http.allHeaderFields {
-                        if let ks = k as? String, let vs = v as? String {
-                            resHeaders[ks] = vs
-                        }
-                    }
-                }
-                let bodyString = String(data: data, encoding: .utf8) ?? "<\(data.count) bytes>"
-
-                updateFlow(retryID) { f in
-                    f.response = MitmFlow.Response(status: status, headers: resHeaders, body: bodyString)
-                    f.event = "response"
-                    f.timestamp = Date().timeIntervalSince1970
-                }
+                try await engine.replayHTTP(
+                    requestID: retryID,
+                    method: method,
+                    url: url,
+                    headers: headers,
+                    body: body?.data(using: .utf8)
+                )
             } catch {
-                self.onLog?("[RETRY] failed: \(error)\n")
+                await MainActor.run {
+                    self?.onLog?("[RETRY] failed: \(error)\n")
+                }
             }
         }
     }
@@ -610,14 +617,59 @@ private enum BodyPreviewRenderer {
 // MARK: - Map Rule Interceptor
 
 private actor MapRuleRegistry {
+    private struct WildcardEntry: Sendable {
+        var key: String
+        var regex: NSRegularExpression
+        var score: Int
+    }
+
     private var rulesByKey: [String: MapRule] = [:]
+    private var keysByBase: [String: [String]] = [:]
+    private var wildcardEntries: [WildcardEntry] = []
+
+    private var signatureCursor: [String: Int] = [:]
+    private var fallbackCursor: [String: Int] = [:]
 
     func upsert(_ rule: MapRule) {
-        rulesByKey[Self.normalized(rule.key)] = rule
+        rulesByKey[rule.key] = rule
+
+        let base = MapRuleKeyBuilder.baseKey(from: rule.key)
+        if keysByBase[base] == nil {
+            keysByBase[base] = []
+        }
+        if keysByBase[base]?.contains(rule.key) != true {
+            keysByBase[base]?.append(rule.key)
+        }
+
+        if Self.isWildcard(base) {
+            wildcardEntries.removeAll(where: { $0.key == rule.key })
+            if let regex = Self.globRegex(pattern: base) {
+                wildcardEntries.append(WildcardEntry(
+                    key: rule.key,
+                    regex: regex,
+                    score: Self.wildcardScore(base)
+                ))
+            }
+        }
     }
 
     func delete(_ key: String) {
-        rulesByKey.removeValue(forKey: Self.normalized(key))
+        rulesByKey.removeValue(forKey: key)
+
+        let base = MapRuleKeyBuilder.baseKey(from: key)
+        if var keys = keysByBase[base] {
+            keys.removeAll(where: { $0 == key })
+            if keys.isEmpty {
+                keysByBase.removeValue(forKey: base)
+                fallbackCursor.removeValue(forKey: base)
+            } else {
+                keysByBase[base] = keys
+            }
+        }
+
+        wildcardEntries.removeAll(where: { $0.key == key })
+        // Best-effort: if this was a signature variant, clear the cursor to avoid stale indices.
+        signatureCursor.removeValue(forKey: key)
     }
 
     func match(request: ProxyRequest) -> MapRule? {
@@ -629,7 +681,7 @@ private actor MapRuleRegistry {
         }
 
         let path = url.path.isEmpty ? "/" : url.path
-        let baseKey = MapRuleKeyBuilder.baseKey(host: host, path: path)
+        let base = MapRuleKeyBuilder.baseKey(host: host, path: path)
 
         let bodyString = request.bodyPreview.flatMap { String(data: $0, encoding: .utf8) }
         let fullKey = MapRuleKeyBuilder.makeKey(
@@ -641,32 +693,105 @@ private actor MapRuleRegistry {
             body: bodyString
         )
 
-        let normalizedFull = Self.normalized(fullKey)
-        if let rule = rulesByKey[normalizedFull], rule.isEnabled {
+        // 1) Signature variants (fullKey, fullKey~2, ...)
+        if let candidates = keysByBase[base] {
+            let signatureCandidates = candidates.compactMap { key -> String? in
+                guard key.hasPrefix(fullKey) else { return nil }
+                guard let rule = rulesByKey[key], rule.isEnabled else { return nil }
+                return key
+            }
+
+            if !signatureCandidates.isEmpty {
+                let index = pickRoundRobinIndex(cursorKey: fullKey, count: signatureCandidates.count, cursor: &signatureCursor)
+                let key = signatureCandidates[index]
+                return rulesByKey[key]
+            }
+        }
+
+        // 2) Exact signature match.
+        if let rule = rulesByKey[fullKey], rule.isEnabled {
             return rule
         }
-        let normalizedBase = Self.normalized(baseKey)
-        if let rule = rulesByKey[normalizedBase], rule.isEnabled {
+
+        // 3) Exact base match (host + path).
+        if let rule = rulesByKey[base], rule.isEnabled {
             return rule
         }
+
+        // 4) Fallback: any rule registered under this base (round-robin).
+        if let candidates = keysByBase[base] {
+            let enabledCandidates = candidates.compactMap { key -> String? in
+                guard let rule = rulesByKey[key], rule.isEnabled else { return nil }
+                return key
+            }
+            if !enabledCandidates.isEmpty {
+                let index = pickRoundRobinIndex(cursorKey: base, count: enabledCandidates.count, cursor: &fallbackCursor)
+                let key = enabledCandidates[index]
+                return rulesByKey[key]
+            }
+        }
+
+        // 5) Wildcards: best match (most specific).
+        if let wildcard = bestWildcardMatch(subject: base) {
+            if let rule = rulesByKey[wildcard], rule.isEnabled {
+                return rule
+            }
+        }
+
         return nil
     }
 
-    private static func normalized(_ key: String) -> String {
-        // Strip "~N" disambiguation suffix if present.
-        if let hash = key.firstIndex(of: "#") {
-            let base = key[..<hash]
-            let suffix = key[key.index(after: hash)...]
-            if let tilde = suffix.firstIndex(of: "~") {
-                let tag = suffix[..<tilde]
-                return base + "#" + tag
+    private func bestWildcardMatch(subject: String) -> String? {
+        var bestKey: String?
+        var bestScore = -1
+
+        for entry in wildcardEntries {
+            guard entry.score >= bestScore else { continue }
+            let range = NSRange(subject.startIndex..<subject.endIndex, in: subject)
+            guard entry.regex.firstMatch(in: subject, options: [], range: range) != nil else { continue }
+            if entry.score > bestScore {
+                bestScore = entry.score
+                bestKey = entry.key
             }
-            return key
         }
-        if let tilde = key.firstIndex(of: "~") {
-            return String(key[..<tilde])
+        return bestKey
+    }
+
+    private func pickRoundRobinIndex(cursorKey: String, count: Int, cursor: inout [String: Int]) -> Int {
+        guard count > 1 else { return 0 }
+        let idx = (cursor[cursorKey] ?? 0) % count
+        cursor[cursorKey] = (idx + 1) % count
+        return idx
+    }
+
+    private static func isWildcard(_ base: String) -> Bool {
+        base.contains("*") || base.contains("?")
+    }
+
+    private static func wildcardScore(_ base: String) -> Int {
+        base.reduce(into: 0) { acc, ch in
+            if ch != "*" && ch != "?" {
+                acc += 1
+            }
         }
-        return key
+    }
+
+    private static func globRegex(pattern: String) -> NSRegularExpression? {
+        // Python's fnmatchcase-style matching: '*' -> '.*', '?' -> '.'.
+        var regex = "^"
+        regex.reserveCapacity(pattern.count * 2)
+        for ch in pattern {
+            switch ch {
+            case "*":
+                regex.append(".*")
+            case "?":
+                regex.append(".")
+            default:
+                regex.append(NSRegularExpression.escapedPattern(for: String(ch)))
+            }
+        }
+        regex.append("$")
+        return try? NSRegularExpression(pattern: regex, options: [])
     }
 }
 

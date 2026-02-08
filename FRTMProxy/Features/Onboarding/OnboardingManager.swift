@@ -3,10 +3,10 @@ import Foundation
 
 class OnboardingManager: ObservableObject {
     @Published var isActive: Bool = false
-    @Published var currentStep: OnboardingStep = .startProxy
+    @Published var currentStep: OnboardingStep = .trustCertificate
     
     private let userDefaults = UserDefaults.standard
-    private let hasCompletedOnboardingKey = "hasCompletedOnboarding"
+    private let hasCompletedOnboardingKey = "onboarding.completed.v2"
     
     var shouldShowOnboarding: Bool {
         !userDefaults.bool(forKey: hasCompletedOnboardingKey)
@@ -15,14 +15,16 @@ class OnboardingManager: ObservableObject {
     func startOnboarding() {
         guard shouldShowOnboarding else { return }
         isActive = true
-        currentStep = .startProxy
+        currentStep = .trustCertificate
     }
     
     func nextStep() {
         switch currentStep {
+        case .trustCertificate:
+            currentStep = .startProxy
         case .startProxy:
-            currentStep = .macOSProxyOverride
-        case .macOSProxyOverride:
+            currentStep = .configureWiFiProxy
+        case .configureWiFiProxy:
             currentStep = .viewTraffic
         case .viewTraffic:
             currentStep = .filterResults
@@ -37,12 +39,14 @@ class OnboardingManager: ObservableObject {
     
     func previousStep() {
         switch currentStep {
-        case .startProxy:
+        case .trustCertificate:
             break
-        case .macOSProxyOverride:
+        case .startProxy:
+            currentStep = .trustCertificate
+        case .configureWiFiProxy:
             currentStep = .startProxy
         case .viewTraffic:
-            currentStep = .macOSProxyOverride
+            currentStep = .configureWiFiProxy
         case .filterResults:
             currentStep = .viewTraffic
         case .inspectFlow:
@@ -63,13 +67,14 @@ class OnboardingManager: ObservableObject {
     
     func resetOnboarding() {
         userDefaults.removeObject(forKey: hasCompletedOnboardingKey)
-        currentStep = .startProxy
+        currentStep = .trustCertificate
     }
 }
 
 enum OnboardingTarget: Hashable {
+    case manageMenu
     case startProxy
-    case macOSProxyOverride
+    case configureWiFiProxy
     case viewTraffic
     case filterResults
     case inspectFlow
@@ -77,8 +82,9 @@ enum OnboardingTarget: Hashable {
 }
 
 enum OnboardingStep: CaseIterable, Hashable {
+    case trustCertificate
     case startProxy
-    case macOSProxyOverride
+    case configureWiFiProxy
     case viewTraffic
     case filterResults
     case inspectFlow
@@ -86,10 +92,12 @@ enum OnboardingStep: CaseIterable, Hashable {
     
     var target: OnboardingTarget {
         switch self {
+        case .trustCertificate:
+            return .manageMenu
         case .startProxy:
             return .startProxy
-        case .macOSProxyOverride:
-            return .macOSProxyOverride
+        case .configureWiFiProxy:
+            return .configureWiFiProxy
         case .viewTraffic:
             return .viewTraffic
         case .filterResults:
@@ -112,10 +120,8 @@ enum OnboardingStep: CaseIterable, Hashable {
 
     var highlightPadding: CGFloat {
         switch self {
-        case .startProxy, .mapResponse:
+        case .trustCertificate, .startProxy, .mapResponse, .configureWiFiProxy:
             return 6
-        case .macOSProxyOverride:
-            return 8
         case .filterResults:
             return 10
         case .viewTraffic, .inspectFlow:
@@ -129,8 +135,6 @@ enum OnboardingStep: CaseIterable, Hashable {
             return 18
         case .viewTraffic:
             return 14
-        case .macOSProxyOverride:
-            return 12
         default:
             return 12
         }
@@ -142,10 +146,12 @@ enum OnboardingStep: CaseIterable, Hashable {
 
     var title: String {
         switch self {
+        case .trustCertificate:
+            return "Trust the proxy certificate"
         case .startProxy:
             return "Start the proxy"
-        case .macOSProxyOverride:
-            return "Override macOS proxy"
+        case .configureWiFiProxy:
+            return "Set the proxy in Wi‑Fi settings"
         case .viewTraffic:
             return "Monitor traffic"
         case .filterResults:
@@ -159,10 +165,12 @@ enum OnboardingStep: CaseIterable, Hashable {
     
     var description: String {
         switch self {
+        case .trustCertificate:
+            return "To intercept HTTPS, install and trust the ProxyCore Root CA. macOS will ask for confirmation."
         case .startProxy:
-            return "Press Start to run the proxy and begin capturing traffic from your device."
-        case .macOSProxyOverride:
-            return "In Settings > Proxy Behavior, enable \"Override macOS proxy\" to route Mac traffic to localhost and the proxy port."
+            return "Press Start to run ProxyCore and begin capturing traffic."
+        case .configureWiFiProxy:
+            return "To capture traffic, configure the HTTP and HTTPS proxy in your Wi‑Fi settings."
         case .viewTraffic:
             return "The traffic table fills here with all HTTP/HTTPS requests in real time."
         case .filterResults:
@@ -176,17 +184,23 @@ enum OnboardingStep: CaseIterable, Hashable {
     
     var position: OnboardingPosition {
         switch self {
+        case .trustCertificate:
+            return OnboardingPosition(
+                anchor: .topTrailing,
+                offset: CGPoint(x: -190, y: 80),
+                highlightSize: CGSize(width: 130, height: 40)
+            )
         case .startProxy:
             return OnboardingPosition(
                 anchor: .topTrailing,
                 offset: CGPoint(x: -20, y: 80),
                 highlightSize: CGSize(width: 80, height: 40)
             )
-        case .macOSProxyOverride:
+        case .configureWiFiProxy:
             return OnboardingPosition(
                 anchor: .topTrailing,
-                offset: CGPoint(x: -180, y: 90),
-                highlightSize: CGSize(width: 220, height: 48)
+                offset: CGPoint(x: -190, y: 80),
+                highlightSize: CGSize(width: 130, height: 40)
             )
         case .viewTraffic:
             return OnboardingPosition(

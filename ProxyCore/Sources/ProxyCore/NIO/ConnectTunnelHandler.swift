@@ -13,6 +13,7 @@ final class ConnectTunnelHandler: ChannelInboundHandler, RemovableChannelHandler
     private let interceptors: [any ProxyInterceptor]
     private let certificateAuthority: CertificateAuthority
     private let processInfoProvider: ProcessInfoProvider
+    private let trafficController: TrafficProfileController
     private let group: EventLoopGroup
 
     private let targetHost: String
@@ -30,6 +31,7 @@ final class ConnectTunnelHandler: ChannelInboundHandler, RemovableChannelHandler
         interceptors: [any ProxyInterceptor],
         certificateAuthority: CertificateAuthority,
         processInfoProvider: ProcessInfoProvider,
+        trafficController: TrafficProfileController,
         group: EventLoopGroup,
         targetHost: String,
         targetPort: Int,
@@ -40,6 +42,7 @@ final class ConnectTunnelHandler: ChannelInboundHandler, RemovableChannelHandler
         self.interceptors = interceptors
         self.certificateAuthority = certificateAuthority
         self.processInfoProvider = processInfoProvider
+        self.trafficController = trafficController
         self.group = group
         self.targetHost = targetHost
         self.targetPort = targetPort
@@ -505,6 +508,7 @@ final class ConnectTunnelHandler: ChannelInboundHandler, RemovableChannelHandler
                     configuration: self.configuration,
                     eventBus: self.eventBus,
                     interceptors: self.interceptors,
+                    trafficController: self.trafficController,
                     clientChannel: clientChannel,
                     session: session
                 ),
@@ -553,6 +557,7 @@ final class ConnectTunnelHandler: ChannelInboundHandler, RemovableChannelHandler
                                 eventBus: self.eventBus,
                                 interceptors: self.interceptors,
                                 processInfoProvider: self.processInfoProvider,
+                                trafficController: self.trafficController,
                                 upstreamMultiplexer: upstreamMux,
                                 authorityFallback: self.authorityFallback()
                             )
@@ -575,6 +580,7 @@ final class ConnectTunnelHandler: ChannelInboundHandler, RemovableChannelHandler
                         eventBus: self.eventBus,
                         interceptors: self.interceptors,
                         processInfoProvider: self.processInfoProvider,
+                        trafficController: self.trafficController,
                         upstreamChannel: upstream,
                         session: session,
                         targetHost: self.targetHost,

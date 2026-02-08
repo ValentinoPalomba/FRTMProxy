@@ -11,6 +11,7 @@ final class ProtocolSniffingHandler: ChannelInboundHandler, RemovableChannelHand
     private let interceptors: [any ProxyInterceptor]
     private let certificateAuthority: CertificateAuthority
     private let processInfoProvider: ProcessInfoProvider
+    private let trafficController: TrafficProfileController
     private let group: EventLoopGroup
 
     private var pending: ByteBuffer?
@@ -22,6 +23,7 @@ final class ProtocolSniffingHandler: ChannelInboundHandler, RemovableChannelHand
         interceptors: [any ProxyInterceptor],
         certificateAuthority: CertificateAuthority,
         processInfoProvider: ProcessInfoProvider,
+        trafficController: TrafficProfileController,
         group: EventLoopGroup
     ) {
         self.configuration = configuration
@@ -29,6 +31,7 @@ final class ProtocolSniffingHandler: ChannelInboundHandler, RemovableChannelHand
         self.interceptors = interceptors
         self.certificateAuthority = certificateAuthority
         self.processInfoProvider = processInfoProvider
+        self.trafficController = trafficController
         self.group = group
     }
 
@@ -68,6 +71,7 @@ final class ProtocolSniffingHandler: ChannelInboundHandler, RemovableChannelHand
             interceptors: interceptors,
             certificateAuthority: certificateAuthority,
             processInfoProvider: processInfoProvider,
+            trafficController: trafficController,
             group: group
         )
 
@@ -92,6 +96,7 @@ final class ProtocolSniffingHandler: ChannelInboundHandler, RemovableChannelHand
             interceptors: interceptors,
             certificateAuthority: certificateAuthority,
             processInfoProvider: processInfoProvider,
+            trafficController: trafficController,
             group: group
         )
 

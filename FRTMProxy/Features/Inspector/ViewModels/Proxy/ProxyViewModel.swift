@@ -44,7 +44,7 @@ final class ProxyViewModel: ObservableObject {
     var seenAlertFlowIDs: Set<String> = []
 
     init(
-        service: ProxyServiceProtocol = MitmproxyService(config: MitmproxyConfig()),
+        service: ProxyServiceProtocol,
         ruleStore: MapRuleStoreProtocol = MapRuleStore(),
         collectionStore: MapCollectionStoreProtocol = MapCollectionStore(),
         breakpointStore: BreakpointStoreProtocol = FlowBreakpointStore(),

@@ -18,22 +18,9 @@
 		E6EE47DF2F2AD4EC009AA367 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		E6EE43CC2F2AC72F009AA367 /* Exceptions for "FRTMProxy" folder in "Link Binary With Libraries" phase from "FRTMProxy" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			buildPhase = E6538F3C2ECB60D70013CCA6 /* Frameworks */;
-			membershipExceptions = (
-				Resources/mitmdump,
-			);
-		};
-/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		E6538F412ECB60D70013CCA6 /* FRTMProxy */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				E6EE43CC2F2AC72F009AA367 /* Exceptions for "FRTMProxy" folder in "Link Binary With Libraries" phase from "FRTMProxy" target */,
-			);
 			path = FRTMProxy;
 			sourceTree = "<group>";
 		};

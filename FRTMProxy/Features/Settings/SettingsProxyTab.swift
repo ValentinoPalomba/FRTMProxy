@@ -17,13 +17,9 @@ struct SettingsProxyTab: View {
                             .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                             .foregroundStyle(colors.textPrimary)
                         Spacer()
-                        Picker("", selection: $settings.selectedProxyEngineID) {
-                            ForEach(ProxyEngineChoice.allCases) { engine in
-                                Text(engine.displayName).tag(engine.id)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .frame(width: 220, alignment: .trailing)
+                        Text("ProxyCore (SwiftNIO)")
+                            .font(DesignSystem.Fonts.sans(13, weight: .medium))
+                            .foregroundStyle(colors.textSecondary)
                     }
                     Toggle(isOn: $settings.autoStartProxy) {
                         Text("Start proxy automatically")
@@ -45,7 +41,6 @@ struct SettingsProxyTab: View {
                             .font(DesignSystem.Fonts.sans(13, weight: .medium))
                             .foregroundStyle(colors.textPrimary)
                     }
-                        .onboardingTarget(.macOSProxyOverride)
                 }
                 .toggleStyle(SwitchToggleStyle())
 
