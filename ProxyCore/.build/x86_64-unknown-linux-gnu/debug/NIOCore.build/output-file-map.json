@@ -1,0 +1,495 @@
+{
+  "": {
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/master.swiftdeps"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/AddressedEnvelope.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AddressedEnvelope.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AddressedEnvelope.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AddressedEnvelope~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AddressedEnvelope.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AddressedEnvelope.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/AsyncAwaitSupport.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncAwaitSupport.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncAwaitSupport.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncAwaitSupport~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncAwaitSupport.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncAwaitSupport.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/AsyncChannel/AsyncChannel.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannel.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannel.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannel~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannel.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannel.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/AsyncChannel/AsyncChannelHandler.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannelHandler.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannelHandler.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannelHandler~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannelHandler.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannelHandler.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/AsyncChannel/AsyncChannelInboundStream.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannelInboundStream.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannelInboundStream.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannelInboundStream~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannelInboundStream.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannelInboundStream.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/AsyncChannel/AsyncChannelOutboundWriter.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannelOutboundWriter.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannelOutboundWriter.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannelOutboundWriter~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannelOutboundWriter.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/AsyncChannelOutboundWriter.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/AsyncSequences/NIOAsyncSequenceProducer.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAsyncSequenceProducer.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAsyncSequenceProducer.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAsyncSequenceProducer~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAsyncSequenceProducer.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAsyncSequenceProducer.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/AsyncSequences/NIOAsyncSequenceProducerStrategies.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAsyncSequenceProducerStrategies.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAsyncSequenceProducerStrategies.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAsyncSequenceProducerStrategies~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAsyncSequenceProducerStrategies.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAsyncSequenceProducerStrategies.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/AsyncSequences/NIOAsyncWriter.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAsyncWriter.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAsyncWriter.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAsyncWriter~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAsyncWriter.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAsyncWriter.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/AsyncSequences/NIOThrowingAsyncSequenceProducer.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOThrowingAsyncSequenceProducer.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOThrowingAsyncSequenceProducer.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOThrowingAsyncSequenceProducer~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOThrowingAsyncSequenceProducer.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOThrowingAsyncSequenceProducer.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/BSDSocketAPI.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/BSDSocketAPI.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/BSDSocketAPI.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/BSDSocketAPI~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/BSDSocketAPI.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/BSDSocketAPI.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-aux.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-aux.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-aux.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-aux~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-aux.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-aux.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-binaryEncodedLengthPrefix.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-binaryEncodedLengthPrefix.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-binaryEncodedLengthPrefix.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-binaryEncodedLengthPrefix~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-binaryEncodedLengthPrefix.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-binaryEncodedLengthPrefix.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-conversions.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-conversions.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-conversions.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-conversions~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-conversions.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-conversions.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-core.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-core.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-core.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-core~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-core.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-core.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-hex.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-hex.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-hex.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-hex~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-hex.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-hex.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-int.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-int.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-int.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-int~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-int.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-int.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-lengthPrefix.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-lengthPrefix.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-lengthPrefix.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-lengthPrefix~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-lengthPrefix.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-lengthPrefix.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-multi-int.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-multi-int.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-multi-int.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-multi-int~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-multi-int.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-multi-int.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-quicBinaryEncodingStrategy.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-quicBinaryEncodingStrategy.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-quicBinaryEncodingStrategy.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-quicBinaryEncodingStrategy~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-quicBinaryEncodingStrategy.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-quicBinaryEncodingStrategy.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/ByteBuffer-views.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-views.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-views.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-views~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-views.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ByteBuffer-views.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/Channel.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Channel.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Channel.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Channel~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Channel.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Channel.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/ChannelHandler.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelHandler.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelHandler.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelHandler~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelHandler.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelHandler.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/ChannelHandlers.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelHandlers.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelHandlers.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelHandlers~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelHandlers.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelHandlers.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/ChannelInvoker.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelInvoker.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelInvoker.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelInvoker~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelInvoker.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelInvoker.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/ChannelOption.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelOption.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelOption.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelOption~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelOption.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelOption.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/ChannelPipeline.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelPipeline.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelPipeline.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelPipeline~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelPipeline.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ChannelPipeline.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/CircularBuffer.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/CircularBuffer.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/CircularBuffer.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/CircularBuffer~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/CircularBuffer.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/CircularBuffer.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/Codec.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Codec.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Codec.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Codec~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Codec.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Codec.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/ConvenienceOptionSupport.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ConvenienceOptionSupport.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ConvenienceOptionSupport.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ConvenienceOptionSupport~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ConvenienceOptionSupport.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/ConvenienceOptionSupport.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/DeadChannel.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/DeadChannel.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/DeadChannel.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/DeadChannel~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/DeadChannel.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/DeadChannel.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/DispatchQueue+WithFuture.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/DispatchQueue+WithFuture.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/DispatchQueue+WithFuture.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/DispatchQueue+WithFuture~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/DispatchQueue+WithFuture.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/DispatchQueue+WithFuture.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/EventLoop+Deprecated.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoop+Deprecated.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoop+Deprecated.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoop+Deprecated~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoop+Deprecated.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoop+Deprecated.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/EventLoop+SerialExecutor.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoop+SerialExecutor.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoop+SerialExecutor.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoop+SerialExecutor~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoop+SerialExecutor.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoop+SerialExecutor.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/EventLoop.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoop.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoop.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoop~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoop.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoop.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/EventLoopFuture+AssumeIsolated.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture+AssumeIsolated.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture+AssumeIsolated.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture+AssumeIsolated~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture+AssumeIsolated.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture+AssumeIsolated.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/EventLoopFuture+Deprecated.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture+Deprecated.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture+Deprecated.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture+Deprecated~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture+Deprecated.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture+Deprecated.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/EventLoopFuture+WithEventLoop.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture+WithEventLoop.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture+WithEventLoop.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture+WithEventLoop~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture+WithEventLoop.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture+WithEventLoop.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/EventLoopFuture.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/EventLoopFuture.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/FileDescriptor.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/FileDescriptor.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/FileDescriptor.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/FileDescriptor~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/FileDescriptor.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/FileDescriptor.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/FileHandle.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/FileHandle.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/FileHandle.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/FileHandle~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/FileHandle.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/FileHandle.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/FileRegion.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/FileRegion.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/FileRegion.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/FileRegion~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/FileRegion.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/FileRegion.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/GlobalSingletons.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/GlobalSingletons.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/GlobalSingletons.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/GlobalSingletons~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/GlobalSingletons.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/GlobalSingletons.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/IO.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IO.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IO.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IO~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IO.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IO.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/IOData.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IOData.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IOData.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IOData~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IOData.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IOData.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/IPProtocol.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IPProtocol.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IPProtocol.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IPProtocol~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IPProtocol.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IPProtocol.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/IntegerBitPacking.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IntegerBitPacking.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IntegerBitPacking.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IntegerBitPacking~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IntegerBitPacking.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IntegerBitPacking.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/IntegerTypes.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IntegerTypes.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IntegerTypes.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IntegerTypes~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IntegerTypes.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/IntegerTypes.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/Interfaces.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Interfaces.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Interfaces.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Interfaces~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Interfaces.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Interfaces.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/Linux.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Linux.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Linux.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Linux~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Linux.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Linux.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/MarkedCircularBuffer.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/MarkedCircularBuffer.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/MarkedCircularBuffer.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/MarkedCircularBuffer~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/MarkedCircularBuffer.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/MarkedCircularBuffer.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/MulticastChannel.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/MulticastChannel.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/MulticastChannel.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/MulticastChannel~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/MulticastChannel.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/MulticastChannel.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/NIOAny.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAny.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAny.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAny~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAny.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOAny.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/NIOCloseOnErrorHandler.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOCloseOnErrorHandler.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOCloseOnErrorHandler.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOCloseOnErrorHandler~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOCloseOnErrorHandler.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOCloseOnErrorHandler.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/NIOCoreSendableMetatype.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOCoreSendableMetatype.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOCoreSendableMetatype.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOCoreSendableMetatype~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOCoreSendableMetatype.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOCoreSendableMetatype.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/NIODecodedAsyncSequence.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIODecodedAsyncSequence.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIODecodedAsyncSequence.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIODecodedAsyncSequence~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIODecodedAsyncSequence.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIODecodedAsyncSequence.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/NIOLoopBound.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOLoopBound.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOLoopBound.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOLoopBound~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOLoopBound.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOLoopBound.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/NIOPooledRecvBufferAllocator.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOPooledRecvBufferAllocator.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOPooledRecvBufferAllocator.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOPooledRecvBufferAllocator~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOPooledRecvBufferAllocator.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOPooledRecvBufferAllocator.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/NIOScheduledCallback.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOScheduledCallback.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOScheduledCallback.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOScheduledCallback~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOScheduledCallback.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOScheduledCallback.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/NIOSendable.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOSendable.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOSendable.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOSendable~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOSendable.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOSendable.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/NIOSplitLinesMessageDecoder.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOSplitLinesMessageDecoder.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOSplitLinesMessageDecoder.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOSplitLinesMessageDecoder~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOSplitLinesMessageDecoder.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/NIOSplitLinesMessageDecoder.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/RecvByteBufferAllocator.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/RecvByteBufferAllocator.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/RecvByteBufferAllocator.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/RecvByteBufferAllocator~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/RecvByteBufferAllocator.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/RecvByteBufferAllocator.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/SingleStepByteToMessageDecoder.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SingleStepByteToMessageDecoder.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SingleStepByteToMessageDecoder.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SingleStepByteToMessageDecoder~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SingleStepByteToMessageDecoder.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SingleStepByteToMessageDecoder.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/SocketAddresses.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SocketAddresses.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SocketAddresses.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SocketAddresses~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SocketAddresses.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SocketAddresses.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/SocketOptionProvider.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SocketOptionProvider.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SocketOptionProvider.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SocketOptionProvider~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SocketOptionProvider.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SocketOptionProvider.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/SystemCallHelpers.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SystemCallHelpers.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SystemCallHelpers.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SystemCallHelpers~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SystemCallHelpers.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/SystemCallHelpers.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/TimeAmount+Duration.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/TimeAmount+Duration.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/TimeAmount+Duration.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/TimeAmount+Duration~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/TimeAmount+Duration.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/TimeAmount+Duration.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/TypeAssistedChannelHandler.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/TypeAssistedChannelHandler.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/TypeAssistedChannelHandler.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/TypeAssistedChannelHandler~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/TypeAssistedChannelHandler.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/TypeAssistedChannelHandler.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/UniversalBootstrapSupport.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/UniversalBootstrapSupport.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/UniversalBootstrapSupport.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/UniversalBootstrapSupport~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/UniversalBootstrapSupport.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/UniversalBootstrapSupport.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOCore/Utilities.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Utilities.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Utilities.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Utilities~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Utilities.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/Utilities.dia"
+  }
+}

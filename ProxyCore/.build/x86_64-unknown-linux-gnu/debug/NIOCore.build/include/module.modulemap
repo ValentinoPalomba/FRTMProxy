@@ -1,0 +1,3 @@
+module NIOCore {
+    header "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOCore.build/include/NIOCore-Swift.h"
+}

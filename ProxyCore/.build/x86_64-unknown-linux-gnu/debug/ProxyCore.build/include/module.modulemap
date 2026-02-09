@@ -1,0 +1,3 @@
+module ProxyCore {
+    header "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCore.build/include/ProxyCore-Swift.h"
+}

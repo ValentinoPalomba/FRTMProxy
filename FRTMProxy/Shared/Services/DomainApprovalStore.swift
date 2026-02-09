@@ -20,6 +20,7 @@ struct DomainApprovalStatus: Codable, Equatable {
     }
 }
 
+@MainActor
 final class DomainApprovalStore: ObservableObject {
     @Published var approvedDomains: Set<String> = []
     @Published var pendingDomains: [String: DomainApprovalStatus] = [:]

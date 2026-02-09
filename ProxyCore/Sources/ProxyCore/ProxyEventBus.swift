@@ -6,7 +6,7 @@ final class ProxyEventBus: @unchecked Sendable {
     private var continuation: AsyncStream<ProxyEvent>.Continuation?
 
     func makeStream() -> AsyncStream<ProxyEvent> {
-        AsyncStream { continuation in
+        AsyncStream(ProxyEvent.self, bufferingPolicy: .bufferingNewest(100)) { continuation in
             self.lock.withLock {
                 self.continuation = continuation
             }

@@ -1,0 +1,3 @@
+module NIOEmbedded {
+    header "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOEmbedded.build/include/NIOEmbedded-Swift.h"
+}

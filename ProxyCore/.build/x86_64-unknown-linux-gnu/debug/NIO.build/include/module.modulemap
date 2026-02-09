@@ -1,0 +1,3 @@
+module NIO {
+    header "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIO.build/include/NIO-Swift.h"
+}

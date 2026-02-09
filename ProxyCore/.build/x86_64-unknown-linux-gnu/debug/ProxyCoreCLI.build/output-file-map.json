@@ -1,0 +1,12 @@
+{
+  "": {
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreCLI.build/master.swiftdeps"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/Sources/ProxyCoreCLI/main.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreCLI.build/main.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreCLI.build/main.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreCLI.build/main~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreCLI.build/main.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreCLI.build/main.dia"
+  }
+}

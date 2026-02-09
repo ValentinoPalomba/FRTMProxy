@@ -1,0 +1,3 @@
+module _NIOBase64 {
+    header "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/_NIOBase64.build/include/_NIOBase64-Swift.h"
+}

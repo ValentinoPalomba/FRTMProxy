@@ -1,0 +1,17 @@
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOHTTP1/ByteCollectionUtils.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPDecoder.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPEncoder.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPHeaderValidator.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPHeaders+Validation.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPPipelineSetup.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPServerPipelineHandler.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPServerProtocolErrorHandler.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPServerUpgradeHandler.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPTypedPipelineSetup.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOHTTP1/HTTPTypes.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOHTTP1/NIOHTTPClientUpgradeHandler.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOHTTP1/NIOHTTPObjectAggregator.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOHTTP1/NIOTypedHTTPClientUpgradeHandler.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOHTTP1/NIOTypedHTTPClientUpgraderStateMachine.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOHTTP1/NIOTypedHTTPServerUpgradeHandler.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/NIOHTTP1/NIOTypedHTTPServerUpgraderStateMachine.swift

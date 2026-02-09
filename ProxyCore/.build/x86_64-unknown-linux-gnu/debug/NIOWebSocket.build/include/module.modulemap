@@ -1,0 +1,3 @@
+module NIOWebSocket {
+    header "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOWebSocket.build/include/NIOWebSocket-Swift.h"
+}

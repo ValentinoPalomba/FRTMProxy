@@ -1,0 +1,3 @@
+module NIOFoundationCompat {
+    header "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOFoundationCompat.build/include/NIOFoundationCompat-Swift.h"
+}

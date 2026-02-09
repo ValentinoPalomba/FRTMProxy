@@ -1,0 +1,82 @@
+{
+  "": {
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/master.swiftdeps"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio-http2/Sources/NIOHPACK/DynamicHeaderTable.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/DynamicHeaderTable.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/DynamicHeaderTable.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/DynamicHeaderTable~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/DynamicHeaderTable.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/DynamicHeaderTable.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio-http2/Sources/NIOHPACK/HPACKDecoder.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKDecoder.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKDecoder.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKDecoder~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKDecoder.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKDecoder.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio-http2/Sources/NIOHPACK/HPACKEncoder.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKEncoder.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKEncoder.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKEncoder~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKEncoder.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKEncoder.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio-http2/Sources/NIOHPACK/HPACKErrors.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKErrors.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKErrors.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKErrors~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKErrors.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKErrors.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio-http2/Sources/NIOHPACK/HPACKHeader.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKHeader.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKHeader.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKHeader~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKHeader.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HPACKHeader.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio-http2/Sources/NIOHPACK/HeaderTables.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HeaderTables.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HeaderTables.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HeaderTables~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HeaderTables.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HeaderTables.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio-http2/Sources/NIOHPACK/HuffmanCoding.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HuffmanCoding.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HuffmanCoding.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HuffmanCoding~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HuffmanCoding.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HuffmanCoding.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio-http2/Sources/NIOHPACK/HuffmanTables.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HuffmanTables.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HuffmanTables.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HuffmanTables~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HuffmanTables.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/HuffmanTables.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio-http2/Sources/NIOHPACK/IndexedHeaderTable.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/IndexedHeaderTable.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/IndexedHeaderTable.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/IndexedHeaderTable~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/IndexedHeaderTable.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/IndexedHeaderTable.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio-http2/Sources/NIOHPACK/IntegerCoding.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/IntegerCoding.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/IntegerCoding.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/IntegerCoding~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/IntegerCoding.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/IntegerCoding.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio-http2/Sources/NIOHPACK/StaticHeaderTable.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/StaticHeaderTable.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/StaticHeaderTable.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/StaticHeaderTable~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/StaticHeaderTable.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOHPACK.build/StaticHeaderTable.dia"
+  }
+}

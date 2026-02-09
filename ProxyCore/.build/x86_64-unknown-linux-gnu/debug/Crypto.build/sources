@@ -1,0 +1,80 @@
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/AEADs/AES/GCM/AES-GCM.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/AEADs/AES/GCM/BoringSSL/AES-GCM_boring.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/AEADs/ChachaPoly/BoringSSL/ChaChaPoly_boring.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/AEADs/ChachaPoly/ChaChaPoly.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/AEADs/Cipher.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/AEADs/Nonces.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/ASN1/ASN1.swift
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/ASN1/Basic ASN1 Types/ASN1Any.swift'
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/ASN1/Basic ASN1 Types/ASN1BitString.swift'
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/ASN1/Basic ASN1 Types/ASN1Boolean.swift'
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/ASN1/Basic ASN1 Types/ASN1Identifier.swift'
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/ASN1/Basic ASN1 Types/ASN1Integer.swift'
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/ASN1/Basic ASN1 Types/ASN1Null.swift'
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/ASN1/Basic ASN1 Types/ASN1OctetString.swift'
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/ASN1/Basic ASN1 Types/ASN1Strings.swift'
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/ASN1/Basic ASN1 Types/ArraySliceBigint.swift'
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/ASN1/Basic ASN1 Types/GeneralizedTime.swift'
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/ASN1/Basic ASN1 Types/ObjectIdentifier.swift'
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/ASN1/ECDSASignature.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/ASN1/PEMDocument.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/ASN1/PKCS8PrivateKey.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/ASN1/SEC1PrivateKey.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/ASN1/SubjectPublicKeyInfo.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/CryptoError_boring.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/CryptoKitErrors.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Digests/BoringSSL/Digest_boring.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Digests/Digest.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Digests/Digests.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Digests/HashFunctions.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Digests/HashFunctions_SHA2.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/HPKE-AEAD.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/HPKE-Ciphersuite.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/HPKE-KDF.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/HPKE-KexKeyDerivation.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/HPKE-LabeledExtract.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/HPKE-Utils.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/KEM/Conformances/DHKEM.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/KEM/Conformances/HPKE-KEM-Curve25519.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/KEM/Conformances/HPKE-NIST-EC-KEMs.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/HPKE/Ciphersuite/KEM/HPKE-KEM.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/HPKE/HPKE-Errors.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/HPKE/HPKE.swift
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/HPKE/Key Schedule/HPKE-Context.swift'
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/HPKE/Key Schedule/HPKE-KeySchedule.swift'
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/HPKE/Modes/HPKE-Modes.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Insecure/Insecure.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Insecure/Insecure_HashFunctions.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/KEM/KEM.swift
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Key Agreement/BoringSSL/ECDH_boring.swift'
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Key Agreement/DH.swift'
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Key Agreement/ECDH.swift'
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Key Derivation/HKDF.swift'
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Key Wrapping/AESWrap.swift'
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Key Wrapping/BoringSSL/AESWrap_boring.swift'
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Keys/EC/BoringSSL/Ed25519_boring.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Keys/EC/BoringSSL/NISTCurvesKeys_boring.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Keys/EC/BoringSSL/X25519Keys_boring.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Keys/EC/Curve25519.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Keys/EC/Ed25519Keys.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Keys/EC/NISTCurvesKeys.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Keys/EC/X25519Keys.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Keys/Symmetric/SymmetricKeys.swift
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Message Authentication Codes/HMAC/HMAC.swift'
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Message Authentication Codes/MACFunctions.swift'
+'/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Message Authentication Codes/MessageAuthenticationCode.swift'
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/PRF/AES.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Signatures/BoringSSL/ECDSASignature_boring.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Signatures/BoringSSL/ECDSA_boring.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Signatures/BoringSSL/EdDSA_boring.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Signatures/ECDSA.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Signatures/Ed25519.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Signatures/Signature.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Util/BoringSSL/CryptoKitErrors_boring.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Util/BoringSSL/RNG_boring.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Util/BoringSSL/SafeCompare_boring.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Util/BoringSSL/Zeroization_boring.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Util/PrettyBytes.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Util/SafeCompare.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Util/SecureBytes.swift
+/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-crypto/Sources/Crypto/Util/Zeroization.swift
