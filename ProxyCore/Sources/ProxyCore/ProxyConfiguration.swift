@@ -112,6 +112,15 @@ public struct ProxyConfiguration: Sendable {
     public var hostFilter: HostFilter
 
     public var paths: Paths
+    
+    /// Closure to check if a domain is approved for MITM.
+    /// If returns nil/false, domain will be bypassed (no MITM).
+    /// If returns true, domain will be intercepted.
+    public var isDomainApprovedForMITM: (@Sendable (String) -> Bool)?
+    
+    /// Closure called when a new domain is discovered.
+    /// Useful for marking domains as "pending" in the approval store.
+    public var onNewDomainDiscovered: (@Sendable (String) -> Void)?
 
     public init(
         listenHost: String = "0.0.0.0",
@@ -124,7 +133,9 @@ public struct ProxyConfiguration: Sendable {
         remoteForward: RemoteForward? = nil,
         socks5InboundEnabled: Bool = true,
         hostFilter: HostFilter = HostFilter(),
-        paths: Paths = try! Paths.defaultPaths()
+        paths: Paths = try! Paths.defaultPaths(),
+        isDomainApprovedForMITM: (@Sendable (String) -> Bool)? = nil,
+        onNewDomainDiscovered: (@Sendable (String) -> Void)? = nil
     ) {
         self.listenHost = listenHost
         self.listenPort = listenPort
@@ -137,5 +148,7 @@ public struct ProxyConfiguration: Sendable {
         self.socks5InboundEnabled = socks5InboundEnabled
         self.hostFilter = hostFilter
         self.paths = paths
+        self.isDomainApprovedForMITM = isDomainApprovedForMITM
+        self.onNewDomainDiscovered = onNewDomainDiscovered
     }
 }

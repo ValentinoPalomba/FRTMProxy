@@ -11,6 +11,8 @@ struct FlowSplitInspector: View {
     let isRequestBreakpointEnabled: Bool
     let isResponseBreakpointEnabled: Bool
     let onToggleBreakpoint: ((FlowBreakpointPhase, Bool) -> Void)?
+    let onApproveDomain: ((String) -> Void)?
+    let domainApprovalStatus: DomainApprovalStatus.Status?
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(8)) {
@@ -20,7 +22,9 @@ struct FlowSplitInspector: View {
                 onMapLocal: onMapLocal,
                 isRequestBreakpointEnabled: isRequestBreakpointEnabled,
                 isResponseBreakpointEnabled: isResponseBreakpointEnabled,
-                onToggleBreakpoint: onToggleBreakpoint
+                onToggleBreakpoint: onToggleBreakpoint,
+                onApproveDomain: onApproveDomain,
+                domainApprovalStatus: domainApprovalStatus
             )
 
             HStack(spacing: DesignSystem.Metrics.scaled(16)) {
@@ -66,6 +70,8 @@ private struct FlowMetaBar: View {
     let isRequestBreakpointEnabled: Bool
     let isResponseBreakpointEnabled: Bool
     let onToggleBreakpoint: ((FlowBreakpointPhase, Bool) -> Void)?
+    let onApproveDomain: ((String) -> Void)?
+    let domainApprovalStatus: DomainApprovalStatus.Status?
     @State private var showBreakpointMenu = false
 
     private var clientLabel: String? {
@@ -171,6 +177,15 @@ private struct FlowMetaBar: View {
                 if let onMapLocal {
                     ControlButton(title: "Map Local", systemImage: "app.badge", style: .ghost(colors)) { onMapLocal() }
                         .onboardingTarget(.mapResponse)
+                }
+                if domainApprovalStatus == .pending, let onApproveDomain {
+                    ControlButton(
+                        title: "Enable this domain",
+                        systemImage: "checkmark.circle",
+                        style: .ghost(colors)
+                    ) {
+                        onApproveDomain(flow.host)
+                    }
                 }
                 if let toggle = onToggleBreakpoint {
                     BreakpointSelectorButton(

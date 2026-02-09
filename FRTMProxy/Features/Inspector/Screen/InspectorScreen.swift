@@ -3,6 +3,7 @@ import SwiftUI
 struct InspectorScreen: View {
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var settings: SettingsStore
+    @EnvironmentObject private var domainApprovalStore: DomainApprovalStore
 
     @ObservedObject var viewModel: ProxyViewModel
     @ObservedObject var rulesViewModel: MapRuleViewModel
@@ -189,11 +190,18 @@ struct InspectorScreen: View {
                     isResponseBreakpointEnabled: viewModel.isBreakpointEnabled(for: flow, phase: .response),
                     onToggleBreakpoint: { phase, enabled in
                         viewModel.setBreakpoint(for: flow, phase: phase, enabled: enabled)
-                    }
+                    },
+                    onApproveDomain: { domain in
+                        domainApprovalStore.approveDomain(domain)
+                    },
+                    domainApprovalStatus: domainApprovalStore.getDomainStatus(flow.host)
                 )
                 .onboardingTarget(.inspectFlow)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .frame(minHeight: inspectorPanelMinHeight, idealHeight: inspectorPanelIdealHeight)
+                .onChange(of: domainApprovalStore.approvedDomains) { _, _ in
+                    // Force UI update when approved domains change
+                }
             }
 
             InspectorBottomBar(

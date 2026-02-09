@@ -10,6 +10,8 @@ struct FlowInspectorPanel: View {
     let isRequestBreakpointEnabled: Bool
     let isResponseBreakpointEnabled: Bool
     let onToggleBreakpoint: ((FlowBreakpointPhase, Bool) -> Void)?
+    let onApproveDomain: ((String) -> Void)?
+    let domainApprovalStatus: DomainApprovalStatus.Status?
 
     var body: some View {
         FlowSplitInspector(
@@ -21,7 +23,9 @@ struct FlowInspectorPanel: View {
             onCopyBody: onCopyBody,
             isRequestBreakpointEnabled: isRequestBreakpointEnabled,
             isResponseBreakpointEnabled: isResponseBreakpointEnabled,
-            onToggleBreakpoint: onToggleBreakpoint
+            onToggleBreakpoint: onToggleBreakpoint,
+            onApproveDomain: onApproveDomain,
+            domainApprovalStatus: domainApprovalStatus
         )
         .padding(.horizontal, DesignSystem.Metrics.scaled(12))
         .padding(.vertical, DesignSystem.Metrics.scaled(12))

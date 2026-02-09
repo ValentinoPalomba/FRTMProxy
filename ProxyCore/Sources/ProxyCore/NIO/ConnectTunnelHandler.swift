@@ -91,6 +91,38 @@ final class ConnectTunnelHandler: ChannelInboundHandler, RemovableChannelHandler
                         if self.configuration.hostFilter.shouldFilter(host: hostForFilter) {
                             self.eventBus.emit(.log("[ProxyCore] HostFilter bypass MITM \(hostForFilter)\n"))
                             startRawTunnel(context: context)
+                        } else if let isDomainApproved = self.configuration.isDomainApprovedForMITM {
+                            if isDomainApproved(hostForFilter) {
+                                startMITM(context: context, clientHello: hello)
+                            } else {
+                                self.eventBus.emit(.log("[ProxyCore] Domain not approved for MITM, using raw tunnel: \(hostForFilter)\n"))
+                                self.configuration.onNewDomainDiscovered?(hostForFilter)
+                                
+                                // Emit a skeleton request so the domain appears in the inspector
+                                let skeletonRequest = ProxyRequest(
+                                    id: self.connectRequestID,
+                                    timestamp: Date(),
+                                    httpVersion: .http1_1,
+                                    method: "CONNECT",
+                                    url: "https://\(hostForFilter):443",
+                                    headers: [
+                                        "Host": hostForFilter
+                                    ]
+                                )
+                                self.eventBus.emit(.request(skeletonRequest))
+                                
+                                // Emit a skeleton response indicating pending approval
+                                let skeletonResponse = ProxyResponse(
+                                    requestID: self.connectRequestID,
+                                    timestamp: Date(),
+                                    httpVersion: .http1_1,
+                                    statusCode: 0,
+                                    headers: [:]
+                                )
+                                self.eventBus.emit(.response(skeletonResponse))
+                                
+                                startRawTunnel(context: context)
+                            }
                         } else {
                             startMITM(context: context, clientHello: hello)
                         }

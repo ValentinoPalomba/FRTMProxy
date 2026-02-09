@@ -24,6 +24,7 @@ struct FRTMProxyApp: App {
     @StateObject private var rulesViewModel = MapRuleViewModel()
     @StateObject private var settingsStore: SettingsStore
     @StateObject private var onboardingManager = OnboardingManager()
+    @StateObject private var domainApprovalStore: DomainApprovalStore
     @State private var deviceAlert: DeviceAlert?
     @State private var isInstallingSimulatorCertificate = false
     @State private var isInstallingMacCertificate = false
@@ -40,10 +41,18 @@ struct FRTMProxyApp: App {
         let launchConfiguration = LaunchConfiguration.current
         let settings = SettingsStore()
         _settingsStore = StateObject(wrappedValue: settings)
+        
+        // Create domain approval store ONCE
+        let domainStore = DomainApprovalStore()
+        _domainApprovalStore = StateObject(wrappedValue: domainStore)
 
         let proxyService: ProxyServiceProtocol = launchConfiguration.useMockFlows
             ? ProxyMockService()
-            : NIOProxyService()
+            : {
+                let service = NIOProxyService()
+                service.domainApprovalStore = domainStore  // Use SAME instance
+                return service
+            }()
 
         _proxyViewModel = StateObject(wrappedValue: ProxyViewModel(service: proxyService))
         self.launchConfiguration = launchConfiguration
@@ -55,6 +64,7 @@ struct FRTMProxyApp: App {
             AppRootView(viewModel: proxyViewModel, rulesViewModel: rulesViewModel)
                 .environmentObject(settingsStore)
                 .environmentObject(onboardingManager)
+                .environmentObject(domainApprovalStore)
                 .preferredColorScheme(settingsStore.activeTheme.preferredColorScheme)
                 .task {
                     appDelegate.proxyViewModel = proxyViewModel

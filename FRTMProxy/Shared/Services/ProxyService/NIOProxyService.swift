@@ -22,6 +22,9 @@ final class NIOProxyService: ObservableObject, ProxyServiceProtocol {
 
     private let mapRuleRegistry = MapRuleRegistry()
     private lazy var breakpointController = BreakpointController(service: self)
+    
+    // Domain approval store for MITM decisions
+    nonisolated(unsafe) var domainApprovalStore: DomainApprovalStore?
 
     func startProxy(port: Int?, restrictToHosts: Bool, hosts: [String]) async throws {
         if isRunning {
@@ -47,7 +50,17 @@ final class NIOProxyService: ObservableObject, ProxyServiceProtocol {
             enableHTTP2: true,
             upstreamTLSVerification: .trustAll,
             socks5InboundEnabled: true,
-            hostFilter: hostFilter
+            hostFilter: hostFilter,
+            isDomainApprovedForMITM: { [weak self] domain in
+                let approved = self?.domainApprovalStore?.approvedDomains.contains(domain) ?? true
+                print("[NIOProxyService] isDomainApprovedForMITM(\(domain)) = \(approved), approvedDomains = \(self?.domainApprovalStore?.approvedDomains ?? [])")
+                return approved
+            },
+            onNewDomainDiscovered: { [weak self] domain in
+                Task { @MainActor in
+                    self?.domainApprovalStore?.markPending(domain)
+                }
+            }
         )
 
         let interceptors: [any ProxyInterceptor] = [
@@ -469,6 +482,11 @@ private enum BodyPreviewRenderer {
             .first
             .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) } ?? ""
 
+        // Images: encode as base64 for preview
+        if isImage(mime: mime) {
+            return data.base64EncodedString()
+        }
+
         if isLikelyText(mime: mime, fullContentType: contentType) {
             var text = decodeText(data, contentType: contentType) ?? decodeLatin1(data)
             if previewIsIncompleteOnWire || didTruncateForUI {
@@ -497,6 +515,11 @@ private enum BodyPreviewRenderer {
             return v
         }
         return nil
+    }
+
+    private static func isImage(mime: String) -> Bool {
+        let m = mime.lowercased()
+        return m.hasPrefix("image/")
     }
 
     private static func isLikelyText(mime: String, fullContentType: String) -> Bool {
