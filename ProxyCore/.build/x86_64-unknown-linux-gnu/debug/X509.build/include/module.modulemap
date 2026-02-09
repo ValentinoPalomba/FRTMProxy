@@ -1,0 +1,3 @@
+module X509 {
+    header "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/X509.build/include/X509-Swift.h"
+}

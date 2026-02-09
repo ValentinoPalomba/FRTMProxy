@@ -1,0 +1,3 @@
+module NIOPosix {
+    header "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOPosix.build/include/NIOPosix-Swift.h"
+}
