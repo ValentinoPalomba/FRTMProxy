@@ -164,11 +164,14 @@ final class HTTP1UpstreamHandler: ChannelInboundHandler, RemovableChannelHandler
     }
 
     private func interceptAndWriteBufferedResponse(head: HTTPResponseHead, body: Data) async {
+        // Preserve original headers to avoid losing duplicates (e.g. Set-Cookie)
+        var originalHeaders = head.headers
+        
         var proxyResponse = ProxyResponse(
             requestID: request.id,
             httpVersion: .http1_1,
             statusCode: Int(head.status.code),
-            headers: head.headers.asFlatDictionary(),
+            headers: originalHeaders.asFlatDictionary(),
             bodyPreview: body,
             bodyIsTruncated: false,
             rawBodySize: body.count
@@ -194,8 +197,34 @@ final class HTTP1UpstreamHandler: ChannelInboundHandler, RemovableChannelHandler
             }
         }
 
+        // Apply modifications from interceptors to the original headers.
+        // Note: Interceptors work with a flattened [String: String] dictionary, which means
+        // they cannot see or preserve duplicate headers (e.g. multiple Set-Cookie).
+        // To minimize data loss:
+        // 1. Start with original headers (preserves all duplicates)
+        // 2. Apply all interceptor changes on top (additions, modifications, deletions)
+        // This way, duplicate headers are preserved unless the interceptor explicitly modifies that header name.
+        let modifiedHeaderDict = proxyResponse.headers
+        let originalHeaderDict = originalHeaders.asFlatDictionary()
+        
+        // Apply all changes from the interceptor
+        for (key, value) in modifiedHeaderDict {
+            if originalHeaderDict[key] != value {
+                // Header was modified or added by interceptor - replace it
+                originalHeaders.replaceOrAdd(name: key, value: value)
+            }
+        }
+        
+        // Remove headers that were deleted by interceptors
+        for (key, _) in originalHeaderDict {
+            if modifiedHeaderDict[key] == nil {
+                originalHeaders.remove(name: key)
+            }
+        }
+
         // Apply traffic shaping (best-effort) after interceptors so size/headers are final.
         if let profileID = trafficController.profileHeaderValue() {
+            originalHeaders.replaceOrAdd(name: "X-FRTraffic-Profile", value: profileID)
             proxyResponse.headers["X-FRTraffic-Profile"] = profileID
         }
 
@@ -207,20 +236,19 @@ final class HTTP1UpstreamHandler: ChannelInboundHandler, RemovableChannelHandler
             proxyResponse.bodyIsTruncated = false
             proxyResponse.rawBodySize = data.count
             ensureContentTypePlainText(&proxyResponse.headers)
+            if let contentType = proxyResponse.headers["Content-Type"] {
+                originalHeaders.replaceOrAdd(name: "Content-Type", value: contentType)
+            }
         }
 
         let outBody = proxyResponse.bodyPreview ?? Data()
-        let outHeaders = proxyResponse.headers
         let outStatus = proxyResponse.statusCode
 
         let delay = trafficController.delayFuture(direction: .downlink, byteCount: outBody.count, on: clientChannel.eventLoop)
         delay.whenComplete { _ in
             self.clientChannel.eventLoop.execute {
                 var serverHead = HTTPResponseHead(version: head.version, status: HTTPResponseStatus(statusCode: outStatus))
-                serverHead.headers = HTTPHeaders()
-                for (k, v) in outHeaders {
-                    serverHead.headers.add(name: k, value: v)
-                }
+                serverHead.headers = originalHeaders
                 serverHead.headers.remove(name: "Transfer-Encoding")
                 serverHead.headers.replaceOrAdd(name: "Content-Length", value: "\(outBody.count)")
 
