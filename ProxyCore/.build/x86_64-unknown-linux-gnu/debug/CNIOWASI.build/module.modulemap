@@ -1,4 +1,0 @@
-module CNIOWASI {
-    umbrella header "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/CNIOWASI/include/CNIOWASI.h"
-    export *
-}

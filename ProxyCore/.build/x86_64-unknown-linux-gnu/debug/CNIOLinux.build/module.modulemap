@@ -1,4 +1,0 @@
-module CNIOLinux {
-    umbrella header "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/CNIOLinux/include/CNIOLinux.h"
-    export *
-}

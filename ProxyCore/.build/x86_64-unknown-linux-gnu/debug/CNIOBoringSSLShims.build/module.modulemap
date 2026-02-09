@@ -1,4 +1,0 @@
-module CNIOBoringSSLShims {
-    umbrella header "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio-ssl/Sources/CNIOBoringSSLShims/include/CNIOBoringSSLShims.h"
-    export *
-}
