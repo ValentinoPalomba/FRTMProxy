@@ -1,1 +1,13 @@
 .DS_Store
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Xcode
+xcuserdata/
+DerivedData/
+*.xcworkspace/xcuserdata/
+
+# Build files
+buildServer.json
