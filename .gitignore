@@ -1,1 +1,4 @@
 .DS_Store
+
+# Build Server configuration (contains machine-specific paths)
+buildServer.json
