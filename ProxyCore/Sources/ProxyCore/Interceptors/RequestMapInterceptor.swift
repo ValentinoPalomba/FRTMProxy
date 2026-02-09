@@ -32,10 +32,6 @@ public struct RequestMapInterceptor: ProxyInterceptor {
                     let url = resolveRelativeURL(file, under: baseDirectory)
                     return try? Data(contentsOf: url)
                 }
-                if let file = item.bodyFile, (item.bodyType?.lowercased() == "file"), !file.isEmpty {
-                    let url = resolveRelativeURL(file, under: baseDirectory)
-                    return try? Data(contentsOf: url)
-                }
                 if let body = item.body {
                     return Data(body.utf8)
                 }

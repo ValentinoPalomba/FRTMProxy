@@ -6,3 +6,11 @@ DerivedData/
 .vscode/
 *.xcuserstate
 xcuserdata/
+
+# Xcode user-specific data
+xcuserdata/
+*.xcuserdatad/
+
+# Swift Package Manager build artifacts
+.build/
+
