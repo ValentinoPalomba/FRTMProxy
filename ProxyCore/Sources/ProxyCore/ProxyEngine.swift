@@ -290,9 +290,14 @@ public actor ProxyEngine {
         try await certificateAuthority.rootCertificateDER()
     }
 
-    public func facci(commonName: String = "ProxyCore CA") async throws {
+    public func generateNewRootCA(commonName: String = "ProxyCore CA") async throws {
         try await certificateAuthority.generateNewRootCA(commonName: commonName)
         eventBus.emit(.log("[ProxyCore] Generated new Root CA.\n"))
+    }
+    
+    @available(*, deprecated, renamed: "generateNewRootCA(commonName:)")
+    public func facci(commonName: String = "ProxyCore CA") async throws {
+        try await generateNewRootCA(commonName: commonName)
     }
 
     public func exportRootCAPKCS12(password: String) async throws -> Data {

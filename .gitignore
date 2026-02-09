@@ -1,4 +1,11 @@
 .DS_Store
+.build/
+*.swiftpm
+.swiftpm/
+DerivedData/
+.vscode/
+*.xcuserstate
+xcuserdata/
 
 # Xcode user-specific data
 xcuserdata/
