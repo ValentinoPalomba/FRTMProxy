@@ -99,7 +99,7 @@ func processRequest(_ request: URLRequest) -> HTTPResponse? {
 * Write tests for new features when applicable
 * Ensure all existing tests pass before submitting a PR
 * Test your changes on different macOS versions if possible
-* Test with both Simulator and physical iOS devices when changes affect device connectivity
+* Since FRTMProxy allows connecting iOS devices and Simulators for HTTP/S traffic inspection, test with both when changes affect the device connectivity features
 
 ## Git Commit Messages
 
