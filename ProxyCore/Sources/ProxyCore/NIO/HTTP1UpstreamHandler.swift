@@ -197,15 +197,28 @@ final class HTTP1UpstreamHandler: ChannelInboundHandler, RemovableChannelHandler
             }
         }
 
-        // Apply modifications from interceptors to the original headers
-        // This preserves duplicates while still allowing interceptors to modify/add headers
+        // Apply modifications from interceptors to the original headers.
+        // Note: Interceptors work with a flattened [String: String] dictionary, which means
+        // they cannot see or preserve duplicate headers (e.g. multiple Set-Cookie).
+        // To minimize data loss:
+        // 1. Start with original headers (preserves all duplicates)
+        // 2. Apply all interceptor changes on top (additions, modifications, deletions)
+        // This way, duplicate headers are preserved unless the interceptor explicitly modifies that header name.
         let modifiedHeaderDict = proxyResponse.headers
         let originalHeaderDict = originalHeaders.asFlatDictionary()
         
+        // Apply all changes from the interceptor
         for (key, value) in modifiedHeaderDict {
-            if originalHeaderDict[key] != value {
-                // Header was modified or added by interceptor
+            if originalHeaderDict[key] != value || originalHeaderDict[key] == nil {
+                // Header was modified or added by interceptor - replace it
                 originalHeaders.replaceOrAdd(name: key, value: value)
+            }
+        }
+        
+        // Remove headers that were deleted by interceptors
+        for (key, _) in originalHeaderDict {
+            if modifiedHeaderDict[key] == nil {
+                originalHeaders.remove(name: key)
             }
         }
 
