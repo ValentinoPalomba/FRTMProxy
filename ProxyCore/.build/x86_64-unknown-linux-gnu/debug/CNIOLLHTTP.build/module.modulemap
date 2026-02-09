@@ -1,4 +1,0 @@
-module CNIOLLHTTP {
-    umbrella header "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/CNIOLLHTTP/include/CNIOLLHTTP.h"
-    export *
-}

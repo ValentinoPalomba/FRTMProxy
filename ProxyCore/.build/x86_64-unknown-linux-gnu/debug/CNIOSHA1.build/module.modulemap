@@ -1,4 +1,0 @@
-module CNIOSHA1 {
-    umbrella header "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/checkouts/swift-nio/Sources/CNIOSHA1/include/CNIOSHA1.h"
-    export *
-}
