@@ -199,9 +199,6 @@ struct InspectorScreen: View {
                 .onboardingTarget(.inspectFlow)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .frame(minHeight: inspectorPanelMinHeight, idealHeight: inspectorPanelIdealHeight)
-                .onChange(of: domainApprovalStore.approvedDomains) { _, _ in
-                    // Force UI update when approved domains change
-                }
             }
 
             InspectorBottomBar(
