@@ -1,0 +1,3 @@
+module SwiftASN1 {
+    header "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/SwiftASN1.build/include/SwiftASN1-Swift.h"
+}

@@ -1,0 +1,3 @@
+module Crypto {
+    header "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/Crypto.build/include/Crypto-Swift.h"
+}

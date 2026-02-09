@@ -1,0 +1,3 @@
+module NIOConcurrencyHelpers {
+    header "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/NIOConcurrencyHelpers.build/include/NIOConcurrencyHelpers-Swift.h"
+}

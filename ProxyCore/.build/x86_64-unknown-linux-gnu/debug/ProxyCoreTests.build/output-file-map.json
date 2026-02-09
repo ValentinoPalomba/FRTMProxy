@@ -1,0 +1,68 @@
+{
+  "": {
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/master.swiftdeps"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/Tests/ProxyCoreTests/CertificateAuthorityPKCS12Tests.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/CertificateAuthorityPKCS12Tests.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/CertificateAuthorityPKCS12Tests.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/CertificateAuthorityPKCS12Tests~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/CertificateAuthorityPKCS12Tests.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/CertificateAuthorityPKCS12Tests.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/Tests/ProxyCoreTests/CryptoKeySerializationTests.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/CryptoKeySerializationTests.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/CryptoKeySerializationTests.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/CryptoKeySerializationTests~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/CryptoKeySerializationTests.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/CryptoKeySerializationTests.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/Tests/ProxyCoreTests/HTTPProxyRewriteIntegrationTests.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/HTTPProxyRewriteIntegrationTests.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/HTTPProxyRewriteIntegrationTests.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/HTTPProxyRewriteIntegrationTests~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/HTTPProxyRewriteIntegrationTests.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/HTTPProxyRewriteIntegrationTests.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/Tests/ProxyCoreTests/ReplayHTTPIntegrationTests.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/ReplayHTTPIntegrationTests.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/ReplayHTTPIntegrationTests.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/ReplayHTTPIntegrationTests~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/ReplayHTTPIntegrationTests.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/ReplayHTTPIntegrationTests.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/Tests/ProxyCoreTests/ReportServerInterceptorTests.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/ReportServerInterceptorTests.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/ReportServerInterceptorTests.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/ReportServerInterceptorTests~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/ReportServerInterceptorTests.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/ReportServerInterceptorTests.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/Tests/ProxyCoreTests/SSEParserTests.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/SSEParserTests.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/SSEParserTests.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/SSEParserTests~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/SSEParserTests.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/SSEParserTests.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/Tests/ProxyCoreTests/ScriptInterceptorTests.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/ScriptInterceptorTests.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/ScriptInterceptorTests.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/ScriptInterceptorTests~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/ScriptInterceptorTests.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/ScriptInterceptorTests.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/Tests/ProxyCoreTests/TLSClientHelloParserTests.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/TLSClientHelloParserTests.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/TLSClientHelloParserTests.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/TLSClientHelloParserTests~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/TLSClientHelloParserTests.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/TLSClientHelloParserTests.dia"
+  },
+  "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/Tests/ProxyCoreTests/WebSocketProxyIntegrationTests.swift": {
+    "dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/WebSocketProxyIntegrationTests.d",
+    "object": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/WebSocketProxyIntegrationTests.swift.o",
+    "swiftmodule": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/WebSocketProxyIntegrationTests~partial.swiftmodule",
+    "swift-dependencies": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/WebSocketProxyIntegrationTests.swiftdeps",
+    "diagnostics": "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/ProxyCoreTests.build/WebSocketProxyIntegrationTests.dia"
+  }
+}

@@ -1,0 +1,3 @@
+module CryptoBoringWrapper {
+    header "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/CryptoBoringWrapper.build/include/CryptoBoringWrapper-Swift.h"
+}

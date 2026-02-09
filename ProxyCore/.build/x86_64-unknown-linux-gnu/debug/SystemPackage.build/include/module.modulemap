@@ -1,0 +1,3 @@
+module SystemPackage {
+    header "/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/.build/x86_64-unknown-linux-gnu/debug/SystemPackage.build/include/SystemPackage-Swift.h"
+}
