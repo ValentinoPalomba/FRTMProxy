@@ -62,30 +62,35 @@ enum TLSClientHelloParser {
             let extLen = u16(pos + 2)
             pos += 4
 
+            // Compute the end of this extension and bounds-check it
+            let extEnd = pos + extLen
+            if extEnd > end { break }
+
             if extType == 0 { // server_name
-                if pos + 5 > end { break }
+                if pos + 2 > extEnd { pos = extEnd; continue }
                 let listLen = u16(pos)
                 pos += 2
-                if pos + listLen > end { break }
+                if pos + listLen > extEnd { pos = extEnd; continue }
 
+                if pos + 3 > extEnd { pos = extEnd; continue }
                 let nameType = Int(bytes[bytes.startIndex.advanced(by: pos)])
                 let nameLen = u16(pos + 1)
                 pos += 3
-                if nameType != 0 { break }
-                if pos + nameLen > end { break }
+                if nameType != 0 { pos = extEnd; continue }
+                if pos + nameLen > extEnd { pos = extEnd; continue }
 
                 let start = bytes.startIndex.advanced(by: pos)
                 let hostBytes = bytes[start..<start.advanced(by: nameLen)]
                 sni = String(decoding: hostBytes, as: UTF8.self)
-                pos += nameLen
+                pos = extEnd
                 continue
             }
 
             if extType == 16 { // ALPN
-                if pos + 2 > end { break }
+                if pos + 2 > extEnd { pos = extEnd; continue }
                 let alpnExtLen = u16(pos)
                 pos += 2
-                if pos + alpnExtLen > end { break }
+                if pos + alpnExtLen > extEnd { pos = extEnd; continue }
 
                 let alpnEnd = pos + alpnExtLen
                 while pos + 1 <= alpnEnd {
@@ -98,10 +103,12 @@ enum TLSClientHelloParser {
                     alpn.append(String(decoding: pBytes, as: UTF8.self))
                     pos += protoLen
                 }
+                pos = extEnd
                 continue
             }
 
-            pos += extLen
+            // Skip unknown extensions
+            pos = extEnd
         }
 
         return TLSClientHelloInfo(sniHost: sni, alpnProtocols: alpn)
