@@ -209,7 +209,7 @@ final class HTTP1UpstreamHandler: ChannelInboundHandler, RemovableChannelHandler
         
         // Apply all changes from the interceptor
         for (key, value) in modifiedHeaderDict {
-            if originalHeaderDict[key] != value || originalHeaderDict[key] == nil {
+            if originalHeaderDict[key] != value {
                 // Header was modified or added by interceptor - replace it
                 originalHeaders.replaceOrAdd(name: key, value: value)
             }
