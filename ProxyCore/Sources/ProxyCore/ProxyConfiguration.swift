@@ -92,6 +92,12 @@ public struct ProxyConfiguration: Sendable {
                 .appending(path: "ProxyCore", directoryHint: .isDirectory)
             return Paths(baseDirectory: base)
         }
+        
+        public static func makeFallbackPaths() -> Paths {
+            let fallbackDir = FileManager.default.temporaryDirectory
+                .appendingPathComponent("FRTMProxy-fallback")
+            return Paths(baseDirectory: fallbackDir)
+        }
     }
 
     public var listenHost: String
@@ -133,7 +139,7 @@ public struct ProxyConfiguration: Sendable {
         remoteForward: RemoteForward? = nil,
         socks5InboundEnabled: Bool = true,
         hostFilter: HostFilter = HostFilter(),
-        paths: Paths = try! Paths.defaultPaths(),
+        paths: Paths? = nil,
         isDomainApprovedForMITM: (@Sendable (String) -> Bool)? = nil,
         onNewDomainDiscovered: (@Sendable (String) -> Void)? = nil
     ) {
@@ -147,7 +153,7 @@ public struct ProxyConfiguration: Sendable {
         self.remoteForward = remoteForward
         self.socks5InboundEnabled = socks5InboundEnabled
         self.hostFilter = hostFilter
-        self.paths = paths
+        self.paths = paths ?? (try? Paths.defaultPaths()) ?? Paths.makeFallbackPaths()
         self.isDomainApprovedForMITM = isDomainApprovedForMITM
         self.onNewDomainDiscovered = onNewDomainDiscovered
     }

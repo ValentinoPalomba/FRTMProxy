@@ -2,3 +2,18 @@
 
 # Build Server configuration (contains machine-specific paths)
 buildServer.json
+.build/
+*.swiftpm
+.swiftpm/
+DerivedData/
+.vscode/
+*.xcuserstate
+xcuserdata/
+
+# Xcode user-specific data
+xcuserdata/
+*.xcuserdatad/
+
+# Swift Package Manager build artifacts
+.build/
+
