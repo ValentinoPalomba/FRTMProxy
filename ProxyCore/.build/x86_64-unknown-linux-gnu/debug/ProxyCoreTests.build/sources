@@ -1,9 +1,0 @@
-/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/Tests/ProxyCoreTests/CertificateAuthorityPKCS12Tests.swift
-/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/Tests/ProxyCoreTests/CryptoKeySerializationTests.swift
-/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/Tests/ProxyCoreTests/HTTPProxyRewriteIntegrationTests.swift
-/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/Tests/ProxyCoreTests/ReplayHTTPIntegrationTests.swift
-/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/Tests/ProxyCoreTests/ReportServerInterceptorTests.swift
-/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/Tests/ProxyCoreTests/SSEParserTests.swift
-/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/Tests/ProxyCoreTests/ScriptInterceptorTests.swift
-/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/Tests/ProxyCoreTests/TLSClientHelloParserTests.swift
-/home/runner/work/FRTMProxy/FRTMProxy/ProxyCore/Tests/ProxyCoreTests/WebSocketProxyIntegrationTests.swift
