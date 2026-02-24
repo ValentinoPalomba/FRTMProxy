@@ -116,7 +116,10 @@ struct InspectorScreen: View {
                             activeMapLocalCount: activeMapLocalCount,
                             activeCollectionsCount: activeCollectionsCount,
                             activeBreakpointsCount: activeBreakpointsCount,
-                            onClear: viewModel.clear
+                            onClear: viewModel.clear,
+                            onMapLocalTap: { showRulesSheet = true},
+                            onCollectionsTap:{ showCollectionsSheet = true } ,
+                            onBreakpointsTap: { showBreakpointsManager = true }
                         )
                     }
                 } else {
@@ -601,6 +604,9 @@ private struct InspectorBottomBar: View {
     let activeCollectionsCount: Int
     let activeBreakpointsCount: Int
     let onClear: () -> Void
+    let onMapLocalTap: () -> Void
+    let onCollectionsTap: () -> Void
+    let onBreakpointsTap: () -> Void
 
     private var hasActiveModifiers: Bool {
         activeMapLocalCount > 0 || activeCollectionsCount > 0 || activeBreakpointsCount > 0
@@ -628,6 +634,9 @@ private struct InspectorBottomBar: View {
                         tint: colors.accent,
                         colors: colors
                     )
+                    .onTapGesture {
+                        onMapLocalTap()
+                    }
                 }
 
                 if activeCollectionsCount > 0 {
@@ -638,6 +647,9 @@ private struct InspectorBottomBar: View {
                         tint: colors.accentSecondary,
                         colors: colors
                     )
+                    .onTapGesture {
+                        onCollectionsTap()
+                    }
                 }
 
                 if activeBreakpointsCount > 0 {
@@ -648,6 +660,9 @@ private struct InspectorBottomBar: View {
                         tint: colors.danger,
                         colors: colors
                     )
+                    .onTapGesture {
+                        onBreakpointsTap()
+                    }
                 }
 
                 if !hasActiveModifiers {
