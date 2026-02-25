@@ -29,7 +29,7 @@
 	<key>SUFeedURL</key>
 	<string>https://valentinopalomba.github.io/FRTMProxy/appcast.xml</string>
 	<key>SUPublicEDKey</key>
-	<string>qo+iXM6XJ5zlNY5OFeGYJ7TnWsxC4KdVXpMKnREeLh0=</string>
+	<string>wc3novPXAFIN3lWFiHGA7JNUD8dtIfCPvXm/WFdJonY=</string>
 	<key>SUScheduledCheckInterval</key>
 	<integer>86400</integer>
 </dict>
