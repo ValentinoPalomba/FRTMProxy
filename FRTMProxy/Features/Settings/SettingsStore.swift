@@ -53,6 +53,72 @@ final class SettingsStore: ObservableObject {
         didSet { defaults.set(selectedTrafficProfileID, forKey: trafficProfileKey) }
     }
 
+    @Published var customTrafficLatencyMs: Int {
+        didSet {
+            let clamped = Self.clamp(customTrafficLatencyMs, within: 0...120_000)
+            if clamped != customTrafficLatencyMs {
+                customTrafficLatencyMs = clamped
+                return
+            }
+            defaults.set(customTrafficLatencyMs, forKey: customTrafficLatencyKey)
+        }
+    }
+
+    @Published var customTrafficJitterMs: Int {
+        didSet {
+            let clamped = Self.clamp(customTrafficJitterMs, within: 0...120_000)
+            if clamped != customTrafficJitterMs {
+                customTrafficJitterMs = clamped
+                return
+            }
+            defaults.set(customTrafficJitterMs, forKey: customTrafficJitterKey)
+        }
+    }
+
+    @Published var customTrafficDownstreamKbps: Int {
+        didSet {
+            let clamped = Self.clamp(customTrafficDownstreamKbps, within: 0...1_000_000)
+            if clamped != customTrafficDownstreamKbps {
+                customTrafficDownstreamKbps = clamped
+                return
+            }
+            defaults.set(customTrafficDownstreamKbps, forKey: customTrafficDownstreamKey)
+        }
+    }
+
+    @Published var customTrafficUpstreamKbps: Int {
+        didSet {
+            let clamped = Self.clamp(customTrafficUpstreamKbps, within: 0...1_000_000)
+            if clamped != customTrafficUpstreamKbps {
+                customTrafficUpstreamKbps = clamped
+                return
+            }
+            defaults.set(customTrafficUpstreamKbps, forKey: customTrafficUpstreamKey)
+        }
+    }
+
+    @Published var customTrafficPacketLossPercent: Double {
+        didSet {
+            let clamped = Self.clamp(customTrafficPacketLossPercent, within: 0...100)
+            if clamped != customTrafficPacketLossPercent {
+                customTrafficPacketLossPercent = clamped
+                return
+            }
+            defaults.set(customTrafficPacketLossPercent, forKey: customTrafficPacketLossKey)
+        }
+    }
+
+    @Published var customTrafficResponseDelayMs: Int {
+        didSet {
+            let clamped = Self.clamp(customTrafficResponseDelayMs, within: 0...120_000)
+            if clamped != customTrafficResponseDelayMs {
+                customTrafficResponseDelayMs = clamped
+                return
+            }
+            defaults.set(customTrafficResponseDelayMs, forKey: customTrafficResponseDelayKey)
+        }
+    }
+
     @Published var alertsEnabled: Bool {
         didSet { defaults.set(alertsEnabled, forKey: alertsEnabledKey) }
     }
@@ -75,6 +141,12 @@ final class SettingsStore: ObservableObject {
     private let pinnedAppsKey = "settings.pinnedApps"
     private let restrictInterceptionKey = "settings.restrictInterceptionToActivePinnedHosts"
     private let trafficProfileKey = "settings.trafficProfile"
+    private let customTrafficLatencyKey = "settings.traffic.custom.latencyMs"
+    private let customTrafficJitterKey = "settings.traffic.custom.jitterMs"
+    private let customTrafficDownstreamKey = "settings.traffic.custom.downstreamKbps"
+    private let customTrafficUpstreamKey = "settings.traffic.custom.upstreamKbps"
+    private let customTrafficPacketLossKey = "settings.traffic.custom.packetLossPercent"
+    private let customTrafficResponseDelayKey = "settings.traffic.custom.responseDelayMs"
     private let alertsEnabledKey = "settings.alertsEnabled"
     private let alertRulesKey = "settings.alertRules"
 
@@ -86,8 +158,23 @@ final class SettingsStore: ObservableObject {
         DesignSystem.InterfaceScale.option(with: interfaceScaleID)
     }
 
+    var manualTrafficProfile: TrafficProfile {
+        TrafficProfileLibrary.manualProfile(
+            latencyMs: customTrafficLatencyMs,
+            jitterMs: customTrafficJitterMs,
+            downstreamKbps: customTrafficDownstreamKbps,
+            upstreamKbps: customTrafficUpstreamKbps,
+            packetLossPercent: customTrafficPacketLossPercent,
+            responseDelayMs: customTrafficResponseDelayMs
+        )
+    }
+
+    var availableTrafficProfiles: [TrafficProfile] {
+        TrafficProfileLibrary.profiles(manualProfile: manualTrafficProfile)
+    }
+
     var activeTrafficProfile: TrafficProfile {
-        TrafficProfileLibrary.profile(with: selectedTrafficProfileID)
+        TrafficProfileLibrary.profile(with: selectedTrafficProfileID, manualProfile: manualTrafficProfile)
     }
 
     init() {
@@ -106,8 +193,29 @@ final class SettingsStore: ObservableObject {
         self.pinnedHosts = SettingsStore.loadPinnedHosts(from: defaults, key: pinnedHostsKey)
         self.pinnedApps = SettingsStore.loadPinnedApps(from: defaults, key: pinnedAppsKey)
         self.restrictInterceptionToActivePinnedHosts = defaults.bool(forKey: restrictInterceptionKey)
+        let initialCustomTrafficLatencyMs = Self.clamp(defaults.integer(forKey: customTrafficLatencyKey), within: 0...120_000)
+        let initialCustomTrafficJitterMs = Self.clamp(defaults.integer(forKey: customTrafficJitterKey), within: 0...120_000)
+        let initialCustomTrafficDownstreamKbps = Self.clamp(defaults.integer(forKey: customTrafficDownstreamKey), within: 0...1_000_000)
+        let initialCustomTrafficUpstreamKbps = Self.clamp(defaults.integer(forKey: customTrafficUpstreamKey), within: 0...1_000_000)
+        let storedPacketLoss = defaults.object(forKey: customTrafficPacketLossKey) as? Double ?? 0
+        let initialCustomTrafficPacketLossPercent = Self.clamp(storedPacketLoss, within: 0...100)
+        let initialCustomTrafficResponseDelayMs = Self.clamp(defaults.integer(forKey: customTrafficResponseDelayKey), within: 0...120_000)
+        self.customTrafficLatencyMs = initialCustomTrafficLatencyMs
+        self.customTrafficJitterMs = initialCustomTrafficJitterMs
+        self.customTrafficDownstreamKbps = initialCustomTrafficDownstreamKbps
+        self.customTrafficUpstreamKbps = initialCustomTrafficUpstreamKbps
+        self.customTrafficPacketLossPercent = initialCustomTrafficPacketLossPercent
+        self.customTrafficResponseDelayMs = initialCustomTrafficResponseDelayMs
         let storedProfileID = defaults.string(forKey: trafficProfileKey)
-        self.selectedTrafficProfileID = TrafficProfileLibrary.profile(with: storedProfileID).id
+        let initialManualProfile = TrafficProfileLibrary.manualProfile(
+            latencyMs: initialCustomTrafficLatencyMs,
+            jitterMs: initialCustomTrafficJitterMs,
+            downstreamKbps: initialCustomTrafficDownstreamKbps,
+            upstreamKbps: initialCustomTrafficUpstreamKbps,
+            packetLossPercent: initialCustomTrafficPacketLossPercent,
+            responseDelayMs: initialCustomTrafficResponseDelayMs
+        )
+        self.selectedTrafficProfileID = TrafficProfileLibrary.profile(with: storedProfileID, manualProfile: initialManualProfile).id
 
         self.alertsEnabled = defaults.bool(forKey: alertsEnabledKey)
         self.alertRules = SettingsStore.loadAlertRules(from: defaults, key: alertRulesKey)
@@ -272,5 +380,13 @@ final class SettingsStore: ObservableObject {
             return []
         }
         return decoded
+    }
+
+    private static func clamp(_ value: Int, within range: ClosedRange<Int>) -> Int {
+        min(max(value, range.lowerBound), range.upperBound)
+    }
+
+    private static func clamp(_ value: Double, within range: ClosedRange<Double>) -> Double {
+        min(max(value, range.lowerBound), range.upperBound)
     }
 }

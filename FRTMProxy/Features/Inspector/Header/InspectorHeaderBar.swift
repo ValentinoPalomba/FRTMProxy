@@ -202,7 +202,7 @@ private struct TrafficProfileSection: View {
                     Text(profile.name)
                         .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                         .foregroundStyle(colors.textPrimary)
-                    Text(profile.summary)
+                    Text(profileSubtitle(for: profile))
                         .font(DesignSystem.Fonts.sans(11, weight: .regular))
                         .foregroundStyle(colors.textSecondary)
                 }
@@ -225,5 +225,12 @@ private struct TrafficProfileSection: View {
             )
         }
         .buttonStyle(.plain)
+    }
+
+    private func profileSubtitle(for profile: TrafficProfile) -> String {
+        if profile.id == TrafficProfileLibrary.manualID {
+            return profile.summary + " · Customize in Settings > Traffic"
+        }
+        return profile.summary
     }
 }

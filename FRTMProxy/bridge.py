@@ -28,7 +28,8 @@ TRAFFIC_PROFILE_DEFAULT = {
     "jitter_ms": 0,
     "downstream_kbps": 0,
     "upstream_kbps": 0,
-    "packet_loss": 0
+    "packet_loss": 0,
+    "response_delay_ms": 0
 }
 ACTIVE_TRAFFIC_PROFILE = dict(TRAFFIC_PROFILE_DEFAULT)
 
@@ -193,6 +194,7 @@ def update_traffic_profile(profile_payload):
             "downstream_kbps": max(int(profile_payload.get("downstream_kbps", 0)), 0),
             "upstream_kbps": max(int(profile_payload.get("upstream_kbps", 0)), 0),
             "packet_loss": max(min(float(profile_payload.get("packet_loss", 0) or 0), 1), 0),
+            "response_delay_ms": max(int(profile_payload.get("response_delay_ms", 0)), 0),
         })
     ACTIVE_TRAFFIC_PROFILE = merged
     ctx.log.info(f"[TRAFFIC] active profile: {merged.get('name')}")
@@ -225,6 +227,16 @@ def apply_profile_bandwidth(byte_count: int, kbps_limit: int, direction: str):
         return
     time.sleep(delay)
     debug_log(f"[TRAFFIC] {direction} throttled {byte_count}B in {int(delay * 1000)}ms")
+
+def apply_profile_response_delay():
+    if not traffic_profile_enabled():
+        return
+    delay_ms = ACTIVE_TRAFFIC_PROFILE.get("response_delay_ms", 0)
+    if not delay_ms or delay_ms <= 0:
+        return
+    delay = max(delay_ms / 1000.0, 0)
+    time.sleep(delay)
+    debug_log(f"[TRAFFIC] response delay {int(delay * 1000)}ms")
 
 def maybe_inject_packet_loss(flow: http.HTTPFlow) -> bool:
     if not traffic_profile_enabled():
@@ -262,6 +274,7 @@ def apply_profile_to_response(flow: http.HTTPFlow):
     if not traffic_profile_enabled():
         return
     apply_profile_latency("downlink")
+    apply_profile_response_delay()
     packet_loss = maybe_inject_packet_loss(flow)
     tag_response_with_profile(flow)
     if packet_loss:

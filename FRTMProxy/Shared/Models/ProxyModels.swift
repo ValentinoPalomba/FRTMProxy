@@ -7,6 +7,8 @@ struct MitmFlow: Identifiable, Codable, Equatable {
     var response: Response?
     var event: String
     var timestamp: TimeInterval?
+    var requestTimestamp: TimeInterval?
+    var responseTimestamp: TimeInterval?
     var client: Client?
     var clientApp: FlowClientApp?
     var breakpoint: FlowBreakpointMetadata?

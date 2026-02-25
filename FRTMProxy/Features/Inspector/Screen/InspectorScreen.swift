@@ -34,7 +34,7 @@ struct InspectorScreen: View {
     }
 
     var body: some View {
-        let trafficProfiles = TrafficProfileLibrary.presets
+        let trafficProfiles = settings.availableTrafficProfiles
 
         let flowExplorer = FlowExplorerSection(
             flows: filteredFlows,
@@ -117,6 +117,7 @@ struct InspectorScreen: View {
                             activeCollectionsCount: activeCollectionsCount,
                             activeBreakpointsCount: activeBreakpointsCount,
                             onClear: viewModel.clear,
+                            onOpenCommandPalette: { showCommandPalette = true },
                             onMapLocalTap: { showRulesSheet = true},
                             onCollectionsTap:{ showCollectionsSheet = true } ,
                             onBreakpointsTap: { showBreakpointsManager = true }
@@ -604,6 +605,7 @@ private struct InspectorBottomBar: View {
     let activeCollectionsCount: Int
     let activeBreakpointsCount: Int
     let onClear: () -> Void
+    let onOpenCommandPalette: () -> Void
     let onMapLocalTap: () -> Void
     let onCollectionsTap: () -> Void
     let onBreakpointsTap: () -> Void
@@ -617,6 +619,7 @@ private struct InspectorBottomBar: View {
             ControlButton(title: "Clear", systemImage: "trash", style: .ghost(colors), disabled: false) {
                 onClear()
             }
+            commandPaletteButton
 
             Spacer(minLength: DesignSystem.Metrics.scaled(12))
 
@@ -625,6 +628,12 @@ private struct InspectorBottomBar: View {
                     profile: activeTrafficProfile,
                     colors: colors
                 )
+                if activeTrafficProfile.id == TrafficProfileLibrary.manualID {
+                    Text("Customize in Settings > Traffic")
+                        .font(DesignSystem.Fonts.sans(11, weight: .medium))
+                        .foregroundStyle(colors.textSecondary)
+                        .lineLimit(1)
+                }
 
                 if activeMapLocalCount > 0 {
                     ModifierStatusItem(
@@ -685,6 +694,26 @@ private struct InspectorBottomBar: View {
                         .frame(height: 1)
                 }
         )
+    }
+
+    private var commandPaletteButton: some View {
+        Button(action: onOpenCommandPalette) {
+            Image(systemName: "keyboard")
+                .font(.system(size: DesignSystem.Metrics.scaled(13), weight: .semibold))
+                .frame(width: DesignSystem.Metrics.scaled(34), height: DesignSystem.Metrics.scaled(34))
+                .background(
+                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+                        .fill(colors.surface)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+                        .stroke(colors.border.opacity(0.9), lineWidth: 1)
+                )
+                .foregroundStyle(colors.textPrimary)
+        }
+        .buttonStyle(.plain)
+        .help("Command Palette (⌘K)")
+        .accessibilityLabel(Text("Command Palette"))
     }
 }
 

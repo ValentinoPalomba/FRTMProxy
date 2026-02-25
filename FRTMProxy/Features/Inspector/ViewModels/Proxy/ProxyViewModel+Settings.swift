@@ -59,10 +59,30 @@ extension ProxyViewModel {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] profileID in
                 guard let self else { return }
-                let profile = TrafficProfileLibrary.profile(with: profileID)
+                let profile = TrafficProfileLibrary.profile(with: profileID, manualProfile: settings.manualTrafficProfile)
                 self.setTrafficProfile(profile)
             }
             .store(in: &settingsCancellables)
+
+        Publishers.CombineLatest(
+            Publishers.CombineLatest4(
+                settings.$customTrafficLatencyMs,
+                settings.$customTrafficJitterMs,
+                settings.$customTrafficDownstreamKbps,
+                settings.$customTrafficUpstreamKbps
+            ),
+            Publishers.CombineLatest(
+                settings.$customTrafficPacketLossPercent,
+                settings.$customTrafficResponseDelayMs
+            )
+        )
+        .receive(on: DispatchQueue.main)
+        .sink { [weak self] _, _ in
+            guard let self else { return }
+            guard settings.selectedTrafficProfileID == TrafficProfileLibrary.manualID else { return }
+            self.setTrafficProfile(settings.manualTrafficProfile)
+        }
+        .store(in: &settingsCancellables)
 
         settings.$overrideMacOSProxy
             .dropFirst()

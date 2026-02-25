@@ -10,6 +10,7 @@ struct BreakpointsManagerView: View {
     @State private var newPath: String = "/"
     @State private var includeRequest: Bool = true
     @State private var includeResponse: Bool = true
+    @State private var isApplyingURLSplit = false
 
     private var colors: DesignSystem.ColorPalette {
         DesignSystem.Colors.palette(for: settings.activeTheme, interfaceStyle: colorScheme)
@@ -71,8 +72,14 @@ struct BreakpointsManagerView: View {
             HStack(spacing: 12) {
                 TextField("Host (e.g. api.example.com)", text: $newHost)
                     .textFieldStyle(ProxyTextFieldStyle(palette: colors))
+                    .onChange(of: newHost) { oldValue, newValue in
+                        applyURLSplitIfNeeded(changedField: .host, previousValue: oldValue, newValue: newValue)
+                    }
                 TextField("Path (e.g. /v1/users)", text: $newPath)
                     .textFieldStyle(ProxyTextFieldStyle(palette: colors))
+                    .onChange(of: newPath) { oldValue, newValue in
+                        applyURLSplitIfNeeded(changedField: .path, previousValue: oldValue, newValue: newValue)
+                    }
             }
 
             HStack(spacing: 12) {
@@ -189,6 +196,38 @@ struct BreakpointsManagerView: View {
         newHost = host
         newPath = url.path.isEmpty ? "/" : url.path
     }
+
+    private func applyURLSplitIfNeeded(changedField: URLInputField, previousValue: String, newValue: String) {
+        guard !isApplyingURLSplit else { return }
+        let trimmedValue = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedValue.isEmpty else { return }
+
+        let hostWasEmpty: Bool
+        let pathWasEmpty: Bool
+        switch changedField {
+        case .host:
+            hostWasEmpty = previousValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            let currentPath = newPath.trimmingCharacters(in: .whitespacesAndNewlines)
+            pathWasEmpty = currentPath.isEmpty || currentPath == "/"
+        case .path:
+            hostWasEmpty = newHost.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            let previousPath = previousValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            pathWasEmpty = previousPath.isEmpty || previousPath == "/"
+        }
+
+        guard hostWasEmpty && pathWasEmpty else { return }
+        guard let split = FormattingUtils.splitHostAndPath(from: trimmedValue) else { return }
+
+        isApplyingURLSplit = true
+        newHost = split.host
+        newPath = split.path
+        isApplyingURLSplit = false
+    }
+}
+
+private enum URLInputField {
+    case host
+    case path
 }
 
 private struct BreakpointRow: View {

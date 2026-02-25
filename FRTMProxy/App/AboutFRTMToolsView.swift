@@ -60,7 +60,7 @@ struct AboutFRTMToolsView: View {
                 Text("Shortcuts")
                     .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                     .foregroundStyle(colors.textSecondary)
-                Text("• ⌘⇧K to clear captured flows\n• Manage → Device for QR pairing\n• Manage → Traffic profiles for throttling presets")
+                Text("• ⌘K to open the command palette\n• ⌘⌥K to clear captured flows\n• Manage → Device for QR pairing")
                     .font(DesignSystem.Fonts.sans(11, weight: .medium))
                     .foregroundStyle(colors.textPrimary)
             }

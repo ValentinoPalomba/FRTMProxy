@@ -3,8 +3,7 @@ import Foundation
 extension DateFormatter {
     static let cachedTime: DateFormatter = {
         let df = DateFormatter()
-        df.dateFormat = "HH:mm:ss"
+        df.dateFormat = "HH:mm:ss.SSS"
         return df
     }()
 }
-

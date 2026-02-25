@@ -1,10 +1,42 @@
 import Foundation
 
 extension MitmFlow {
-    var formattedTimestamp: String {
-        guard let timestamp else { return "" }
-        let date = Date(timeIntervalSince1970: timestamp)
+    var formattedStartTimestamp: String {
+        guard let start = requestTimestamp ?? timestamp else { return "—" }
+        let date = Date(timeIntervalSince1970: start)
         return DateFormatter.cachedTime.string(from: date)
+    }
+
+    var formattedEndTimestamp: String {
+        guard let end = responseTimestamp else { return "—" }
+        let date = Date(timeIntervalSince1970: end)
+        return DateFormatter.cachedTime.string(from: date)
+    }
+
+    var formattedTimestamp: String {
+        formattedStartTimestamp
+    }
+
+    var duration: TimeInterval? {
+        guard let start = requestTimestamp ?? timestamp,
+              let end = responseTimestamp else {
+            return nil
+        }
+        let elapsed = end - start
+        guard elapsed >= 0 else { return nil }
+        return elapsed
+    }
+
+    var formattedDuration: String {
+        guard let duration else { return "—" }
+        if duration < 1 {
+            let milliseconds = (duration * 1000).rounded()
+            return "\(Int(milliseconds)) ms"
+        }
+        if duration < 10 {
+            return duration.formatted(.number.precision(.fractionLength(2))) + " s"
+        }
+        return duration.formatted(.number.precision(.fractionLength(1))) + " s"
     }
 
     var clientIP: String {

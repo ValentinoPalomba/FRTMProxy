@@ -178,7 +178,9 @@ private enum ColumnWidths {
     static var app: CGFloat { DesignSystem.Metrics.scaled(210) }
     static var host: CGFloat { DesignSystem.Metrics.scaled(220) }
     static var map: CGFloat { DesignSystem.Metrics.scaled(64) }
-    static var time: CGFloat { DesignSystem.Metrics.scaled(118) }
+    static var start: CGFloat { DesignSystem.Metrics.scaled(128) }
+    static var end: CGFloat { DesignSystem.Metrics.scaled(128) }
+    static var duration: CGFloat { DesignSystem.Metrics.scaled(100) }
 }
 
 private struct FlowTableHeader: View {
@@ -215,8 +217,12 @@ private struct FlowTableHeader: View {
                 .frame(width: ColumnWidths.host, alignment: .leading)
             headerLabel("Map")
                 .frame(width: ColumnWidths.map, alignment: .center)
-            headerLabel("Time")
-                .frame(width: ColumnWidths.time, alignment: .trailing)
+            headerLabel("Start")
+                .frame(width: ColumnWidths.start, alignment: .trailing)
+            headerLabel("End")
+                .frame(width: ColumnWidths.end, alignment: .trailing)
+            headerLabel("Duration")
+                .frame(width: ColumnWidths.duration, alignment: .trailing)
         }
     }
 
@@ -232,6 +238,12 @@ private struct FlowTableHeader: View {
                 .frame(width: ColumnWidths.app, alignment: .leading)
             headerLabel("Host")
                 .frame(width: ColumnWidths.host, alignment: .leading)
+            headerLabel("Start")
+                .frame(width: ColumnWidths.start, alignment: .trailing)
+            headerLabel("End")
+                .frame(width: ColumnWidths.end, alignment: .trailing)
+            headerLabel("Duration")
+                .frame(width: ColumnWidths.duration, alignment: .trailing)
         }
     }
 
@@ -317,8 +329,12 @@ private struct FlowTableRow: View {
                 .frame(width: ColumnWidths.host, alignment: .leading)
             mapIndicator
                 .frame(width: ColumnWidths.map, alignment: .center)
-            timeLabel
-                .frame(width: ColumnWidths.time, alignment: .trailing)
+            startLabel
+                .frame(width: ColumnWidths.start, alignment: .trailing)
+            endLabel
+                .frame(width: ColumnWidths.end, alignment: .trailing)
+            durationLabel
+                .frame(width: ColumnWidths.duration, alignment: .trailing)
         }
     }
 
@@ -462,8 +478,20 @@ private struct FlowTableRow: View {
             .truncationMode(.middle)
     }
 
-    private var timeLabel: some View {
-        Text(flow.formattedTimestamp)
+    private var startLabel: some View {
+        Text(flow.formattedStartTimestamp)
+            .font(DesignSystem.Fonts.mono(11))
+            .foregroundStyle(colors.textSecondary)
+    }
+
+    private var endLabel: some View {
+        Text(flow.formattedEndTimestamp)
+            .font(DesignSystem.Fonts.mono(11))
+            .foregroundStyle(colors.textSecondary)
+    }
+
+    private var durationLabel: some View {
+        Text(flow.formattedDuration)
             .font(DesignSystem.Fonts.mono(11))
             .foregroundStyle(colors.textSecondary)
     }

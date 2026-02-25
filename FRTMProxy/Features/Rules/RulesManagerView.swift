@@ -261,6 +261,7 @@ private struct NewRuleSheet: View {
     @Binding var path: String
     let colors: DesignSystem.ColorPalette
     let onCreate: () -> Void
+    @State private var isApplyingURLSplit = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -273,8 +274,14 @@ private struct NewRuleSheet: View {
             VStack(alignment: .leading, spacing: 12) {
                 TextField("Host (e.g. api.example.com)", text: $host)
                     .textFieldStyle(ProxyTextFieldStyle(palette: colors))
+                    .onChange(of: host) { oldValue, newValue in
+                        applyURLSplitIfNeeded(changedField: .host, previousValue: oldValue, newValue: newValue)
+                    }
                 TextField("Path (e.g. /v1/resource)", text: $path)
                     .textFieldStyle(ProxyTextFieldStyle(palette: colors))
+                    .onChange(of: path) { oldValue, newValue in
+                        applyURLSplitIfNeeded(changedField: .path, previousValue: oldValue, newValue: newValue)
+                    }
                 Text("Wildcard support: use * or ? in host/path (e.g. *.example.com, /v1/*).")
                     .font(DesignSystem.Fonts.sans(11, weight: .medium))
                     .foregroundStyle(colors.textSecondary)
@@ -297,6 +304,38 @@ private struct NewRuleSheet: View {
         .padding(24)
         .frame(minWidth: 420)
     }
+
+    private func applyURLSplitIfNeeded(changedField: HostPathInputField, previousValue: String, newValue: String) {
+        guard !isApplyingURLSplit else { return }
+        let trimmedValue = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedValue.isEmpty else { return }
+
+        let hostWasEmpty: Bool
+        let pathWasEmpty: Bool
+        switch changedField {
+        case .host:
+            hostWasEmpty = previousValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            let currentPath = path.trimmingCharacters(in: .whitespacesAndNewlines)
+            pathWasEmpty = currentPath.isEmpty || currentPath == "/"
+        case .path:
+            hostWasEmpty = host.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            let previousPath = previousValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            pathWasEmpty = previousPath.isEmpty || previousPath == "/"
+        }
+
+        guard hostWasEmpty && pathWasEmpty else { return }
+        guard let split = FormattingUtils.splitHostAndPath(from: trimmedValue) else { return }
+
+        isApplyingURLSplit = true
+        host = split.host
+        path = split.path
+        isApplyingURLSplit = false
+    }
+}
+
+private enum HostPathInputField {
+    case host
+    case path
 }
 
 private struct RuleEditorSheet: View {

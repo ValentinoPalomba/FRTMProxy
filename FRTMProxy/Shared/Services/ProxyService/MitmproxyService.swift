@@ -334,9 +334,15 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         if var existing = flows[incoming.id] {
             if incoming.event == "request" {
                 existing.request = incoming.request
+                if let timestamp = incoming.timestamp {
+                    existing.requestTimestamp = timestamp
+                }
             }
             if incoming.event == "response" {
                 existing.response = incoming.response
+                if let timestamp = incoming.timestamp {
+                    existing.responseTimestamp = timestamp
+                }
             }
             if let breakpoint = incoming.breakpoint {
                 existing.breakpoint = breakpoint
@@ -348,7 +354,14 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             }
             flows[incoming.id] = existing
         } else {
-            flows[incoming.id] = incoming
+            var created = incoming
+            if created.requestTimestamp == nil, created.event == "request" {
+                created.requestTimestamp = created.timestamp
+            }
+            if created.responseTimestamp == nil, created.event == "response" {
+                created.responseTimestamp = created.timestamp
+            }
+            flows[incoming.id] = created
         }
 
         if flows.count > maxFlowsStored {
@@ -432,7 +445,8 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
                 "jitter_ms": profile.jitterMs,
                 "downstream_kbps": profile.downstreamKbps,
                 "upstream_kbps": profile.upstreamKbps,
-                "packet_loss": profile.packetLoss
+                "packet_loss": profile.packetLoss,
+                "response_delay_ms": profile.responseDelayMs
             ]
         ]
 

@@ -1,6 +1,11 @@
 import Foundation
 
 enum FormattingUtils {
+    struct HostPathSplit {
+        let host: String
+        let path: String
+    }
+
     static func formattedBodyForEdit(_ body: String?) -> String {
         guard let body, let data = body.data(using: .utf8) else { return body ?? "" }
         if let json = try? JSONSerialization.jsonObject(with: data),
@@ -28,5 +33,42 @@ enum FormattingUtils {
         }
         return result
     }
-}
 
+    static func splitHostAndPath(from rawValue: String) -> HostPathSplit? {
+        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard isLikelyURL(trimmed) else { return nil }
+
+        if let direct = parseURLHostAndPath(trimmed) {
+            return direct
+        }
+        if !trimmed.contains("://"), let withDefaultScheme = parseURLHostAndPath("https://\(trimmed)") {
+            return withDefaultScheme
+        }
+        return nil
+    }
+
+    private static func isLikelyURL(_ value: String) -> Bool {
+        value.contains("://") || value.contains("/") || value.contains("?")
+    }
+
+    private static func parseURLHostAndPath(_ value: String) -> HostPathSplit? {
+        guard let components = URLComponents(string: value),
+              let host = components.host?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !host.isEmpty else {
+            return nil
+        }
+
+        var path = components.percentEncodedPath
+        if path.isEmpty {
+            path = "/"
+        }
+        if let query = components.percentEncodedQuery, !query.isEmpty {
+            path += "?\(query)"
+        }
+        if let fragment = components.percentEncodedFragment, !fragment.isEmpty {
+            path += "#\(fragment)"
+        }
+
+        return HostPathSplit(host: host, path: path)
+    }
+}

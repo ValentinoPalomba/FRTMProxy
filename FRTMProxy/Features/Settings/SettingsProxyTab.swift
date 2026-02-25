@@ -72,7 +72,8 @@ struct SettingsProxyTab: View {
         let formatter = NumberFormatter()
         formatter.minimum = 1024
         formatter.maximum = 65535
-        formatter.numberStyle = .decimal
+        formatter.numberStyle = .none
+        formatter.usesGroupingSeparator = false
         return formatter
     }()
 
