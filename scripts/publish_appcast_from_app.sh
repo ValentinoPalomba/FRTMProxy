@@ -172,6 +172,8 @@ else
   rsync -a \
     --include='*/' \
     --include='*.xml' \
+    --include='*.zip' \
+    --include='*.delta' \
     --exclude='*' \
     "$RELEASE_DIR/" \
     "$TEMP_PUBLISH_DIR/"
