@@ -9,7 +9,7 @@
             <sparkle:version>1.5.1</sparkle:version>
             <sparkle:shortVersionString>1.5.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.1</sparkle:minimumSystemVersion>
-            <enclosure url="https://valentinopalomba.github.io/FRTMProxy/FRTMProxy-1.5.1.zip" length="41814280" type="application/octet-stream" sparkle:edSignature="ywNLTlv696Ypk5uKT0IIVSG1JnqfSy+ZwDIri3ejpUSkqtEa9LR272gnnC3md37ESDq2EXnQWdBfIRxxrgTfCA=="/>
+            <enclosure url="https://valentinopalomba.github.io/FRTMProxy/FRTMProxy-1.5.1.zip" length="42041645" type="application/octet-stream" sparkle:edSignature="1dMpEHPNUxojWhhe3cBIJDEBc4cEUtdXtb9KxtnK3OmN0eo/tEuRuMreur5iEu140M0LjQwbjnJ3zo/03nY8BA=="/>
         </item>
     </channel>
 </rss>
