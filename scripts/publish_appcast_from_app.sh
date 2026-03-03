@@ -118,7 +118,8 @@ if [[ -z "$GH_REPO" ]]; then
   REMOTE_URL="$(git remote get-url "$REMOTE_NAME" 2>/dev/null || true)"
   [[ -n "$REMOTE_URL" ]] || fail "Git remote '$REMOTE_NAME' not found and --gh-repo not set"
   GH_REPO="$(printf '%s' "$REMOTE_URL" \
-    | sed -E 's|.*github\.com[:/]([^/]+/[^/]+?)(\.git)?$|\1|')"
+    | sed -E 's|.*github\.com[:/]||' \
+    | sed -E 's|\.git$||')"
   [[ -n "$GH_REPO" ]] || fail "Unable to infer GitHub repo from remote URL: $REMOTE_URL"
 fi
 
