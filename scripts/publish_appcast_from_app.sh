@@ -2,9 +2,10 @@
 # publish_appcast_from_app.sh
 #
 # Given a pre-built (and optionally notarized) .app bundle:
-#   1. Creates a signed .zip archive
-#   2. Generates the Sparkle appcast.xml
-#   3. Pushes appcast.xml to gh-pages
+#   1. Creates a signed .zip archive (locally — upload to GitHub Releases manually)
+#   2. Generates the Sparkle appcast.xml, with enclosure URLs pointing to
+#      GitHub Releases: https://github.com/OWNER/REPO/releases/download/TAG/App-version.zip
+#   3. Pushes only the appcast.xml to gh-pages
 #
 # Usage:
 #   ./scripts/publish_appcast_from_app.sh /path/to/FRTMProxy.app [options]
@@ -20,9 +21,13 @@ RELEASE_DIR="${RELEASE_DIR:-$HOME/releases/$APP_NAME}"
 REMOTE_NAME="${REMOTE_NAME:-origin}"
 PAGES_BRANCH="${PAGES_BRANCH:-gh-pages}"
 SPARKLE_ACCOUNT="${SPARKLE_ACCOUNT:-ed25519}"
-PRODUCT_LINK="${PRODUCT_LINK:-https://github.com/ValentinoPalomba/FRTMProxy/releases}"
-DOWNLOAD_URL_PREFIX="${DOWNLOAD_URL_PREFIX:-}"
+PRODUCT_LINK="${PRODUCT_LINK:-}"          # inferred from GH_REPO if empty
+GH_REPO="${GH_REPO:-}"                   # e.g. ValentinoPalomba/FRTMProxy — inferred from remote
+RELEASE_TAG="${RELEASE_TAG:-}"           # e.g. v1.6.0 — inferred from version if empty
 RELEASE_NOTES_URL_PREFIX="${RELEASE_NOTES_URL_PREFIX:-}"
+# DOWNLOAD_URL_PREFIX is always auto-built from GH_REPO + RELEASE_TAG;
+# override only if you host zips elsewhere.
+DOWNLOAD_URL_PREFIX="${DOWNLOAD_URL_PREFIX:-}"
 
 PUBLISH=1
 APP_PATH=""
@@ -38,7 +43,8 @@ Usage:
 
 Options:
   --release-dir <path>          Directory for the zip and appcast (default: ~/releases/APP_NAME)
-  --download-url-prefix <url>   Base URL for appcast enclosure download links
+  --gh-repo <owner/repo>        GitHub repo slug (inferred from git remote if omitted)
+  --tag <v1.6.0>                GitHub Release tag (default: v<CFBundleShortVersionString>)
   --notes-url-prefix <url>      Base URL for release notes links in appcast
   --product-link <url>          Link in appcast item (default: GitHub releases page)
   --sparkle-account <name>      Keychain account for Sparkle signing key (default: ed25519)
@@ -49,7 +55,13 @@ Options:
 
 Environment overrides:
   APP_NAME, RELEASE_DIR, REMOTE_NAME, PAGES_BRANCH, SPARKLE_ACCOUNT,
-  PRODUCT_LINK, DOWNLOAD_URL_PREFIX, RELEASE_NOTES_URL_PREFIX
+  GH_REPO, RELEASE_TAG, PRODUCT_LINK, RELEASE_NOTES_URL_PREFIX,
+  DOWNLOAD_URL_PREFIX (override only if zips are hosted outside GitHub Releases)
+
+The zip enclosure URL in the appcast is automatically set to:
+  https://github.com/<GH_REPO>/releases/download/<TAG>/<AppName-version.zip>
+
+Remember to upload the generated zip to that GitHub Release manually (or via CI).
 EOF
 }
 
@@ -67,7 +79,8 @@ fi
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --release-dir)         RELEASE_DIR="$2";              shift 2 ;;
-    --download-url-prefix) DOWNLOAD_URL_PREFIX="$2";      shift 2 ;;
+    --gh-repo)             GH_REPO="$2";                  shift 2 ;;
+    --tag)                 RELEASE_TAG="$2";              shift 2 ;;
     --notes-url-prefix)    RELEASE_NOTES_URL_PREFIX="$2"; shift 2 ;;
     --product-link)        PRODUCT_LINK="$2";             shift 2 ;;
     --sparkle-account)     SPARKLE_ACCOUNT="$2";          shift 2 ;;
@@ -100,15 +113,30 @@ BUILD_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP_INFO_
 log "App     : $APP_PATH"
 log "Version : $SHORT_VERSION (build $BUILD_VERSION)"
 
-# ── Infer download URL prefix from Info.plist SUFeedURL ──────────────────────
-if [[ -z "$DOWNLOAD_URL_PREFIX" ]]; then
-  FEED_URL="$(/usr/libexec/PlistBuddy -c 'Print :SUFeedURL' "$ROOT_DIR/Info.plist" 2>/dev/null || true)"
-  DOWNLOAD_URL_PREFIX="${FEED_URL%appcast.xml}"
+# ── Infer GH_REPO from remote ─────────────────────────────────────────────────
+if [[ -z "$GH_REPO" ]]; then
+  REMOTE_URL="$(git remote get-url "$REMOTE_NAME" 2>/dev/null || true)"
+  [[ -n "$REMOTE_URL" ]] || fail "Git remote '$REMOTE_NAME' not found and --gh-repo not set"
+  GH_REPO="$(printf '%s' "$REMOTE_URL" \
+    | sed -E 's|.*github\.com[:/]([^/]+/[^/]+?)(\.git)?$|\1|')"
+  [[ -n "$GH_REPO" ]] || fail "Unable to infer GitHub repo from remote URL: $REMOTE_URL"
 fi
-[[ -n "$DOWNLOAD_URL_PREFIX" ]] || \
-  fail "Cannot infer --download-url-prefix (SUFeedURL missing from Info.plist — pass it explicitly)"
+
+# ── Derive tag and URLs ───────────────────────────────────────────────────────
+[[ -n "$RELEASE_TAG" ]] || RELEASE_TAG="v$SHORT_VERSION"
+[[ -n "$PRODUCT_LINK" ]] || PRODUCT_LINK="https://github.com/$GH_REPO/releases"
+
+# Build the download prefix pointing to GitHub Releases — trailing slash required
+# Result: https://github.com/Owner/Repo/releases/download/v1.6.0/
+if [[ -z "$DOWNLOAD_URL_PREFIX" ]]; then
+  DOWNLOAD_URL_PREFIX="https://github.com/$GH_REPO/releases/download/$RELEASE_TAG/"
+fi
 
 [[ -n "$RELEASE_NOTES_URL_PREFIX" ]] || RELEASE_NOTES_URL_PREFIX="$DOWNLOAD_URL_PREFIX"
+
+log "Repo    : $GH_REPO"
+log "Tag     : $RELEASE_TAG"
+log "Zip URL : ${DOWNLOAD_URL_PREFIX}${APP_NAME}-${SHORT_VERSION}.zip"
 
 # ── Find Sparkle tools ────────────────────────────────────────────────────────
 find_sparkle_bin() {
@@ -155,7 +183,7 @@ log "Generating appcast..."
   "$RELEASE_DIR"
 log "Appcast : $APPCAST_PATH"
 
-# ── Push appcast to gh-pages ──────────────────────────────────────────────────
+# ── Push appcast to gh-pages (zip stays local — upload to GH Release manually) ──
 if [[ "$PUBLISH" -eq 0 ]]; then
   log "Skipping publish (--no-publish)."
 else
@@ -172,8 +200,6 @@ else
   rsync -a \
     --include='*/' \
     --include='*.xml' \
-    --include='*.zip' \
-    --include='*.delta' \
     --exclude='*' \
     "$RELEASE_DIR/" \
     "$TEMP_PUBLISH_DIR/"
@@ -196,6 +222,6 @@ log "Done."
 log "Version : $SHORT_VERSION (build $BUILD_VERSION)"
 log "Archive : $ARCHIVE_PATH"
 log "Appcast : $APPCAST_PATH"
-if [[ "$PUBLISH" -eq 1 ]]; then
-  log "Feed    : ${DOWNLOAD_URL_PREFIX}appcast.xml"
-fi
+log ""
+log "Next step: upload the zip to the GitHub Release manually:"
+log "  https://github.com/$GH_REPO/releases/tag/$RELEASE_TAG"
