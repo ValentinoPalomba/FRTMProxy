@@ -19,6 +19,10 @@ extension ProxyViewModel {
                 self.enqueueBreakpointHits(from: enriched)
                 self.resolveClientAppsIfNeeded(in: enriched)
                 self.processAlerts(in: enriched)
+                for flow in enriched where flow.event == "response" && !self.processedScriptFlowIDs.contains(flow.id) {
+                    self.processedScriptFlowIDs.insert(flow.id)
+                    self.processScripts(for: flow)
+                }
             }
             .store(in: &cancellables)
 

@@ -16,10 +16,13 @@ final class ProxyViewModel: ObservableObject {
     @Published var activeBreakpointHit: FlowBreakpointHit?
     @Published var activeTrafficProfile: TrafficProfile = TrafficProfileLibrary.disabled
 
+    @Published var scripts: [ScriptRule] = []
+
     let service: ProxyServiceProtocol
     let ruleStore: MapRuleStoreProtocol
     let collectionStore: MapCollectionStoreProtocol
     let breakpointStore: BreakpointStoreProtocol
+    let scriptStore: ScriptStore
     let collectionRecorder = CollectionRecorder()
     var cancellables: Set<AnyCancellable> = []
     var settingsCancellables: Set<AnyCancellable> = []
@@ -42,18 +45,21 @@ final class ProxyViewModel: ObservableObject {
     var alertRuleQueryByID: [UUID: String] = [:]
     var triggeredAlertKeys: Set<String> = []
     var seenAlertFlowIDs: Set<String> = []
+    var processedScriptFlowIDs: Set<String> = []
 
     init(
         service: ProxyServiceProtocol = MitmproxyService(config: MitmproxyConfig()),
         ruleStore: MapRuleStoreProtocol = MapRuleStore(),
         collectionStore: MapCollectionStoreProtocol = MapCollectionStore(),
         breakpointStore: BreakpointStoreProtocol = FlowBreakpointStore(),
+        scriptStore: ScriptStore = ScriptStore(),
         defaultPort: Int = 8080
     ) {
         self.service = service
         self.ruleStore = ruleStore
         self.collectionStore = collectionStore
         self.breakpointStore = breakpointStore
+        self.scriptStore = scriptStore
         self.defaultPort = defaultPort
         self.activePort = defaultPort
         bind()
@@ -61,6 +67,7 @@ final class ProxyViewModel: ObservableObject {
         loadPersistedCollections()
         loadPersistedGitSources()
         loadPersistedBreakpoints()
+        loadPersistedScripts()
         syncAppliedRules()
         syncBreakpointRules()
     }
@@ -103,6 +110,7 @@ final class ProxyViewModel: ObservableObject {
         selectedFlowID = nil
         clientAppByConnectionKey.removeAll()
         resolvingConnectionKeys.removeAll()
+        processedScriptFlowIDs.removeAll()
         service.clearFlows()
     }
 
