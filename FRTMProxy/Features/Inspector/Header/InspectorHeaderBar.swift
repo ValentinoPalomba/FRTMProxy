@@ -15,6 +15,8 @@ struct InspectorHeaderBar: View {
     let onShowBreakpoints: () -> Void
     let onShowCollections: () -> Void
     let onShowDeviceConnect: () -> Void
+    let onShowComposer: () -> Void
+    let onShowScripts: () -> Void
     let trafficProfiles: [TrafficProfile]
     let activeTrafficProfile: TrafficProfile
     let onSelectTrafficProfile: (TrafficProfile) -> Void
@@ -56,7 +58,9 @@ struct InspectorHeaderBar: View {
                     onShowRules: onShowRules,
                     onShowBreakpoints: onShowBreakpoints,
                     onShowCollections: onShowCollections,
-                    onShowDeviceConnect: onShowDeviceConnect
+                    onShowDeviceConnect: onShowDeviceConnect,
+                    onShowComposer: onShowComposer,
+                    onShowScripts: onShowScripts
                 )
                 ControlButton(
                     title: toggleTitle,
@@ -83,6 +87,8 @@ private struct ManageMenuButton: View {
     let onShowBreakpoints: () -> Void
     let onShowCollections: () -> Void
     let onShowDeviceConnect: () -> Void
+    let onShowComposer: () -> Void
+    let onShowScripts: () -> Void
     @State private var isPresented = false
 
     var body: some View {
@@ -104,25 +110,28 @@ private struct ManageMenuButton: View {
         }
         .buttonStyle(.plain)
         .popover(isPresented: $isPresented, arrowEdge: .bottom) {
-            VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(14)) {
-                Text("Quick actions")
-                    .font(DesignSystem.Fonts.sans(12, weight: .semibold))
-                    .foregroundStyle(colors.textSecondary)
+            VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(4)) {
+                sectionHeader("Settings")
                 menuButton(title: "Rules", icon: "slider.horizontal.3", action: {
-                    isPresented = false
-                    onShowRules()
+                    isPresented = false; onShowRules()
                 })
                 menuButton(title: "Breakpoints", icon: "record.circle", action: {
-                    isPresented = false
-                    onShowBreakpoints()
+                    isPresented = false; onShowBreakpoints()
                 })
                 menuButton(title: "Collections", icon: "folder", action: {
-                    isPresented = false
-                    onShowCollections()
+                    isPresented = false; onShowCollections()
                 })
                 menuButton(title: "Device", icon: "qrcode", action: {
-                    isPresented = false
-                    onShowDeviceConnect()
+                    isPresented = false; onShowDeviceConnect()
+                })
+
+                sectionHeader("Tools")
+                    .padding(.top, DesignSystem.Metrics.scaled(6))
+                menuButton(title: "Compose", icon: "paperplane.fill", action: {
+                    isPresented = false; onShowComposer()
+                })
+                menuButton(title: "Scripts", icon: "curlybraces", action: {
+                    isPresented = false; onShowScripts()
                 })
 
                 Divider()
@@ -146,6 +155,13 @@ private struct ManageMenuButton: View {
                     .shadow(color: Color.black.opacity(0.18), radius: 18, y: 8)
             )
         }
+    }
+
+    private func sectionHeader(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(DesignSystem.Fonts.sans(10, weight: .semibold))
+            .foregroundStyle(colors.textSecondary.opacity(0.7))
+            .tracking(0.8)
     }
 
     private func menuButton(title: String, icon: String, action: @escaping () -> Void) -> some View {

@@ -3,6 +3,7 @@ import SwiftUI
 struct FlowExplorerSection: View {
     let flows: [MitmFlow]
     @Binding var selection: String?
+    @Binding var compareSelection: String?
     let colors: DesignSystem.ColorPalette
     let emptyMessage: String
     let pinnedHosts: [PinnedHost]
@@ -24,6 +25,7 @@ struct FlowExplorerSection: View {
         FlowTableView(
             flows: flows,
             selection: $selection,
+            compareSelection: $compareSelection,
             emptyMessage: emptyMessage,
             colors: colors,
             pinnedHostnames: Set(pinnedHosts.map(\.host)),

@@ -4,6 +4,7 @@ import SwiftUI
 struct FlowTableView: View {
     let flows: [MitmFlow]
     @Binding var selection: String?
+    @Binding var compareSelection: String?
     let emptyMessage: String
     let colors: DesignSystem.ColorPalette
     let pinnedHostnames: Set<String>
@@ -16,7 +17,7 @@ struct FlowTableView: View {
     let onUnpinApp: (String) -> Void
     let onFilterApp: (FlowClientApp) -> Void
     let onFilterDevice: (String) -> Void
-    
+
     var body: some View {
         if flows.isEmpty {
             VStack(spacing: DesignSystem.Metrics.scaled(12)) {
@@ -38,10 +39,21 @@ struct FlowTableView: View {
                             FlowTableRow(
                                 flow: flow,
                                 isSelected: selection == flow.id,
+                                isCompareSelected: compareSelection == flow.id,
                                 colors: colors,
                                 isHostPinned: pinnedHostnames.contains(PinnedHost.normalized(flow.host)),
                                 isAppPinned: !appID.isEmpty && pinnedAppIDs.contains(appID),
-                                onSelect: { selection = flow.id },
+                                onSelect: {
+                                    selection = flow.id
+                                    compareSelection = nil
+                                },
+                                onCompareSelect: {
+                                    if compareSelection == flow.id {
+                                        compareSelection = nil
+                                    } else {
+                                        compareSelection = flow.id
+                                    }
+                                },
                                 onMapLocal: {
                                     selection = flow.id
                                     onMapLocal(flow)
@@ -270,10 +282,12 @@ private struct FlowTableHeader: View {
 private struct FlowTableRow: View {
     let flow: MitmFlow
     let isSelected: Bool
+    let isCompareSelected: Bool
     let colors: DesignSystem.ColorPalette
     let isHostPinned: Bool
     let isAppPinned: Bool
     let onSelect: () -> Void
+    let onCompareSelect: () -> Void
     let onMapLocal: () -> Void
     let onEditRetry: () -> Void
     let onPinHost: () -> Void
@@ -284,7 +298,13 @@ private struct FlowTableRow: View {
     let onFilterDevice: () -> Void
 
     var body: some View {
-        Button(action: onSelect) {
+        Button {
+            if NSApp.currentEvent?.modifierFlags.contains(.command) == true {
+                onCompareSelect()
+            } else {
+                onSelect()
+            }
+        } label: {
             regularRow
             .padding(.horizontal, DesignSystem.Metrics.scaled(14))
             .padding(.vertical, DesignSystem.Metrics.scaled(4))
@@ -292,6 +312,7 @@ private struct FlowTableRow: View {
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
+        .help("⌘ Click to select as compare target")
         .contextMenu {
             FlowContextMenuContent(
                 flow: flow,
@@ -376,6 +397,8 @@ private struct FlowTableRow: View {
         Group {
             if isSelected {
                 colors.accent.opacity(0.18)
+            } else if isCompareSelected {
+                colors.accentSecondary.opacity(0.18)
             } else {
                 (flow.response?.status ?? 0) >= 400
                     ? colors.danger.opacity(0.08)
