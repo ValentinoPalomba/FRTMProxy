@@ -87,6 +87,19 @@ enum DesignSystem {
     }
 
     enum Colors {
+        /// Returns the conventional display color for an HTTP method.
+        /// Centralised here to avoid duplicated switch statements across the codebase.
+        static func methodColor(_ method: String, palette: ColorPalette) -> Color {
+            switch method.uppercased() {
+            case "GET":     return .green
+            case "POST":    return .blue
+            case "PUT":     return .orange
+            case "PATCH":   return .purple
+            case "DELETE":  return .red
+            default:        return palette.textPrimary
+            }
+        }
+
         static func palette(_ scheme: ColorScheme) -> ColorPalette {
             if scheme == .dark {
                 return ColorPalette(

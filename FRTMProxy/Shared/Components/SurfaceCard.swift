@@ -29,4 +29,19 @@ extension View {
     ) -> some View {
         modifier(SurfaceCard(radius: radius, fill: fill, stroke: stroke, shadowOpacity: shadowOpacity))
     }
+
+    /// Convenience overload that derives fill/stroke from a `ColorPalette`,
+    /// ensuring the card respects the current theme in both light and dark mode.
+    func surfaceCard(
+        palette: DesignSystem.ColorPalette,
+        radius: CGFloat = 14,
+        shadowOpacity: Double = 0.18
+    ) -> some View {
+        modifier(SurfaceCard(
+            radius: radius,
+            fill: palette.surfaceElevated,
+            stroke: palette.border,
+            shadowOpacity: shadowOpacity
+        ))
+    }
 }

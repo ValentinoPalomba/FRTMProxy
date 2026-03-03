@@ -363,18 +363,7 @@ private struct FlowTableRow: View {
         let method = flow.request?.method.uppercased() ?? "—"
         return Text(method)
             .font(DesignSystem.Fonts.mono(13, weight: .medium))
-            .foregroundStyle(methodColor(for: method))
-    }
-    
-    private func methodColor(for method: String) -> Color {
-        switch method {
-        case "GET": return Color.green
-        case "POST": return Color.blue
-        case "PUT": return Color.orange
-        case "PATCH": return Color.purple
-        case "DELETE": return Color.red
-        default: return colors.textPrimary
-        }
+            .foregroundStyle(DesignSystem.Colors.methodColor(method, palette: colors))
     }
     
     private var mapIndicator: some View {

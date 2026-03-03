@@ -8,6 +8,7 @@ struct ScriptsManagerView: View {
 
     @Binding var scripts: [ScriptRule]
     let onSave: ([ScriptRule]) -> Void
+    let onClose: () -> Void
 
     @State private var editingScript: ScriptRule?
     @State private var showNewScriptSheet = false
@@ -17,7 +18,7 @@ struct ScriptsManagerView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: DesignSystem.Metrics.scaled(16)) {
             header
             Divider()
             if scripts.isEmpty {
@@ -26,8 +27,8 @@ struct ScriptsManagerView: View {
                 scriptsList
             }
         }
-        .padding(20)
-        .frame(minWidth: 900, minHeight: 580)
+        .padding(DesignSystem.Metrics.scaled(20))
+        .frame(minWidth: 780, minHeight: 500)
         .background(colors.background)
         .sheet(item: $editingScript) { script in
             ScriptEditorSheet(
@@ -60,18 +61,21 @@ struct ScriptsManagerView: View {
     // MARK: - Header
 
     private var header: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: DesignSystem.Metrics.scaled(12)) {
+            VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(4)) {
                 Text("Script Rules")
-                    .font(DesignSystem.Fonts.mono(20, weight: .semibold))
+                    .font(DesignSystem.Fonts.sans(20, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
                 Text("Transform responses dynamically using JavaScript.")
-                    .font(DesignSystem.Fonts.mono(13))
+                    .font(DesignSystem.Fonts.sans(13))
                     .foregroundStyle(colors.textSecondary)
             }
             Spacer()
             ControlButton(title: "Add Script", systemImage: "plus", style: .filled(colors)) {
                 showNewScriptSheet = true
+            }
+            ControlButton(title: "Close", systemImage: "xmark", style: .ghost(colors)) {
+                onClose()
             }
         }
     }

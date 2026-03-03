@@ -80,7 +80,9 @@ struct ControlButton: View {
     private var foreground: Color {
         switch style {
         case .filled:
-            return Color.black.opacity(0.9)
+            // Dark mode accent (#1FD4A9 teal) is light → dark text reads well.
+            // Light mode accent (#007AFF blue) is saturated → white text is standard.
+            return colorScheme == .dark ? Color.black.opacity(0.9) : .white
         case .ghost(let palette):
             return palette.textPrimary
         case .destructive:

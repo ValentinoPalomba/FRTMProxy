@@ -8,7 +8,23 @@ struct RequestComposerView: View {
     let proxyPort: Int?
     let onClose: () -> Void
 
+    /// Controls the active panel in narrow (single-column) mode.
+    @State private var narrowTab: ComposerMainTab = .request
+
     var body: some View {
+        GeometryReader { geo in
+            if geo.size.width >= 700 {
+                twoColumnLayout
+            } else {
+                singleColumnLayout
+            }
+        }
+        .background(colors.surface)
+    }
+
+    // MARK: - Two-column layout (wide)
+
+    private var twoColumnLayout: some View {
         VStack(spacing: 0) {
             composerHeader
             Divider().overlay(colors.border.opacity(0.7))
@@ -24,16 +40,49 @@ struct RequestComposerView: View {
 
             composerFooter
         }
-        .background(colors.surface)
+    }
+
+    // MARK: - Single-column layout (narrow)
+
+    private var singleColumnLayout: some View {
+        VStack(spacing: 0) {
+            composerHeader
+            Divider().overlay(colors.border.opacity(0.7))
+
+            // Tab switcher
+            HStack(spacing: DesignSystem.Metrics.scaled(6)) {
+                ComposerTabPill(label: "Request", isSelected: narrowTab == .request, colors: colors) {
+                    narrowTab = .request
+                }
+                ComposerTabPill(label: "Response", isSelected: narrowTab == .response, colors: colors) {
+                    narrowTab = .response
+                }
+                Spacer()
+            }
+            .padding(.horizontal, DesignSystem.Metrics.scaled(16))
+            .padding(.vertical, DesignSystem.Metrics.scaled(8))
+            .background(colors.surfaceElevated)
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(colors.border.opacity(0.5)).frame(height: 1)
+            }
+
+            Group {
+                if narrowTab == .request {
+                    requestCard
+                } else {
+                    responseCard
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            composerFooter
+        }
     }
 
     // MARK: - Header
 
     private var composerHeader: some View {
         HStack(spacing: DesignSystem.Metrics.scaled(12)) {
-            Image(systemName: "paperplane.fill")
-                .font(.system(size: DesignSystem.Metrics.scaled(16), weight: .semibold))
-                .foregroundStyle(colors.accent)
             Text("Compose Request")
                 .font(DesignSystem.Fonts.sans(15, weight: .semibold))
                 .foregroundStyle(colors.textPrimary)
@@ -60,35 +109,25 @@ struct RequestComposerView: View {
         HStack(spacing: DesignSystem.Metrics.scaled(4)) {
             ForEach(RequestComposerViewModel.httpMethods, id: \.self) { method in
                 let isSelected = viewModel.method == method
+                let tint = DesignSystem.Colors.methodColor(method, palette: colors)
                 Button { viewModel.method = method } label: {
                     Text(method)
                         .font(DesignSystem.Fonts.mono(11, weight: .bold))
-                        .foregroundStyle(isSelected ? methodColor(method) : colors.textSecondary)
+                        .foregroundStyle(isSelected ? tint : colors.textSecondary)
                         .padding(.horizontal, DesignSystem.Metrics.scaled(8))
                         .padding(.vertical, DesignSystem.Metrics.scaled(5))
                         .background(
                             RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(7))
-                                .fill(isSelected ? methodColor(method).opacity(0.12) : colors.surfaceElevated.opacity(0.5))
+                                .fill(isSelected ? tint.opacity(0.12) : colors.surfaceElevated.opacity(0.5))
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(7))
-                                .stroke(isSelected ? methodColor(method).opacity(0.5) : colors.border.opacity(0.4), lineWidth: 1)
+                                .stroke(isSelected ? tint.opacity(0.5) : colors.border.opacity(0.4), lineWidth: 1)
                         )
                 }
                 .buttonStyle(.plain)
             }
             Spacer()
-        }
-    }
-
-    private func methodColor(_ method: String) -> Color {
-        switch method {
-        case "GET": return .green
-        case "POST": return .blue
-        case "PUT": return .orange
-        case "PATCH": return .purple
-        case "DELETE": return .red
-        default: return colors.textPrimary
         }
     }
 
@@ -208,6 +247,34 @@ private struct ComposerCard<Content: View>: View {
     }
 }
 
+// MARK: - ComposerTabPill (shared)
+
+struct ComposerTabPill: View {
+    let label: String
+    let isSelected: Bool
+    let colors: DesignSystem.ColorPalette
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(DesignSystem.Fonts.sans(12, weight: isSelected ? .semibold : .medium))
+                .foregroundStyle(isSelected ? colors.textPrimary : colors.textSecondary)
+                .padding(.horizontal, DesignSystem.Metrics.scaled(10))
+                .padding(.vertical, DesignSystem.Metrics.scaled(4))
+                .background(
+                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
+                        .fill(isSelected ? colors.surfaceElevated : colors.surface.opacity(0.4))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
+                        .stroke(isSelected ? colors.border.opacity(0.9) : colors.border.opacity(0.4), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 // MARK: - ComposerRequestBody
 
 private struct ComposerRequestBody: View {
@@ -218,8 +285,8 @@ private struct ComposerRequestBody: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(8)) {
             HStack(spacing: DesignSystem.Metrics.scaled(6)) {
-                tabButton(.body)
-                tabButton(.headers)
+                ComposerTabPill(label: tab == .body ? "Body" : "Body", isSelected: tab == .body, colors: colors) { tab = .body }
+                ComposerTabPill(label: "Headers", isSelected: tab == .headers, colors: colors) { tab = .headers }
                 Spacer()
             }
 
@@ -243,25 +310,6 @@ private struct ComposerRequestBody: View {
                 ComposerHeadersEditor(viewModel: viewModel, colors: colors)
             }
         }
-    }
-
-    private func tabButton(_ t: ComposerRequestTab) -> some View {
-        Button { tab = t } label: {
-            Text(t.label)
-                .font(DesignSystem.Fonts.sans(12, weight: tab == t ? .semibold : .medium))
-                .foregroundStyle(tab == t ? colors.textPrimary : colors.textSecondary)
-                .padding(.horizontal, DesignSystem.Metrics.scaled(10))
-                .padding(.vertical, DesignSystem.Metrics.scaled(4))
-                .background(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
-                        .fill(tab == t ? colors.surfaceElevated : colors.surface.opacity(0.4))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
-                        .stroke(tab == t ? colors.border.opacity(0.9) : colors.border.opacity(0.4), lineWidth: 1)
-                )
-        }
-        .buttonStyle(.plain)
     }
 }
 
@@ -319,8 +367,8 @@ private struct ComposerResponseBody: View {
                     ComposerStatusBadge(status: status, colors: colors)
                 }
                 Spacer()
-                tabButton(.body)
-                tabButton(.headers)
+                ComposerTabPill(label: "Body", isSelected: tab == .body, colors: colors) { tab = .body }
+                ComposerTabPill(label: "Headers", isSelected: tab == .headers, colors: colors) { tab = .headers }
             }
 
             Divider().overlay(colors.border.opacity(0.5))
@@ -385,25 +433,6 @@ private struct ComposerResponseBody: View {
         else { return body }
         return prettyStr
     }
-
-    private func tabButton(_ t: ComposerResponseTab) -> some View {
-        Button { tab = t } label: {
-            Text(t.label)
-                .font(DesignSystem.Fonts.sans(12, weight: tab == t ? .semibold : .medium))
-                .foregroundStyle(tab == t ? colors.textPrimary : colors.textSecondary)
-                .padding(.horizontal, DesignSystem.Metrics.scaled(10))
-                .padding(.vertical, DesignSystem.Metrics.scaled(4))
-                .background(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
-                        .fill(tab == t ? colors.surfaceElevated : colors.surface.opacity(0.4))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
-                        .stroke(tab == t ? colors.border.opacity(0.9) : colors.border.opacity(0.4), lineWidth: 1)
-                )
-        }
-        .buttonStyle(.plain)
-    }
 }
 
 // MARK: - ComposerStatusBadge
@@ -434,9 +463,6 @@ private struct ComposerStatusBadge: View {
 
 // MARK: - Supporting enums
 
-private enum ComposerRequestTab { case body, headers
-    var label: String { self == .body ? "Body" : "Headers" }
-}
-private enum ComposerResponseTab { case body, headers
-    var label: String { self == .body ? "Body" : "Headers" }
-}
+private enum ComposerMainTab { case request, response }
+private enum ComposerRequestTab { case body, headers }
+private enum ComposerResponseTab { case body, headers }

@@ -66,7 +66,7 @@ struct InspectorScreen: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .frame(minHeight: flowExplorerMinHeight)
 
-        let content = VStack(spacing: 16) {
+        let content = VStack(spacing: 0) {
             InspectorHeaderBar(
                 colors: colors,
                 isRunning: viewModel.isRunning,
@@ -221,12 +221,13 @@ struct InspectorScreen: View {
                     proxyPort: viewModel.isRunning ? viewModel.activePort : nil,
                     onClose: { showComposerSheet = false }
                 )
-                .frame(minWidth: 1100, minHeight: 720)
+                .frame(minWidth: 900, minHeight: 620)
             }
             .sheet(isPresented: $showScriptsSheet) {
                 ScriptsManagerView(
                     scripts: $viewModel.scripts,
-                    onSave: { _ in viewModel.persistScripts() }
+                    onSave: { _ in viewModel.persistScripts() },
+                    onClose: { showScriptsSheet = false }
                 )
                 .environmentObject(settings)
             }
@@ -567,7 +568,7 @@ struct InspectorScreen: View {
                 }
             }
         }
-        .frame(minWidth: 1280, minHeight: 800, maxHeight: 800)
+        .frame(minWidth: 1100, minHeight: 700, maxHeight: 700)
     }
 
     private var retrySheet: some View {
@@ -594,9 +595,9 @@ struct InspectorScreen: View {
                 titlePrefix: "Retry"
             )
         }
-        .frame(minWidth: 1280, minHeight: 800)
+        .frame(minWidth: 1100, minHeight: 700)
     }
-    
+
     private var breakpointSheet: some View {
         NavigationStack {
             MapEditorView(

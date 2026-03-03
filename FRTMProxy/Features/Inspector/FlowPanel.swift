@@ -129,7 +129,7 @@ private struct FlowPanelHeader: View {
                         .foregroundStyle(colors.textPrimary)
 
                     if let method {
-                        MethodBadge(method: method)
+                        MethodBadge(method: method, colors: colors)
                     }
 
                     if let status {
@@ -159,22 +159,12 @@ private struct FlowPanelHeader: View {
 
 private struct MethodBadge: View {
     let method: String
+    let colors: DesignSystem.ColorPalette
 
     var body: some View {
         Text(method.uppercased())
             .font(DesignSystem.Fonts.sans(12, weight: .bold))
-            .foregroundStyle(color(for: method))
-    }
-
-    private func color(for method: String) -> Color {
-        switch method.uppercased() {
-        case "GET": return .green
-        case "POST": return .blue
-        case "PUT": return .orange
-        case "PATCH": return .purple
-        case "DELETE": return .red
-        default: return Color.primary
-        }
+            .foregroundStyle(DesignSystem.Colors.methodColor(method, palette: colors))
     }
 }
 

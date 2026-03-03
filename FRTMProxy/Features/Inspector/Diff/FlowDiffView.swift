@@ -32,35 +32,37 @@ struct FlowDiffView: View {
                 alignment: .bottom
             )
 
-            // Section picker
-            HStack(spacing: DesignSystem.Metrics.scaled(8)) {
-                ForEach(DiffSection.allCases, id: \.self) { section in
-                    Button {
-                        selectedSection = section
-                    } label: {
-                        Text(section.label)
-                            .font(DesignSystem.Fonts.sans(12, weight: selectedSection == section ? .semibold : .medium))
-                            .foregroundStyle(selectedSection == section ? colors.textPrimary : colors.textSecondary)
-                            .padding(.horizontal, DesignSystem.Metrics.scaled(12))
-                            .padding(.vertical, DesignSystem.Metrics.scaled(6))
-                            .background(
-                                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
-                                    .fill(selectedSection == section ? colors.surfaceElevated : colors.surface.opacity(0.4))
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
-                                    .stroke(
-                                        selectedSection == section ? colors.border.opacity(0.9) : colors.border.opacity(0.4),
-                                        lineWidth: 1
-                                    )
-                            )
+            // Section picker — wrapped in horizontal scroll so it doesn't clip at narrow widths
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: DesignSystem.Metrics.scaled(8)) {
+                    ForEach(DiffSection.allCases, id: \.self) { section in
+                        Button {
+                            selectedSection = section
+                        } label: {
+                            Text(section.label)
+                                .font(DesignSystem.Fonts.sans(12, weight: selectedSection == section ? .semibold : .medium))
+                                .foregroundStyle(selectedSection == section ? colors.textPrimary : colors.textSecondary)
+                                .padding(.horizontal, DesignSystem.Metrics.scaled(12))
+                                .padding(.vertical, DesignSystem.Metrics.scaled(6))
+                                .background(
+                                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
+                                        .fill(selectedSection == section ? colors.surfaceElevated : colors.surface.opacity(0.4))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
+                                        .stroke(
+                                            selectedSection == section ? colors.border.opacity(0.9) : colors.border.opacity(0.4),
+                                            lineWidth: 1
+                                        )
+                                )
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
-                Spacer()
+                .padding(.horizontal, DesignSystem.Metrics.scaled(16))
+                .padding(.vertical, DesignSystem.Metrics.scaled(10))
             }
-            .padding(.horizontal, DesignSystem.Metrics.scaled(16))
-            .padding(.vertical, DesignSystem.Metrics.scaled(10))
+            .fixedSize(horizontal: false, vertical: true)
             .background(colors.surface)
             .overlay(
                 Rectangle()
@@ -113,7 +115,7 @@ private struct DiffColumn: View {
             if let method = flow.request?.method {
                 Text(method.uppercased())
                     .font(DesignSystem.Fonts.mono(11, weight: .bold))
-                    .foregroundStyle(methodColor(method))
+                    .foregroundStyle(DesignSystem.Colors.methodColor(method, palette: colors))
             }
             Text(flow.host + flow.path)
                 .font(DesignSystem.Fonts.mono(11))
@@ -148,28 +150,29 @@ private struct DiffColumn: View {
 
     private func sectionContent(flow: MitmFlow) -> String {
         switch section {
-        case .requestBody: return flow.request?.body ?? ""
-        case .responseBody: return flow.response?.body ?? ""
-        case .requestHeaders: return formatted(headers: flow.request?.headers ?? [:])
+        case .requestBody:  return prettyPrint(flow.request?.body ?? "")
+        case .responseBody: return prettyPrint(flow.response?.body ?? "")
+        case .requestHeaders:  return formatted(headers: flow.request?.headers ?? [:])
         case .responseHeaders: return formatted(headers: flow.response?.headers ?? [:])
         }
+    }
+
+    /// Pretty-prints JSON so each key/value lands on its own line,
+    /// enabling meaningful line-by-line diffs. Falls back to raw text.
+    private func prettyPrint(_ text: String) -> String {
+        guard !text.isEmpty,
+              let data = text.data(using: .utf8),
+              let obj = try? JSONSerialization.jsonObject(with: data),
+              let pretty = try? JSONSerialization.data(withJSONObject: obj, options: [.prettyPrinted, .sortedKeys]),
+              let str = String(data: pretty, encoding: .utf8)
+        else { return text }
+        return str
     }
 
     private func formatted(headers: [String: String]) -> String {
         headers.sorted { $0.key < $1.key }
             .map { "\($0.key): \($0.value)" }
             .joined(separator: "\n")
-    }
-
-    private func methodColor(_ method: String) -> Color {
-        switch method.uppercased() {
-        case "GET": return .green
-        case "POST": return .blue
-        case "PUT": return .orange
-        case "PATCH": return .purple
-        case "DELETE": return .red
-        default: return colors.textPrimary
-        }
     }
 }
 
@@ -425,9 +428,9 @@ enum DiffSection: CaseIterable {
 
     var label: String {
         switch self {
-        case .requestBody: return "Request Body"
-        case .responseBody: return "Response Body"
-        case .requestHeaders: return "Request Headers"
+        case .requestBody:     return "Request Body"
+        case .responseBody:    return "Response Body"
+        case .requestHeaders:  return "Request Headers"
         case .responseHeaders: return "Response Headers"
         }
     }
