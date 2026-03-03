@@ -47,7 +47,13 @@ struct FlowSplitInspector: View {
                     bodyFlow: flow.response?.body,
                     emptyText: "Response non disponibile",
                     isMapped: flow.isMapped,
-                    colors: colors
+                    colors: colors,
+                    timingData: FlowTimingData(
+                        duration: flow.duration,
+                        requestBodySize: flow.request?.body?.utf8.count ?? 0,
+                        responseBodySize: flow.response?.body?.utf8.count ?? 0
+                    ),
+                    websocketMessages: flow.websocketMessages
                 )
                 .id("\(flow.id)-response")
                 .frame(maxWidth: .infinity)

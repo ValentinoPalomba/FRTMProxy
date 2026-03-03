@@ -663,6 +663,42 @@ def response(flow: http.HTTPFlow):
     bp_meta = breakpoint_snapshot(flow, "response", "waiting") if waiting_response else None
     send_flow_event(flow, "response", bp_meta)
 
+def websocket_start(flow: http.HTTPFlow):
+    if is_loopback_host(flow.request.host):
+        return
+    FLOW_BY_ID[flow.id] = flow
+    send_flow_event(flow, "websocket_start")
+
+def websocket_message(flow: http.HTTPFlow):
+    if is_loopback_host(flow.request.host):
+        return
+    if not flow.websocket or not flow.websocket.messages:
+        return
+    msg = flow.websocket.messages[-1]
+    is_text = (msg.type == 1)  # opcode 1 = text frame, 2 = binary
+    try:
+        content = msg.content.decode("utf-8", errors="replace") if is_text else base64.b64encode(msg.content).decode()
+    except Exception:
+        content = ""
+    payload = {
+        "event": "websocket_message",
+        "id": flow.id,
+        "timestamp": time.time(),
+        "websocket_message": {
+            "id": str(uuid.uuid4()),
+            "direction": "client" if msg.from_client else "server",
+            "type": "text" if is_text else "binary",
+            "content": content,
+            "timestamp": time.time()
+        }
+    }
+    send(payload)
+
+def websocket_end(flow: http.HTTPFlow):
+    if is_loopback_host(flow.request.host):
+        return
+    send_flow_event(flow, "websocket_end")
+
 def select_wildcard_rule(flow: http.HTTPFlow):
     if not MAP_LOCAL_WILDCARD_RULES:
         return None

@@ -1,6 +1,34 @@
 
 import Foundation
 
+// MARK: - WebSocket
+
+enum WebSocketDirection: String, Codable, Equatable { case client, server }
+enum WebSocketMessageType: String, Codable, Equatable { case text, binary }
+
+struct WebSocketMessage: Codable, Identifiable, Equatable {
+    let id: String
+    let direction: WebSocketDirection
+    let type: WebSocketMessageType
+    let content: String
+    let timestamp: TimeInterval
+}
+
+/// Transient wrapper used only for decoding a websocket_message bridge event.
+struct WebSocketMessageEvent: Codable {
+    let event: String
+    let id: String
+    let timestamp: TimeInterval
+    let websocketMessage: WebSocketMessage
+
+    enum CodingKeys: String, CodingKey {
+        case event, id, timestamp
+        case websocketMessage = "websocket_message"
+    }
+}
+
+// MARK: - MitmFlow
+
 struct MitmFlow: Identifiable, Codable, Equatable {
     let id: String
     var request: Request?
@@ -12,7 +40,31 @@ struct MitmFlow: Identifiable, Codable, Equatable {
     var client: Client?
     var clientApp: FlowClientApp?
     var breakpoint: FlowBreakpointMetadata?
-    
+    var websocketMessages: [WebSocketMessage] = []
+
+    // MARK: Codable — websocketMessages is transient (never decoded from JSON)
+
+    enum CodingKeys: String, CodingKey {
+        case id, request, response, event, timestamp
+        case requestTimestamp, responseTimestamp
+        case client, clientApp, breakpoint
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        request = try c.decodeIfPresent(Request.self, forKey: .request)
+        response = try c.decodeIfPresent(Response.self, forKey: .response)
+        event = try c.decode(String.self, forKey: .event)
+        timestamp = try c.decodeIfPresent(TimeInterval.self, forKey: .timestamp)
+        requestTimestamp = try c.decodeIfPresent(TimeInterval.self, forKey: .requestTimestamp)
+        responseTimestamp = try c.decodeIfPresent(TimeInterval.self, forKey: .responseTimestamp)
+        client = try c.decodeIfPresent(Client.self, forKey: .client)
+        clientApp = try c.decodeIfPresent(FlowClientApp.self, forKey: .clientApp)
+        breakpoint = try c.decodeIfPresent(FlowBreakpointMetadata.self, forKey: .breakpoint)
+        websocketMessages = []
+    }
+
     struct Client: Codable, Equatable {
         let ip: String
         let port: Int?

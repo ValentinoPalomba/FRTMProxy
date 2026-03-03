@@ -317,7 +317,16 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     
     private nonisolated func handleIncomingLine(_ line: String) {
         guard let data = line.data(using: .utf8) else { return }
-        
+
+        // WebSocket message events are decoded separately to avoid polluting MitmFlow.
+        if let wsEvent = try? JSONDecoder().decode(WebSocketMessageEvent.self, from: data),
+           wsEvent.event == "websocket_message" {
+            DispatchQueue.main.async {
+                self.appendWebSocketMessage(wsEvent)
+            }
+            return
+        }
+
         if let flow = try? JSONDecoder().decode(MitmFlow.self, from: data) {
             DispatchQueue.main.async {
                 self.mergeFlow(flow)
@@ -327,6 +336,13 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
                 self.onLog?(line)
             }
         }
+    }
+
+    @MainActor
+    private func appendWebSocketMessage(_ event: WebSocketMessageEvent) {
+        guard var existing = flows[event.id] else { return }
+        existing.websocketMessages.append(event.websocketMessage)
+        flows[event.id] = existing
     }
     
     @MainActor
