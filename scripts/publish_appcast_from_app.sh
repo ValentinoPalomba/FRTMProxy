@@ -7,6 +7,9 @@
 #   3. Uploads the .zip to a GitHub Release (creates the release if missing)
 #   4. Pushes appcast.xml to gh-pages
 #
+# GitHub Release upload uses the `gh` CLI if available, otherwise falls back
+# to the GitHub REST API via `curl` (requires GITHUB_TOKEN env var).
+#
 # Usage:
 #   ./scripts/publish_appcast_from_app.sh /path/to/FRTMProxy.app [options]
 #
@@ -25,11 +28,12 @@ PRODUCT_LINK="${PRODUCT_LINK:-https://github.com/ValentinoPalomba/FRTMProxy/rele
 DOWNLOAD_URL_PREFIX="${DOWNLOAD_URL_PREFIX:-}"
 RELEASE_NOTES_URL_PREFIX="${RELEASE_NOTES_URL_PREFIX:-}"
 GH_REPO="${GH_REPO:-}"          # e.g. ValentinoPalomba/FRTMProxy (inferred from remote if empty)
+GITHUB_TOKEN="${GITHUB_TOKEN:-}" # personal access token — needed only when gh CLI is absent
 RELEASE_TAG="${RELEASE_TAG:-}"  # e.g. v1.6.0 (inferred from CFBundleShortVersionString if empty)
 RELEASE_TITLE="${RELEASE_TITLE:-}"
-RELEASE_NOTES="${RELEASE_NOTES:-}"  # body text for the GH release (optional)
+RELEASE_NOTES="${RELEASE_NOTES:-}"
 
-PUBLISH=1       # set to 0 with --no-publish to skip gh-pages + gh release
+PUBLISH=1
 APP_PATH=""
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -59,7 +63,11 @@ Options:
 Environment overrides:
   APP_NAME, RELEASE_DIR, REMOTE_NAME, PAGES_BRANCH, SPARKLE_ACCOUNT,
   PRODUCT_LINK, DOWNLOAD_URL_PREFIX, RELEASE_NOTES_URL_PREFIX,
-  GH_REPO, RELEASE_TAG, RELEASE_TITLE, RELEASE_NOTES
+  GH_REPO, RELEASE_TAG, RELEASE_TITLE, RELEASE_NOTES, GITHUB_TOKEN
+
+GitHub Release upload priority:
+  1. gh CLI  (if installed — no token needed, uses existing gh auth)
+  2. curl + GITHUB_TOKEN  (fallback — set GITHUB_TOKEN env var)
 EOF
 }
 
@@ -69,7 +77,6 @@ if [[ $# -eq 0 ]]; then
   exit 1
 fi
 
-# First positional arg is the .app path
 if [[ "${1:-}" != --* && "${1:-}" != -h ]]; then
   APP_PATH="$1"
   shift
@@ -77,35 +84,45 @@ fi
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --release-dir)        RELEASE_DIR="$2";              shift 2 ;;
-    --download-url-prefix) DOWNLOAD_URL_PREFIX="$2";     shift 2 ;;
-    --notes-url-prefix)   RELEASE_NOTES_URL_PREFIX="$2"; shift 2 ;;
-    --product-link)       PRODUCT_LINK="$2";             shift 2 ;;
-    --sparkle-account)    SPARKLE_ACCOUNT="$2";          shift 2 ;;
-    --remote)             REMOTE_NAME="$2";              shift 2 ;;
-    --pages-branch)       PAGES_BRANCH="$2";             shift 2 ;;
-    --gh-repo)            GH_REPO="$2";                  shift 2 ;;
-    --tag)                RELEASE_TAG="$2";              shift 2 ;;
-    --title)              RELEASE_TITLE="$2";            shift 2 ;;
-    --notes)              RELEASE_NOTES="$2";            shift 2 ;;
-    --no-publish)         PUBLISH=0;                     shift   ;;
-    -h|--help)            usage; exit 0 ;;
+    --release-dir)         RELEASE_DIR="$2";              shift 2 ;;
+    --download-url-prefix) DOWNLOAD_URL_PREFIX="$2";      shift 2 ;;
+    --notes-url-prefix)    RELEASE_NOTES_URL_PREFIX="$2"; shift 2 ;;
+    --product-link)        PRODUCT_LINK="$2";             shift 2 ;;
+    --sparkle-account)     SPARKLE_ACCOUNT="$2";          shift 2 ;;
+    --remote)              REMOTE_NAME="$2";              shift 2 ;;
+    --pages-branch)        PAGES_BRANCH="$2";             shift 2 ;;
+    --gh-repo)             GH_REPO="$2";                  shift 2 ;;
+    --tag)                 RELEASE_TAG="$2";              shift 2 ;;
+    --title)               RELEASE_TITLE="$2";            shift 2 ;;
+    --notes)               RELEASE_NOTES="$2";            shift 2 ;;
+    --no-publish)          PUBLISH=0;                     shift   ;;
+    -h|--help)             usage; exit 0 ;;
     *) fail "Unknown option: $1" ;;
   esac
 done
 
 # ── Validate inputs ──────────────────────────────────────────────────────────
-[[ -n "$APP_PATH" ]]          || fail "No .app path provided. Run with --help for usage."
-[[ -d "$APP_PATH" ]]          || fail ".app not found: $APP_PATH"
-[[ "$APP_PATH" == *.app ]]    || fail "Path does not look like a .app bundle: $APP_PATH"
+[[ -n "$APP_PATH" ]]        || fail "No .app path provided. Run with --help for usage."
+[[ -d "$APP_PATH" ]]        || fail ".app not found: $APP_PATH"
+[[ "$APP_PATH" == *.app ]]  || fail "Path does not look like a .app bundle: $APP_PATH"
 
-command -v ditto  >/dev/null  || fail "ditto not found"
-command -v git    >/dev/null  || fail "git not found"
-command -v rsync  >/dev/null  || fail "rsync not found"
+command -v ditto  >/dev/null || fail "ditto not found"
+command -v git    >/dev/null || fail "git not found"
+command -v rsync  >/dev/null || fail "rsync not found"
+command -v curl   >/dev/null || fail "curl not found"
 [[ -x /usr/libexec/PlistBuddy ]] || fail "PlistBuddy not found"
 
+# Detect which GitHub upload backend we'll use
+USE_GH_CLI=0
 if [[ "$PUBLISH" -eq 1 ]]; then
-  command -v gh >/dev/null    || fail "GitHub CLI (gh) not found — install via 'brew install gh' or pass --no-publish"
+  if command -v gh >/dev/null 2>&1; then
+    USE_GH_CLI=1
+    log "GitHub upload backend: gh CLI"
+  elif [[ -n "$GITHUB_TOKEN" ]]; then
+    log "GitHub upload backend: curl + GITHUB_TOKEN"
+  else
+    fail "No GitHub upload backend found. Install gh CLI (brew install gh) or set GITHUB_TOKEN."
+  fi
 fi
 
 # ── Read version from the app bundle ─────────────────────────────────────────
@@ -116,32 +133,90 @@ SHORT_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' 
 BUILD_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP_INFO_PLIST" 2>/dev/null || echo "$SHORT_VERSION")"
 [[ -n "$SHORT_VERSION" ]] || fail "CFBundleShortVersionString missing from $APP_INFO_PLIST"
 
-log "App: $APP_PATH"
-log "Version: $SHORT_VERSION (build $BUILD_VERSION)"
+log "App     : $APP_PATH"
+log "Version : $SHORT_VERSION (build $BUILD_VERSION)"
 
-# ── Infer download URL prefix from Info.plist SUFeedURL if not set ────────────
+# ── Infer download URL prefix from Info.plist SUFeedURL ──────────────────────
 if [[ -z "$DOWNLOAD_URL_PREFIX" ]]; then
   FEED_URL="$(/usr/libexec/PlistBuddy -c 'Print :SUFeedURL' "$ROOT_DIR/Info.plist" 2>/dev/null || true)"
   DOWNLOAD_URL_PREFIX="${FEED_URL%appcast.xml}"
 fi
-[[ -n "$DOWNLOAD_URL_PREFIX" ]] || fail "Cannot infer --download-url-prefix (SUFeedURL missing from Info.plist — pass it explicitly)"
+[[ -n "$DOWNLOAD_URL_PREFIX" ]] || \
+  fail "Cannot infer --download-url-prefix (SUFeedURL missing from Info.plist — pass it explicitly)"
 
-if [[ -z "$RELEASE_NOTES_URL_PREFIX" ]]; then
-  RELEASE_NOTES_URL_PREFIX="$DOWNLOAD_URL_PREFIX"
-fi
+[[ -n "$RELEASE_NOTES_URL_PREFIX" ]] || RELEASE_NOTES_URL_PREFIX="$DOWNLOAD_URL_PREFIX"
 
-# ── Derive tag and repo ───────────────────────────────────────────────────────
+# ── Derive tag, title, repo ───────────────────────────────────────────────────
 [[ -n "$RELEASE_TAG" ]]   || RELEASE_TAG="v$SHORT_VERSION"
 [[ -n "$RELEASE_TITLE" ]] || RELEASE_TITLE="$RELEASE_TAG"
 
 if [[ "$PUBLISH" -eq 1 && -z "$GH_REPO" ]]; then
   REMOTE_URL="$(git remote get-url "$REMOTE_NAME" 2>/dev/null || true)"
   [[ -n "$REMOTE_URL" ]] || fail "Git remote '$REMOTE_NAME' not found and --gh-repo not set"
-  # Extract owner/repo from https or ssh remote URL
   GH_REPO="$(printf '%s' "$REMOTE_URL" \
     | sed -E 's|.*github\.com[:/]([^/]+/[^/]+?)(\.git)?$|\1|')"
   [[ -n "$GH_REPO" ]] || fail "Unable to infer GitHub repo from remote URL: $REMOTE_URL"
 fi
+
+# ── GitHub API helpers (curl fallback) ───────────────────────────────────────
+
+# Returns the release id for a tag, or empty string if not found.
+gh_api_get_release_id() {
+  local tag="$1"
+  curl -fsSL \
+    -H "Authorization: Bearer $GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github+json" \
+    "https://api.github.com/repos/$GH_REPO/releases/tags/$tag" \
+    2>/dev/null | grep '"id"' | head -1 | sed -E 's/.*"id": *([0-9]+).*/\1/' || true
+}
+
+# Creates a draft=false release and returns its id.
+gh_api_create_release() {
+  local tag="$1" title="$2" notes="$3"
+  curl -fsSL \
+    -X POST \
+    -H "Authorization: Bearer $GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github+json" \
+    -H "Content-Type: application/json" \
+    "https://api.github.com/repos/$GH_REPO/releases" \
+    -d "{\"tag_name\":\"$tag\",\"name\":\"$title\",\"body\":\"$notes\",\"draft\":false}" \
+    | grep '"id"' | head -1 | sed -E 's/.*"id": *([0-9]+).*/\1/'
+}
+
+# Uploads an asset to an existing release, overwriting if a same-name asset exists.
+gh_api_upload_asset() {
+  local release_id="$1" file_path="$2" file_name="$3"
+
+  # Delete existing asset with the same name to allow re-upload
+  local existing_asset_id
+  existing_asset_id="$(
+    curl -fsSL \
+      -H "Authorization: Bearer $GITHUB_TOKEN" \
+      -H "Accept: application/vnd.github+json" \
+      "https://api.github.com/repos/$GH_REPO/releases/$release_id/assets" \
+      2>/dev/null \
+    | grep -A2 "\"name\": \"$file_name\"" \
+    | grep '"id"' \
+    | head -1 \
+    | sed -E 's/.*"id": *([0-9]+).*/\1/' || true
+  )"
+  if [[ -n "$existing_asset_id" ]]; then
+    log "Deleting existing asset $file_name (id $existing_asset_id)..."
+    curl -fsSL -X DELETE \
+      -H "Authorization: Bearer $GITHUB_TOKEN" \
+      -H "Accept: application/vnd.github+json" \
+      "https://api.github.com/repos/$GH_REPO/releases/assets/$existing_asset_id" >/dev/null
+  fi
+
+  curl -fsSL \
+    -X POST \
+    -H "Authorization: Bearer $GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github+json" \
+    -H "Content-Type: application/zip" \
+    --data-binary "@$file_path" \
+    "https://uploads.github.com/repos/$GH_REPO/releases/$release_id/assets?name=$file_name" \
+    >/dev/null
+}
 
 # ── Find Sparkle tools ────────────────────────────────────────────────────────
 find_sparkle_bin() {
@@ -163,8 +238,9 @@ find_sparkle_bin() {
   return 1
 }
 
-SPARKLE_BIN="$(find_sparkle_bin)" || fail "Unable to locate Sparkle tools. Build the project once or set SPARKLE_BIN."
-log "Sparkle tools: $SPARKLE_BIN"
+SPARKLE_BIN="$(find_sparkle_bin)" || \
+  fail "Unable to locate Sparkle tools. Build the project once or set SPARKLE_BIN."
+log "Sparkle : $SPARKLE_BIN"
 
 # ── Create archive ────────────────────────────────────────────────────────────
 ARCHIVE_NAME="$APP_NAME-$SHORT_VERSION.zip"
@@ -185,8 +261,7 @@ log "Generating appcast..."
   --link "$PRODUCT_LINK" \
   -o "$APPCAST_PATH" \
   "$RELEASE_DIR"
-
-log "Appcast written to: $APPCAST_PATH"
+log "Appcast : $APPCAST_PATH"
 
 # ── Publish ───────────────────────────────────────────────────────────────────
 if [[ "$PUBLISH" -eq 0 ]]; then
@@ -196,25 +271,39 @@ else
   # 1. Upload zip to GitHub Release ------------------------------------------
   log "Uploading $ARCHIVE_NAME to GitHub Release $RELEASE_TAG ($GH_REPO)..."
 
-  if gh release view "$RELEASE_TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
-    log "Release $RELEASE_TAG already exists — uploading asset..."
-    gh release upload "$RELEASE_TAG" "$ARCHIVE_PATH" \
-      --repo "$GH_REPO" \
-      --clobber
-  else
-    log "Release $RELEASE_TAG not found — creating it..."
-    CREATE_ARGS=(
-      release create "$RELEASE_TAG"
-      --repo "$GH_REPO"
-      --title "$RELEASE_TITLE"
-      "$ARCHIVE_PATH"
-    )
-    if [[ -n "$RELEASE_NOTES" ]]; then
-      CREATE_ARGS+=(--notes "$RELEASE_NOTES")
+  if [[ "$USE_GH_CLI" -eq 1 ]]; then
+    # ── gh CLI path ──────────────────────────────────────────────────────────
+    if gh release view "$RELEASE_TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+      log "Release $RELEASE_TAG already exists — uploading asset..."
+      gh release upload "$RELEASE_TAG" "$ARCHIVE_PATH" \
+        --repo "$GH_REPO" \
+        --clobber
     else
-      CREATE_ARGS+=(--notes "")
+      log "Release $RELEASE_TAG not found — creating it..."
+      GH_CREATE_ARGS=(
+        release create "$RELEASE_TAG"
+        --repo "$GH_REPO"
+        --title "$RELEASE_TITLE"
+        --notes "${RELEASE_NOTES:-}"
+        "$ARCHIVE_PATH"
+      )
+      gh "${GH_CREATE_ARGS[@]}"
     fi
-    gh "${CREATE_ARGS[@]}"
+
+  else
+    # ── curl + GITHUB_TOKEN path ─────────────────────────────────────────────
+    RELEASE_ID="$(gh_api_get_release_id "$RELEASE_TAG")"
+
+    if [[ -z "$RELEASE_ID" ]]; then
+      log "Release $RELEASE_TAG not found — creating it..."
+      RELEASE_ID="$(gh_api_create_release "$RELEASE_TAG" "$RELEASE_TITLE" "${RELEASE_NOTES:-}")"
+      [[ -n "$RELEASE_ID" ]] || fail "Failed to create GitHub Release (check GITHUB_TOKEN permissions)"
+      log "Release created (id $RELEASE_ID)"
+    else
+      log "Release $RELEASE_TAG already exists (id $RELEASE_ID) — uploading asset..."
+    fi
+
+    gh_api_upload_asset "$RELEASE_ID" "$ARCHIVE_PATH" "$ARCHIVE_NAME"
   fi
 
   log "GitHub Release: https://github.com/$GH_REPO/releases/tag/$RELEASE_TAG"
@@ -251,6 +340,7 @@ else
 fi
 
 # ── Summary ───────────────────────────────────────────────────────────────────
+log "────────────────────────────────"
 log "Done."
 log "Version : $SHORT_VERSION (build $BUILD_VERSION)"
 log "Archive : $ARCHIVE_PATH"
