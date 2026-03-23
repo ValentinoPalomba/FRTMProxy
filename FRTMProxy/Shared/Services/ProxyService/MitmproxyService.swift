@@ -43,6 +43,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     private var workspaceTerminationObserver: NSObjectProtocol?
     private var warmupState: MitmdumpWarmupState = .idle
     private var warmupProcess: Process?
+    private var prewarmTask: Task<Void, Never>?
     private var cachedMitmdumpURL: URL?
     
     nonisolated(unsafe) var onLog: ((String) -> Void)?
@@ -58,7 +59,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         self.config = config
         Task { @MainActor in
             self.setupTerminationObservers()
-            self.prewarmMitmdumpExecutableIfNeeded()
+            self.schedulePrewarmMitmdumpExecutableIfNeeded()
         }
     }
     
@@ -71,6 +72,8 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         }
         Task { @MainActor [weak self]  in
             self?.stopProxy()
+            self?.prewarmTask?.cancel()
+            self?.prewarmTask = nil
             self?.warmupProcess?.terminate()
             self?.warmupProcess = nil
         }
@@ -151,7 +154,12 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
                 process.standardInput = inputPipe
 
                 pipe.fileHandleForReading.readabilityHandler = { handle in
-                    stdoutBuffer.append(handle.availableData)
+                    let chunk = handle.availableData
+                    if chunk.isEmpty {
+                        handle.readabilityHandler = nil
+                        return
+                    }
+                    stdoutBuffer.append(chunk)
                     while let range = stdoutBuffer.firstRange(of: Data([0x0A])) {
                         let lineData = stdoutBuffer.subdata(in: stdoutBuffer.startIndex..<range.lowerBound)
                         stdoutBuffer.removeSubrange(stdoutBuffer.startIndex...range.lowerBound)
@@ -163,6 +171,10 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
 
                 errorPipe.fileHandleForReading.readabilityHandler = { handle in
                     let data = handle.availableData
+                    if data.isEmpty {
+                        handle.readabilityHandler = nil
+                        return
+                    }
                     if let text = String(data: data, encoding: .utf8), !text.isEmpty {
                         onError(text)
                     }
@@ -194,8 +206,6 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         var args: [String] = [
             "-p", "\(selectedPort)",
             "-s", scriptURL.path,
-            "--anticache",
-            "--set", "connection_strategy=lazy",
             "--set", "ssl_insecure=true"
         ]
 
@@ -246,7 +256,6 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         }
         
         guard let url = Bundle.main.url(forResource: "mitmdump", withExtension: nil) else {
-            print("NOT FOUND")
             throw MitmproxyServiceError.executableNotFound("Resources/mitmdump")
         }
         
@@ -271,6 +280,17 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     }
 
     /// Launches a lightweight `mitmdump --version` to force the bundled binary to unpack/cache itself before the user presses Start.
+    private func schedulePrewarmMitmdumpExecutableIfNeeded() {
+        guard prewarmTask == nil else { return }
+        prewarmTask = Task(priority: .background) { [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled, let self else { return }
+            self.prewarmTask = nil
+            guard !self.isRunning else { return }
+            self.prewarmMitmdumpExecutableIfNeeded()
+        }
+    }
+
     private func prewarmMitmdumpExecutableIfNeeded() {
         guard warmupState == .idle else { return }
         warmupState = .warming
