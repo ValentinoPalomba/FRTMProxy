@@ -7,6 +7,21 @@ FRTMProxy is free for every developer, and it will remain free.
 
 ---
 
+## Install
+
+### Homebrew (recommended)
+
+```bash
+brew tap ValentinoPalomba/frtmtools
+brew install --cask frtmproxy
+```
+
+### Direct download
+
+You can also download the latest `.zip` from the [GitHub Releases](https://github.com/ValentinoPalomba/FRTMProxy/releases) page.
+
+---
+
 ## What you can do
 
 - **Inspect** requests and responses with a fast, readable inspector.
@@ -60,3 +75,46 @@ A dedicated section to connect iOS devices:
 ![Actions](.media/Actions.png)
 
 Happy debugging! 🚀
+
+---
+
+## Sparkle Release Automation
+
+Use the helper script to build a Release app, zip it, regenerate `appcast.xml`, and publish artifacts to `gh-pages`:
+
+```bash
+./scripts/publish_sparkle_release.sh
+```
+
+Useful variants:
+
+```bash
+# Generate zip + appcast locally only (no push)
+./scripts/publish_sparkle_release.sh --no-publish
+
+# Reuse existing Release build output
+./scripts/publish_sparkle_release.sh --skip-build
+```
+
+---
+
+## Homebrew Cask Update (manual release flow)
+
+After publishing a GitHub Release manually, update only the Homebrew cask metadata (`version`, `sha256`, `url`) with:
+
+```bash
+./scripts/update_homebrew_cask.sh \
+  --version 1.6.0 \
+  --tag v.1.6.0 \
+  --tap-dir ~/Repositories/homebrew-frtmtools
+```
+
+Optional automation for the tap repository:
+
+```bash
+# commit in tap repo
+./scripts/update_homebrew_cask.sh --version 1.6.0 --tag v.1.6.0 --tap-dir ~/Repositories/homebrew-frtmtools --commit
+
+# commit + push in tap repo
+./scripts/update_homebrew_cask.sh --version 1.6.0 --tag v.1.6.0 --tap-dir ~/Repositories/homebrew-frtmtools --push
+```
