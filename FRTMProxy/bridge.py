@@ -1,5 +1,6 @@
 # bridge.py (COMPATIBLE WITH YOUR SWIFT MODEL)
 import json
+import os
 import sys
 import time
 import uuid
@@ -32,6 +33,7 @@ TRAFFIC_PROFILE_DEFAULT = {
     "response_delay_ms": 0
 }
 ACTIVE_TRAFFIC_PROFILE = dict(TRAFFIC_PROFILE_DEFAULT)
+DEBUG_VERBOSE = str(os.environ.get("FRTMPROXY_BRIDGE_DEBUG", "")).strip().lower() in ("1", "true", "yes", "on")
 
 
 def flow_key(flow: http.HTTPFlow) -> str:
@@ -152,6 +154,8 @@ def send(obj):
 
 def debug_log(msg: str):
     """Send a log line to stdout so the app can display it."""
+    if not DEBUG_VERBOSE:
+        return
     sys.stdout.write(f"[DEBUG] {msg}\n")
     sys.stdout.flush()
 
@@ -212,7 +216,8 @@ def apply_profile_latency(direction: str):
         return
     delay = max(total / 1000.0, 0)
     time.sleep(delay)
-    debug_log(f"[TRAFFIC] {direction} latency {int(delay * 1000)}ms")
+    if DEBUG_VERBOSE:
+        debug_log(f"[TRAFFIC] {direction} latency {int(delay * 1000)}ms")
 
 def apply_profile_bandwidth(byte_count: int, kbps_limit: int, direction: str):
     if not traffic_profile_enabled():
@@ -226,7 +231,8 @@ def apply_profile_bandwidth(byte_count: int, kbps_limit: int, direction: str):
     if delay <= 0:
         return
     time.sleep(delay)
-    debug_log(f"[TRAFFIC] {direction} throttled {byte_count}B in {int(delay * 1000)}ms")
+    if DEBUG_VERBOSE:
+        debug_log(f"[TRAFFIC] {direction} throttled {byte_count}B in {int(delay * 1000)}ms")
 
 def apply_profile_response_delay():
     if not traffic_profile_enabled():
@@ -236,7 +242,8 @@ def apply_profile_response_delay():
         return
     delay = max(delay_ms / 1000.0, 0)
     time.sleep(delay)
-    debug_log(f"[TRAFFIC] response delay {int(delay * 1000)}ms")
+    if DEBUG_VERBOSE:
+        debug_log(f"[TRAFFIC] response delay {int(delay * 1000)}ms")
 
 def maybe_inject_packet_loss(flow: http.HTTPFlow) -> bool:
     if not traffic_profile_enabled():
@@ -632,15 +639,18 @@ def request(flow: http.HTTPFlow):
                     MAP_LOCAL_FALLBACK_CURSOR[base] = (idx + 1) % len(candidates)
                     rule = MAP_LOCAL_RULES.get(matched_key)
     if rule:
-        debug_log(f"rule found for {matched_key}, applying mock")
+        if DEBUG_VERBOSE:
+            debug_log(f"rule found for {matched_key}, applying mock")
         apply_map_local_response(flow, rule)
     else:
         wildcard_key = select_wildcard_rule(flow)
         if wildcard_key:
-            debug_log(f"wildcard rule found for {wildcard_key}, applying mock")
+            if DEBUG_VERBOSE:
+                debug_log(f"wildcard rule found for {wildcard_key}, applying mock")
             apply_map_local_response(flow, MAP_LOCAL_RULES[wildcard_key])
         else:
-            debug_log(f"no rule found for {computed_key} (base {base})")
+            if DEBUG_VERBOSE:
+                debug_log(f"no rule found for {computed_key} (base {base})")
 
     bp_meta = breakpoint_snapshot(flow, "request", "waiting") if waiting_request else None
     send_flow_event(flow, "request", bp_meta)
