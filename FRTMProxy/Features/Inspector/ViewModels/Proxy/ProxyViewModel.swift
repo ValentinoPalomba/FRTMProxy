@@ -1,5 +1,7 @@
 import Combine
 import Foundation
+import AppKit
+import Network
 
 final class ProxyViewModel: ObservableObject {
     @Published var flows: [MitmFlow] = []
@@ -46,6 +48,10 @@ final class ProxyViewModel: ObservableObject {
     var triggeredAlertKeys: Set<String> = []
     var seenAlertFlowIDs: Set<String> = []
     var processedScriptFlowIDs: Set<String> = []
+    var networkPathMonitor: NWPathMonitor?
+    let networkPathMonitorQueue = DispatchQueue(label: "com.frtmproxy.network-path-monitor", qos: .utility)
+    var wakeObserver: NSObjectProtocol?
+    var lastProxyReassertAt: Date = .distantPast
 
     init(
         service: ProxyServiceProtocol = MitmproxyService(config: MitmproxyConfig()),
@@ -70,6 +76,13 @@ final class ProxyViewModel: ObservableObject {
         loadPersistedScripts()
         syncAppliedRules()
         syncBreakpointRules()
+    }
+
+    deinit {
+        networkPathMonitor?.cancel()
+        if let wakeObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver)
+        }
     }
 
     var selectedFlow: MitmFlow? {
@@ -128,6 +141,8 @@ final class ProxyViewModel: ObservableObject {
             logText = newText
         }
 
-        print(text)
+        if ProcessInfo.processInfo.environment["FRTMPROXY_STDOUT_LOGS"] == "1" {
+            print(text, terminator: "")
+        }
     }
 }

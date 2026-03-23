@@ -1,5 +1,7 @@
 import Combine
 import Foundation
+import AppKit
+import Network
 
 extension ProxyViewModel {
     func bind(settings: SettingsStore) {
@@ -92,6 +94,7 @@ extension ProxyViewModel {
                 guard let self else { return }
                 self.overrideMacOSProxy = isEnabled
                 self.syncMacOSProxyOverride()
+                self.updateProxySelfHealingState()
             }
             .store(in: &settingsCancellables)
 
@@ -130,6 +133,7 @@ extension ProxyViewModel {
         if overrideMacOSProxy {
             applyMacOSProxyOverride(port: activePort)
         }
+        updateProxySelfHealingState()
 
         if settings.autoStartProxy && !isRunning {
             Task { @MainActor in
@@ -152,6 +156,7 @@ extension ProxyViewModel {
         } else {
             clearMacOSProxyOverride()
         }
+        updateProxySelfHealingState()
     }
 
     func updateMacOSProxyOverridePort() {
@@ -187,5 +192,73 @@ extension ProxyViewModel {
         if isRunning {
             service.applyTrafficProfile(profile)
         }
+    }
+
+    func updateProxySelfHealingState() {
+        let shouldMonitor = overrideMacOSProxy && isRunning
+        if shouldMonitor {
+            startProxyNetworkPathMonitorIfNeeded()
+            startWakeObserverIfNeeded()
+        } else {
+            stopProxyNetworkPathMonitor()
+            stopWakeObserver()
+        }
+    }
+
+    private func startProxyNetworkPathMonitorIfNeeded() {
+        guard networkPathMonitor == nil else { return }
+        let monitor = NWPathMonitor()
+        monitor.pathUpdateHandler = { [weak self] path in
+            let status: String
+            switch path.status {
+            case .satisfied:
+                status = "satisfied"
+            case .requiresConnection:
+                status = "requires-connection"
+            case .unsatisfied:
+                status = "unsatisfied"
+            @unknown default:
+                status = "unknown"
+            }
+            Task { @MainActor [weak self] in
+                self?.reassertMacOSProxyOverrideIfNeeded(reason: "network path \(status)")
+            }
+        }
+        networkPathMonitor = monitor
+        monitor.start(queue: networkPathMonitorQueue)
+    }
+
+    private func stopProxyNetworkPathMonitor() {
+        networkPathMonitor?.cancel()
+        networkPathMonitor = nil
+    }
+
+    private func startWakeObserverIfNeeded() {
+        guard wakeObserver == nil else { return }
+        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil,
+            queue: nil
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.reassertMacOSProxyOverrideIfNeeded(reason: "system wake")
+            }
+        }
+    }
+
+    private func stopWakeObserver() {
+        if let wakeObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver)
+            self.wakeObserver = nil
+        }
+    }
+
+    private func reassertMacOSProxyOverrideIfNeeded(reason: String) {
+        guard overrideMacOSProxy, isRunning else { return }
+        let now = Date()
+        guard now.timeIntervalSince(lastProxyReassertAt) >= 8 else { return }
+        lastProxyReassertAt = now
+        applyMacOSProxyOverride(port: activePort)
+        appendLog("\n[PROXY] Re-applied macOS proxy override (\(reason)).")
     }
 }
