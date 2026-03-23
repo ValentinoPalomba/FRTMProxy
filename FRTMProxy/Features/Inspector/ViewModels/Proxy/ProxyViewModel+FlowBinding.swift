@@ -3,7 +3,10 @@ import Foundation
 
 extension ProxyViewModel {
     func bind() {
+        let flowProcessingQueue = DispatchQueue(label: "com.frtmproxy.flow-binding", qos: .userInitiated)
         service.flowsPublisher
+            .receive(on: flowProcessingQueue)
+            .throttle(for: .milliseconds(120), scheduler: flowProcessingQueue, latest: true)
             .map { map in
                 map.values.sorted(by: { ($0.timestamp ?? 0) > ($1.timestamp ?? 0) })
             }
@@ -31,6 +34,7 @@ extension ProxyViewModel {
             .sink { [weak self] running in
                 guard let self else { return }
                 self.isRunning = running
+                self.updateProxySelfHealingState()
                 if running {
                     self.service.applyTrafficProfile(self.activeTrafficProfile)
                 }
@@ -62,7 +66,18 @@ extension ProxyViewModel {
 
     func resolveClientAppsIfNeeded(in flows: [MitmFlow]) {
         let proxyPort = activePort
-        for flow in flows {
+        let maxConcurrentResolutions = 4
+        let maxNewResolutionsPerUpdate = 3
+
+        if resolvingConnectionKeys.count >= maxConcurrentResolutions {
+            return
+        }
+
+        var started = 0
+        for flow in flows.prefix(120) {
+            if started >= maxNewResolutionsPerUpdate || resolvingConnectionKeys.count >= maxConcurrentResolutions {
+                break
+            }
             guard flow.clientApp == nil,
                   let clientPort = flow.client?.port,
                   isLoopbackClientIP(flow.clientIP) else {
@@ -74,8 +89,9 @@ extension ProxyViewModel {
                 continue
             }
             resolvingConnectionKeys.insert(key)
+            started += 1
 
-            Task.detached { [weak self] in
+            Task.detached(priority: .utility) { [weak self] in
                 guard let self else { return }
                 let app = await self.clientAppResolver.resolve(clientPort: clientPort, proxyPort: proxyPort)
                 await MainActor.run {

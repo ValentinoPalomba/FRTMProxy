@@ -13,12 +13,16 @@ actor ClientAppResolver {
     }
 
     private var cache: [CacheKey: CacheEntry] = [:]
-    private let ttl: TimeInterval = 10
+    private let positiveTTL: TimeInterval = 60
+    private let negativeTTL: TimeInterval = 20
 
     func resolve(clientPort: Int, proxyPort: Int) async -> FlowClientApp? {
         let key = CacheKey(clientPort: clientPort, proxyPort: proxyPort)
-        if let cached = cache[key], Date().timeIntervalSince(cached.cachedAt) < ttl {
-            return cached.app
+        if let cached = cache[key] {
+            let ttl = cached.app == nil ? negativeTTL : positiveTTL
+            if Date().timeIntervalSince(cached.cachedAt) < ttl {
+                return cached.app
+            }
         }
 
         let app = await resolveFresh(clientPort: clientPort, proxyPort: proxyPort)
