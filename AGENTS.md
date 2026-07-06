@@ -1,0 +1,116 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this is
+
+FRTMProxy is a native macOS SwiftUI app that acts as a frontend/controller for an embedded
+`mitmdump` (mitmproxy) binary. It lets developers inspect, mock, record/replay, and shape
+HTTP/S traffic in real time. The Swift app never speaks HTTP itself — all interception happens
+inside mitmproxy, driven by a bundled Python addon.
+
+## Build / Run / Release
+
+This is a plain `.xcodeproj` (no workspace, no CocoaPods/SPM manifest at root). Dependencies are
+resolved by Xcode via `XCRemoteSwiftPackageReference`: **Sparkle** (auto-update) and
+**CodeMirror-Swift** (the in-app code/JSON editor).
+
+- **Schemes**: `FRTMProxy` (development) and `FRTMProxy_Release` (release builds).
+- **Build (dev)**: `xcodebuild -scheme FRTMProxy -configuration Debug -destination 'platform=macOS' build`
+- **Resolve packages** (e.g. for CI or first checkout): `xcodebuild -resolvePackageDependencies -project FRTMProxy.xcodeproj`
+- **Day-to-day development is done in Xcode** (or VS Code via `buildServer.json` + xcode-build-server).
+- **No test target exists** in the project yet — there is no `xcodebuild test` to run. AGENTS.md asks
+  for unit tests on core logic; if you add them, create a test target first.
+
+### Release automation (Sparkle)
+
+`./scripts/publish_sparkle_release.sh` builds `FRTMProxy_Release`, zips the app, regenerates
+`appcast.xml` via Sparkle tools, and pushes artifacts to the `gh-pages` branch. Useful flags:
+`--no-publish` (local only), `--skip-build` (reuse build output), `--notarize` (Apple notarization).
+It reads/writes the version and `SUPublicEDKey` in the root `Info.plist`.
+
+After a GitHub release, update the Homebrew cask metadata with
+`./scripts/update_homebrew_cask.sh --version <x.y.z> --tag <tag> --tap-dir <path>` (`--commit`/`--push` optional).
+
+The app version lives in the **root `Info.plist`** (`CFBundleShortVersionString` / `CFBundleVersion`).
+
+## Architecture
+
+The system is two processes talking over stdin/stdout, plus a SwiftUI layer on top.
+
+### 1. The bridge (`FRTMProxy/bridge.py`)
+
+A mitmproxy addon, bundled as a resource and loaded with `mitmdump -s bridge.py`. It is the
+**single source of truth for all traffic manipulation**. Communication is line-delimited JSON:
+
+- **stdout → app**: one JSON object per line, one per flow event (`request`, `response`,
+  `websocket_start/message/end`). Bodies for images are emitted as `data:` URLs.
+- **app → stdin**: command objects (`mock_response`, `mock_rule`, `delete_rule`, `mock_request`,
+  `breakpoint_rule`, `breakpoint_continue`, `retry_flow`, `traffic_profile`).
+
+Key mechanisms inside the bridge:
+- **Map Local matching**: rules are keyed by `<host><path>`, optionally suffixed with
+  `#<sha256(signature)>` where the signature is canonicalized `method + query + body` — this lets
+  multiple mocks coexist on the same path, disambiguated by request content. Wildcards (`*`, `?`)
+  in the base key are matched via `fnmatch` with a specificity score. Round-robin cursors rotate
+  among multiple matching rules.
+- **Breakpoints**: `flow.intercept()` pauses a flow; `breakpoint_continue` applies edits and calls
+  `flow.resume()`. Flow-lookup tables (`FLOW_BY_ID`, `FLOW_BY_KEY`, `FLOW_BY_MAP_LOCAL_KEY`) are
+  re-keyed when a paused request is edited.
+- **Traffic profiles**: latency/jitter/bandwidth/packet-loss/response-delay are simulated with
+  `time.sleep` and synthetic 598 responses.
+- Loopback hosts are ignored so the app's own pairing server traffic isn't captured.
+
+When editing matching/mock logic, the Swift `MapRuleKeyBuilder` (key generation) and the Python
+key logic **must stay in sync**.
+
+### 2. The service (`FRTMProxy/Shared/Services/ProxyService/`)
+
+`MitmproxyService` (conforms to `ProxyServiceProtocol`, so it can be mocked) owns the `Process`:
+- Launches the bundled `Resources/mitmdump` (a ~37 MB Mach-O arm64 binary), prewarms it with
+  `--version` before first Start, and kills stale `mitmdump`/`mitmproxy` processes on launch.
+- Parses stdout line-by-line into `MitmFlow` (or `WebSocketMessageEvent`) and publishes a
+  `[String: MitmFlow]` dictionary; caps stored flows at 500.
+- Sends commands by writing JSON + `\n` to the process's stdin `FileHandle`.
+
+`ProxyServiceProtocol` is the seam between UI and proxy — depend on it, not on `MitmproxyService`.
+
+### 3. The view model (`FRTMProxy/Features/Inspector/ViewModels/Proxy/`)
+
+`ProxyViewModel` is the app's brain, split across `ProxyViewModel+*.swift` extensions by feature
+(`FlowBinding`, `Rules`, `Breakpoints`, `Collections`, `Alerts`, `Scripts`, `Settings`,
+`Persistence`). It subscribes to the service's Combine publishers (flows **throttled to 120 ms**),
+enriches flows with the resolved client app, and drives recording, breakpoints, alerts, and scripts.
+
+> Note: the existing code uses `ObservableObject` + Combine + `@StateObject`, even though AGENTS.md
+> prescribes `@Observable`. Match the surrounding file's pattern; don't mix paradigms within a type.
+
+### 4. Features & shared code
+
+- `FRTMProxy/Features/<Domain>/` — one folder per domain: `Inspector`, `Rules`, `Breakpoints`,
+  `Collections`, `Composer`, `Device`, `Scripts`, `Settings`, `MenuBar`, `Onboarding`.
+- `FRTMProxy/Shared/` — `Models`, `Services`, `DesignSystem`, `Components`, `Extensions`,
+  `Filters`, `Utilities`.
+- `FRTMProxyApp.swift` wires the scenes (main `WindowGroup`, `MenuBarExtra`, `Settings`, About
+  window), Sparkle updater, and AppDelegate termination hook.
+
+### Domain services worth knowing (in `Shared/Services/`)
+
+- **Device certificate setup** — `SimulatorCertificateInstaller` (CA into booted simulators),
+  `DevicePairingHTTPServer` + `MobileConfigBuilder` + `QRCodeView` (physical devices via QR /
+  `.mobileconfig`), `MitmproxyCertificateLoader`.
+- **`MacOSProxyOverrideManager`** — toggles the system proxy via `networksetup`.
+- **`ClientAppResolver`** — maps a loopback connection (client IP/port + proxy port) back to the
+  macOS app that originated it, so flows can be attributed to an app.
+- **Collections** — record a session, export to **HAR** (`HARModels`/`HARCollectionConverter`),
+  persist locally or sync/publish via Git (`GitCollections*`). Enabling a collection enters
+  **Replay** mode (recorded responses are served as mocks).
+
+## Conventions
+
+`FRTMProxy/AGENTS.md` is the authoritative Swift/SwiftUI style guide for this repo — read it before
+writing code. Highlights: target **macOS 26.0+ / Swift 6.2** with strict concurrency; prefer
+`@Observable` + `@MainActor` for new shared state; no third-party frameworks without asking; avoid
+UIKit; modern Foundation/SwiftUI APIs only (`foregroundStyle`, `clipShape(.rect(...))`, `Tab` API,
+`Task.sleep(for:)`, no `DispatchQueue.main.async`); one type per file; run SwiftLint clean before
+committing.
