@@ -45,6 +45,10 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     private var warmupProcess: Process?
     private var prewarmTask: Task<Void, Never>?
     private var cachedMitmdumpURL: URL?
+    /// Serializza le scritture su stdin del bridge fuori dal MainActor: una
+    /// pipe piena bloccherebbe la UI, e la write può fallire (EPIPE) se il
+    /// processo è morto — qui viene gestita senza bloccare né crashare.
+    private let commandWriteQueue = DispatchQueue(label: "com.frtmproxy.command-write", qos: .userInitiated)
     
     nonisolated(unsafe) var onLog: ((String) -> Void)?
     
@@ -70,13 +74,14 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         if let observer = workspaceTerminationObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(observer)
         }
-        Task { @MainActor [weak self]  in
-            self?.stopProxy()
-            self?.prewarmTask?.cancel()
-            self?.prewarmTask = nil
-            self?.warmupProcess?.terminate()
-            self?.warmupProcess = nil
-        }
+        // Cleanup sincrono. Un `Task { @MainActor [weak self] }` schedulato qui
+        // girerebbe dopo che l'istanza è già deallocata (`self == nil`), quindi
+        // i processi figli non verrebbero MAI terminati e mitmdump resterebbe
+        // orfano. In deinit l'istanza non è più condivisa: l'accesso diretto
+        // alle proprietà è sicuro e la terminazione è immediata.
+        prewarmTask?.cancel()
+        process?.terminate()
+        warmupProcess?.terminate()
     }
     
     func startProxy(port: Int? = nil, restrictToHosts: Bool = false, hosts: [String] = []) async throws {
@@ -147,7 +152,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
                 let pipe = Pipe()
                 let errorPipe = Pipe()
                 let inputPipe = Pipe()
-                var stdoutBuffer = Data()
+                let stdoutLineBuffer = LineBuffer(onLine: onLine)
 
                 process.standardOutput = pipe
                 process.standardError = errorPipe
@@ -159,14 +164,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
                         handle.readabilityHandler = nil
                         return
                     }
-                    stdoutBuffer.append(chunk)
-                    while let range = stdoutBuffer.firstRange(of: Data([0x0A])) {
-                        let lineData = stdoutBuffer.subdata(in: stdoutBuffer.startIndex..<range.lowerBound)
-                        stdoutBuffer.removeSubrange(stdoutBuffer.startIndex...range.lowerBound)
-                        if let text = String(data: lineData, encoding: .utf8), !text.isEmpty {
-                            onLine(text)
-                        }
-                    }
+                    stdoutLineBuffer.append(chunk)
                 }
 
                 errorPipe.fileHandleForReading.readabilityHandler = { handle in
@@ -332,7 +330,11 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
 
     private static func hostAllowRegex(for host: String) -> String {
         // Matches the host itself and any subdomain of it.
-        "(^|\\\\.)" + NSRegularExpression.escapedPattern(for: host) + "$"
+        // NB: the leading group must reach mitmproxy as the regex `(^|\.)` —
+        // i.e. start-of-string OR a literal dot. In a Swift literal that is
+        // "(^|\\.)"; the previous "(^|\\\\.)" produced `(^|\\.)` (backslash +
+        // any char), so the subdomain branch never matched a real dot.
+        "(^|\\.)" + NSRegularExpression.escapedPattern(for: host) + "$"
     }
     
     private nonisolated func handleIncomingLine(_ line: String) {
@@ -406,7 +408,13 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     }
 
     private func trimOldFlows() {
-        let ordered = flows.values.sorted { ($0.timestamp ?? 0) > ($1.timestamp ?? 0) }
+        // Ordina per attività più recente: il merge aggiorna request/response
+        // timestamp ma non `timestamp` (che resta quello della prima comparsa),
+        // quindi usarlo qui poterebbe flussi con attività recente.
+        func lastActivity(_ flow: MitmFlow) -> TimeInterval {
+            flow.responseTimestamp ?? flow.requestTimestamp ?? flow.timestamp ?? 0
+        }
+        let ordered = flows.values.sorted { lastActivity($0) > lastActivity($1) }
         let trimmed = ordered.prefix(maxFlowsStored)
         var newDict: [String: MitmFlow] = [:]
         trimmed.forEach { newDict[$0.id] = $0 }
@@ -454,16 +462,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             "status": status ?? NSNull(),
             "headers": headers ?? NSNull()
         ]
-        
-        guard let data = try? JSONSerialization.data(withJSONObject: payload),
-              let handle = commandHandle else {
-            onLog?("[PROXY CMD] unable to send command: invalid handle or JSON\n")
-            return
-        }
-
-        handle.write(data)
-        handle.write(Data([0x0A])) // newline terminator
-        onLog?("[MAP LOCAL] command sent for flow \(flowID) (\(body.count) bytes)\n")
+        sendCommand(payload, successLog: "[MAP LOCAL] command sent for flow \(flowID) (\(body.count) bytes)\n")
     }
     
     func mockResponse(for flowID: String, body: String) {
@@ -542,14 +541,22 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     }
 
     private func sendCommand(_ payload: [String: Any], successLog: String) {
-        guard let data = try? JSONSerialization.data(withJSONObject: payload),
+        guard var data = try? JSONSerialization.data(withJSONObject: payload),
               let handle = commandHandle else {
             onLog?("[PROXY CMD] unable to send command: invalid handle or JSON\n")
             return
         }
 
-        handle.write(data)
-        handle.write(Data([0x0A]))
+        data.append(0x0A) // newline terminator
+        commandWriteQueue.async { [weak self] in
+            do {
+                try handle.write(contentsOf: data)
+            } catch {
+                DispatchQueue.main.async {
+                    self?.onLog?("[PROXY CMD] write failed: \(error.localizedDescription)\n")
+                }
+            }
+        }
         onLog?(successLog)
     }
 
