@@ -11,7 +11,10 @@ extension ProxyViewModel {
         collectionRecorder.start(name: trimmed)
         recordingCollectionName = trimmed
         recordingRulesPreview = []
-        recordedFlowIDs = Set(flows.map { $0.id })
+        // Solo i flussi GIÀ completi vanno marcati come "preesistenti": un flusso
+        // ancora in volo (senza response) deve poter essere catturato quando la
+        // sua response arriva dopo l'avvio del recording.
+        recordedFlowIDs = Set(flows.filter { $0.response != nil }.map { $0.id })
     }
 
     func stopCollectionRecording(save: Bool) {

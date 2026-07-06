@@ -147,7 +147,14 @@ enum HARCollectionConverter {
         guard (content.encoding ?? "").lowercased() == "base64" else { return text }
 
         guard let data = Data(base64Encoded: text) else { return text }
-        return String(data: data, encoding: .utf8) ?? text
+        if let utf8 = String(data: data, encoding: .utf8) {
+            return utf8
+        }
+        // Contenuto binario (immagini, gzip, protobuf…): conservalo come data URL
+        // — coerente con come il bridge rappresenta i body binari — invece di
+        // restituire il base64 grezzo o una stringa vuota.
+        let mime = content.mimeType ?? "application/octet-stream"
+        return "data:\(mime);base64,\(text)"
     }
 
     private static func encodeHARDate(_ date: Date, to encoder: Encoder) throws {
