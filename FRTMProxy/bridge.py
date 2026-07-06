@@ -6,10 +6,24 @@ import time
 import uuid
 import base64
 import random
+import asyncio
 import hashlib
 import fnmatch
 from urllib.parse import urlsplit, parse_qsl
 from mitmproxy import http, ctx
+
+# Event loop di mitmproxy, catturato in running(). Lo stdin_reader (thread
+# separato) lo usa per eseguire i comandi SUL loop, evitando data race con gli
+# hook request/response che mutano gli stessi dizionari globali.
+MAIN_LOOP = None
+
+# Limite oltre il quale i dizionari FLOW_BY_* vengono potati (evita crescita
+# illimitata lato bridge; lato Swift il cap è 500 flussi).
+MAX_TRACKED_FLOWS = 1000
+
+# Cap sulla dimensione del body serializzato verso l'app: un download di decine
+# di MB diventerebbe una singola riga JSON enorme (memoria + parsing O(n)).
+MAX_SERIALIZED_BODY_BYTES = 2 * 1024 * 1024
 
 # Map Local rules: key = "<host><path>", value = dict with body/headers/status
 MAP_LOCAL_RULES = {}
@@ -178,9 +192,14 @@ def serialize_message_body(message) -> str:
 
     if _is_image_content_type(mime):
         data = message.content or b""
+        if len(data) > MAX_SERIALIZED_BODY_BYTES:
+            return f"[FRTMProxy] image too large ({len(data)} bytes), preview omitted"
         return _as_data_url(mime, data)
 
-    return message.get_text()
+    text = message.get_text()
+    if text is not None and len(text) > MAX_SERIALIZED_BODY_BYTES:
+        return text[:MAX_SERIALIZED_BODY_BYTES] + f"\n[FRTMProxy] …truncated ({len(text)} chars total)"
+    return text
 
 def traffic_profile_enabled() -> bool:
     return (ACTIVE_TRAFFIC_PROFILE or {}).get("id") != TRAFFIC_PROFILE_DEFAULT["id"]
@@ -204,7 +223,7 @@ def update_traffic_profile(profile_payload):
     ctx.log.info(f"[TRAFFIC] active profile: {merged.get('name')}")
     debug_log(f"traffic profile updated: {merged}")
 
-def apply_profile_latency(direction: str):
+async def apply_profile_latency(direction: str):
     if not traffic_profile_enabled():
         return
     base = ACTIVE_TRAFFIC_PROFILE.get("latency_ms", 0)
@@ -215,11 +234,11 @@ def apply_profile_latency(direction: str):
     if total <= 0:
         return
     delay = max(total / 1000.0, 0)
-    time.sleep(delay)
+    await asyncio.sleep(delay)
     if DEBUG_VERBOSE:
         debug_log(f"[TRAFFIC] {direction} latency {int(delay * 1000)}ms")
 
-def apply_profile_bandwidth(byte_count: int, kbps_limit: int, direction: str):
+async def apply_profile_bandwidth(byte_count: int, kbps_limit: int, direction: str):
     if not traffic_profile_enabled():
         return
     if not byte_count or byte_count <= 0:
@@ -230,18 +249,18 @@ def apply_profile_bandwidth(byte_count: int, kbps_limit: int, direction: str):
     delay = byte_count / bytes_per_second
     if delay <= 0:
         return
-    time.sleep(delay)
+    await asyncio.sleep(delay)
     if DEBUG_VERBOSE:
         debug_log(f"[TRAFFIC] {direction} throttled {byte_count}B in {int(delay * 1000)}ms")
 
-def apply_profile_response_delay():
+async def apply_profile_response_delay():
     if not traffic_profile_enabled():
         return
     delay_ms = ACTIVE_TRAFFIC_PROFILE.get("response_delay_ms", 0)
     if not delay_ms or delay_ms <= 0:
         return
     delay = max(delay_ms / 1000.0, 0)
-    time.sleep(delay)
+    await asyncio.sleep(delay)
     if DEBUG_VERBOSE:
         debug_log(f"[TRAFFIC] response delay {int(delay * 1000)}ms")
 
@@ -270,18 +289,18 @@ def tag_response_with_profile(flow: http.HTTPFlow):
     except Exception:
         pass
 
-def apply_profile_to_request(flow: http.HTTPFlow):
+async def apply_profile_to_request(flow: http.HTTPFlow):
     if not traffic_profile_enabled():
         return
-    apply_profile_latency("uplink")
+    await apply_profile_latency("uplink")
     body = flow.request.raw_content or b""
-    apply_profile_bandwidth(len(body), ACTIVE_TRAFFIC_PROFILE.get("upstream_kbps", 0), "uplink")
+    await apply_profile_bandwidth(len(body), ACTIVE_TRAFFIC_PROFILE.get("upstream_kbps", 0), "uplink")
 
-def apply_profile_to_response(flow: http.HTTPFlow):
+async def apply_profile_to_response(flow: http.HTTPFlow):
     if not traffic_profile_enabled():
         return
-    apply_profile_latency("downlink")
-    apply_profile_response_delay()
+    await apply_profile_latency("downlink")
+    await apply_profile_response_delay()
     packet_loss = maybe_inject_packet_loss(flow)
     tag_response_with_profile(flow)
     if packet_loss:
@@ -292,7 +311,7 @@ def apply_profile_to_response(flow: http.HTTPFlow):
             body = flow.response.get_content() or b""
     except Exception:
         body = flow.response.raw_content if flow.response else b""
-    apply_profile_bandwidth(len(body or b""), ACTIVE_TRAFFIC_PROFILE.get("downstream_kbps", 0), "downlink")
+    await apply_profile_bandwidth(len(body or b""), ACTIVE_TRAFFIC_PROFILE.get("downstream_kbps", 0), "downlink")
 
 def try_decode_data_url(payload: str):
     if not isinstance(payload, str):
@@ -369,7 +388,11 @@ def apply_request_updates(flow: http.HTTPFlow, payload):
     if method:
         flow.request.method = method.upper()
     if url:
-        flow.request.url = url
+        try:
+            flow.request.url = url
+        except Exception as exc:
+            ctx.log.error(f"[BREAKPOINT] invalid url '{url}': {exc}")
+            debug_log(f"invalid url in request update, keeping original: {exc}")
     flow.request.set_text(body or "")
 
     flow.request.headers.clear()
@@ -396,14 +419,34 @@ def load(loader):
     import threading
     threading.Thread(target=stdin_reader, daemon=True).start()
 
+def running():
+    # Chiamato da mitmproxy quando il proxy è avviato, SULL'event loop:
+    # catturiamo il loop così lo stdin_reader può schedularvi i comandi.
+    global MAIN_LOOP
+    try:
+        MAIN_LOOP = asyncio.get_running_loop()
+    except RuntimeError:
+        MAIN_LOOP = None
+
 def stdin_reader():
     for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
         try:
-            message = json.loads(line.strip())
-            handle_command(message)
+            message = json.loads(line)
         except Exception as e:
             ctx.log.error(str(e))
             debug_log(f"command parse error: {e}")
+            continue
+        # Esegui il comando SULL'event loop di mitmproxy: muta gli stessi
+        # dizionari degli hook e chiama flow.intercept()/resume(), che NON sono
+        # thread-safe se invocati da questo thread separato.
+        loop = MAIN_LOOP
+        if loop is not None:
+            loop.call_soon_threadsafe(handle_command, message)
+        else:
+            handle_command(message)  # fallback pre-running (raro)
 
 def handle_command(cmd):
     t = cmd.get("type")
@@ -505,35 +548,43 @@ def handle_command(cmd):
             debug_log(f"flow not found for id={flow_id}")
             return
         phase = cmd.get("phase")
-        if phase == "request":
-            old_key = flow_key(flow)
-            old_map_key = map_local_key(flow)
-            apply_request_updates(flow, cmd.get("request"))
-            new_key = flow_key(flow)
-            new_map_key = map_local_key(flow)
-            if old_key != new_key:
-                FLOW_BY_KEY.pop(old_key, None)
-            if old_map_key != new_map_key:
-                FLOW_BY_MAP_LOCAL_KEY.pop(old_map_key, None)
-            FLOW_BY_ID[flow.id] = flow
-            FLOW_BY_KEY[new_key] = flow
-            FLOW_BY_MAP_LOCAL_KEY[new_map_key] = flow
-            send_flow_event(flow, "request", breakpoint_snapshot(flow, "request", "released"))
-            flow.resume()
-            ctx.log.info(f"[BREAKPOINT] request resumed for {flow.request.pretty_url}")
-            debug_log(f"breakpoint request released for {flow_id}")
-        elif phase == "response":
-            apply_response_updates(flow, cmd.get("response"))
-            FLOW_BY_ID[flow.id] = flow
-            FLOW_BY_KEY[flow_key(flow)] = flow
-            FLOW_BY_MAP_LOCAL_KEY[map_local_key(flow)] = flow
-            send_flow_event(flow, "response", breakpoint_snapshot(flow, "response", "released"))
-            flow.resume()
-            ctx.log.info(f"[BREAKPOINT] response released for {flow.request.pretty_url}")
-            debug_log(f"breakpoint response released for {flow_id}")
-        else:
-            debug_log(f"unknown breakpoint phase: {phase}")
-            flow.resume()
+        # resume() è garantito dal finally: qualunque errore nell'applicare gli
+        # update non deve lasciare il client appeso per sempre sul breakpoint.
+        try:
+            if phase == "request":
+                old_key = flow_key(flow)
+                old_map_key = map_local_key(flow)
+                apply_request_updates(flow, cmd.get("request"))
+                new_key = flow_key(flow)
+                new_map_key = map_local_key(flow)
+                if old_key != new_key:
+                    FLOW_BY_KEY.pop(old_key, None)
+                if old_map_key != new_map_key:
+                    FLOW_BY_MAP_LOCAL_KEY.pop(old_map_key, None)
+                FLOW_BY_ID[flow.id] = flow
+                FLOW_BY_KEY[new_key] = flow
+                FLOW_BY_MAP_LOCAL_KEY[new_map_key] = flow
+                send_flow_event(flow, "request", breakpoint_snapshot(flow, "request", "released"))
+                ctx.log.info(f"[BREAKPOINT] request resumed for {flow.request.pretty_url}")
+                debug_log(f"breakpoint request released for {flow_id}")
+            elif phase == "response":
+                apply_response_updates(flow, cmd.get("response"))
+                FLOW_BY_ID[flow.id] = flow
+                FLOW_BY_KEY[flow_key(flow)] = flow
+                FLOW_BY_MAP_LOCAL_KEY[map_local_key(flow)] = flow
+                send_flow_event(flow, "response", breakpoint_snapshot(flow, "response", "released"))
+                ctx.log.info(f"[BREAKPOINT] response released for {flow.request.pretty_url}")
+                debug_log(f"breakpoint response released for {flow_id}")
+            else:
+                debug_log(f"unknown breakpoint phase: {phase}")
+        except Exception as exc:
+            ctx.log.error(f"[BREAKPOINT] error releasing {flow_id}: {exc}")
+            debug_log(f"breakpoint release error: {exc}")
+        finally:
+            try:
+                flow.resume()
+            except Exception:
+                pass
         return
 
     if t == "retry_flow":
@@ -591,7 +642,25 @@ def apply_map_local_response(flow: http.HTTPFlow, rule: dict):
     debug_log(f"mock response sent to {flow_key(flow)} (status {status})")
 
 
-def request(flow: http.HTTPFlow):
+def prune_flow_maps():
+    """Pota i dizionari FLOW_BY_* per evitarne la crescita illimitata.
+    Rimuove i flussi più vecchi (FLOW_BY_ID conserva l'ordine d'inserimento)."""
+    if len(FLOW_BY_ID) <= MAX_TRACKED_FLOWS:
+        return
+    overflow = len(FLOW_BY_ID) - MAX_TRACKED_FLOWS
+    for old_id in list(FLOW_BY_ID.keys())[:overflow]:
+        old_flow = FLOW_BY_ID.pop(old_id, None)
+        if old_flow is None:
+            continue
+        key = flow_key(old_flow)
+        if FLOW_BY_KEY.get(key) is old_flow:
+            FLOW_BY_KEY.pop(key, None)
+        map_key = map_local_key(old_flow)
+        if FLOW_BY_MAP_LOCAL_KEY.get(map_key) is old_flow:
+            FLOW_BY_MAP_LOCAL_KEY.pop(map_key, None)
+
+
+async def request(flow: http.HTTPFlow):
     if is_loopback_host(flow.request.host):
         return
 
@@ -599,12 +668,13 @@ def request(flow: http.HTTPFlow):
     FLOW_BY_ID[flow.id] = flow
     FLOW_BY_KEY[flow_key(flow)] = flow
     FLOW_BY_MAP_LOCAL_KEY[map_local_key(flow)] = flow
+    prune_flow_maps()
 
     waiting_request = should_break(flow, "request")
     if waiting_request:
         flow.intercept()
 
-    apply_profile_to_request(flow)
+    await apply_profile_to_request(flow)
 
     # Apply Map Local before sending the request to the server.
     base = flow_key(flow)
@@ -655,7 +725,7 @@ def request(flow: http.HTTPFlow):
     bp_meta = breakpoint_snapshot(flow, "request", "waiting") if waiting_request else None
     send_flow_event(flow, "request", bp_meta)
 
-def response(flow: http.HTTPFlow):
+async def response(flow: http.HTTPFlow):
     if is_loopback_host(flow.request.host):
         return
 
@@ -664,7 +734,7 @@ def response(flow: http.HTTPFlow):
     FLOW_BY_KEY[flow_key(flow)] = flow
     FLOW_BY_MAP_LOCAL_KEY[map_local_key(flow)] = flow
 
-    apply_profile_to_response(flow)
+    await apply_profile_to_response(flow)
 
     waiting_response = should_break(flow, "response")
     if waiting_response:
