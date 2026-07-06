@@ -43,20 +43,17 @@ final class MapCollectionStore: MapCollectionStoreProtocol {
     }
 
     func loadCollections() -> [MapCollection] {
-        guard FileManager.default.fileExists(atPath: storageURL.path) else { return [] }
-        do {
-            let data = try Data(contentsOf: storageURL)
-            return try decoder.decode([MapCollection].self, from: data)
-        } catch {
-            NSLog("Failed to load collections: \(error)")
+        switch CodableFileStore.load([MapCollection].self, from: storageURL, decoder: decoder) {
+        case .loaded(let collections):
+            return collections
+        case .missing, .corrupted:
             return []
         }
     }
 
     func save(collections: [MapCollection]) {
         do {
-            let data = try encoder.encode(collections)
-            try data.write(to: storageURL, options: .atomic)
+            try CodableFileStore.save(collections, to: storageURL, encoder: encoder)
         } catch {
             NSLog("Failed to save collections: \(error)")
         }
@@ -108,20 +105,17 @@ final class MapCollectionStore: MapCollectionStoreProtocol {
     }
 
     func loadGitSources() -> [GitCollectionSource] {
-        guard FileManager.default.fileExists(atPath: gitSourcesURL.path) else { return [] }
-        do {
-            let data = try Data(contentsOf: gitSourcesURL)
-            return try decoder.decode([GitCollectionSource].self, from: data)
-        } catch {
-            NSLog("Failed to load git sources: \(error)")
+        switch CodableFileStore.load([GitCollectionSource].self, from: gitSourcesURL, decoder: decoder) {
+        case .loaded(let sources):
+            return sources
+        case .missing, .corrupted:
             return []
         }
     }
 
     func saveGitSources(_ sources: [GitCollectionSource]) {
         do {
-            let data = try encoder.encode(sources)
-            try data.write(to: gitSourcesURL, options: .atomic)
+            try CodableFileStore.save(sources, to: gitSourcesURL, encoder: encoder)
         } catch {
             NSLog("Failed to save git sources: \(error)")
         }

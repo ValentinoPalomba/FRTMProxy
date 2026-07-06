@@ -18,20 +18,17 @@ final class MapRuleStore: MapRuleStoreProtocol {
     }
 
     func loadRules() -> [MapRule] {
-        guard FileManager.default.fileExists(atPath: fileURL.path) else { return [] }
-        do {
-            let data = try Data(contentsOf: fileURL)
-            return try decoder.decode([MapRule].self, from: data)
-        } catch {
-            NSLog("Failed to load rules: \(error)")
+        switch CodableFileStore.load([MapRule].self, from: fileURL, decoder: decoder) {
+        case .loaded(let rules):
+            return rules
+        case .missing, .corrupted:
             return []
         }
     }
 
     func save(rules: [MapRule]) {
         do {
-            let data = try encoder.encode(rules)
-            try data.write(to: fileURL, options: .atomic)
+            try CodableFileStore.save(rules, to: fileURL, encoder: encoder)
         } catch {
             NSLog("Failed to save rules: \(error)")
         }

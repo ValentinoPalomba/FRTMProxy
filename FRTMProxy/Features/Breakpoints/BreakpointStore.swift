@@ -18,20 +18,17 @@ final class FlowBreakpointStore: BreakpointStoreProtocol {
     }
 
     func loadBreakpoints() -> [FlowBreakpointRule] {
-        guard FileManager.default.fileExists(atPath: fileURL.path) else { return [] }
-        do {
-            let data = try Data(contentsOf: fileURL)
-            return try decoder.decode([FlowBreakpointRule].self, from: data)
-        } catch {
-            NSLog("Failed to load breakpoints: \(error)")
+        switch CodableFileStore.load([FlowBreakpointRule].self, from: fileURL, decoder: decoder) {
+        case .loaded(let breakpoints):
+            return breakpoints
+        case .missing, .corrupted:
             return []
         }
     }
 
     func save(breakpoints: [FlowBreakpointRule]) {
         do {
-            let data = try encoder.encode(breakpoints)
-            try data.write(to: fileURL, options: .atomic)
+            try CodableFileStore.save(breakpoints, to: fileURL, encoder: encoder)
         } catch {
             NSLog("Failed to save breakpoints: \(error)")
         }
