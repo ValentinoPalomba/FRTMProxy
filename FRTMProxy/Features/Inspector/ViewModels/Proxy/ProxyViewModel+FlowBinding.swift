@@ -26,6 +26,11 @@ extension ProxyViewModel {
                     self.processedScriptFlowIDs.insert(flow.id)
                     self.processScripts(for: flow)
                 }
+                // Evita la crescita illimitata del set (resettato solo in clear()):
+                // oltre soglia conserva solo gli id dei flussi ancora presenti.
+                if self.processedScriptFlowIDs.count > 2000 {
+                    self.processedScriptFlowIDs.formIntersection(Set(enriched.map(\.id)))
+                }
             }
             .store(in: &cancellables)
 
