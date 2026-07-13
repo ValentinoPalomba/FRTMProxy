@@ -1,1 +1,8 @@
 .DS_Store
+
+# Build output locale (make build/run/test con -derivedDataPath)
+.build/
+DerivedData/
+
+# Stato UI per-utente di Xcode (non va condiviso)
+**/xcuserdata/

@@ -1,0 +1,120 @@
+name: FRTMProxy
+
+options:
+  bundleIdPrefix: com.valentinopalomba
+  deploymentTarget:
+    macOS: "14.1"
+  createIntermediateGroups: true
+  groupSortPosition: top
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    ENABLE_HARDENED_RUNTIME: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
+    SWIFT_VERSION: "5.0"
+  configs:
+    Debug:
+      ENABLE_TESTABILITY: YES
+
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    majorVersion: 2.8.1
+  CodeMirror:
+    url: https://github.com/ValentinoPalomba/CodeMirror-Swift
+    branch: master
+
+targets:
+  FRTMProxy:
+    type: application
+    platform: macOS
+    sources:
+      - path: FRTMProxy
+        excludes:
+          - "AGENTS.md"
+          - "FRTMProxy.entitlements"
+          - "Resources/mitmdump"
+      - path: FRTMProxy/Resources/mitmdump
+        buildPhase: resources
+    dependencies:
+      - package: Sparkle
+        product: Sparkle
+      - package: CodeMirror
+        product: CodeMirror
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.valentinopalomba.frtmproxy
+        PRODUCT_NAME: "$(TARGET_NAME)"
+        MARKETING_VERSION: "1.6.1"
+        CURRENT_PROJECT_VERSION: "1.6.1"
+        DEVELOPMENT_TEAM: 8JS222QZL3
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "Apple Development"
+        CODE_SIGN_ENTITLEMENTS: FRTMProxy/FRTMProxy.entitlements
+        INFOPLIST_FILE: Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        ENABLE_PREVIEWS: YES
+        DEVELOPMENT_ASSET_PATHS: '"FRTMProxy/Preview Content"'
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        COMBINE_HIDPI_IMAGES: YES
+        PROVISIONING_PROFILE_SPECIFIER: ""
+        SPARKLE_FEED_URL: "https://example.com/appcast.xml"
+        SPARKLE_PUBLIC_ED_KEY: ""
+        SWIFT_EMIT_LOC_STRINGS: YES
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "@executable_path/../Frameworks"
+
+  FRTMProxyTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - FRTMProxyTests
+    dependencies:
+      - target: FRTMProxy
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.valentinopalomba.frtmproxy.tests
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/FRTMProxy.app/Contents/MacOS/FRTMProxy"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        SWIFT_VERSION: "5.0"
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 8JS222QZL3
+        MACOSX_DEPLOYMENT_TARGET: "14.1"
+
+schemes:
+  FRTMProxy:
+    build:
+      targets:
+        FRTMProxy: all
+        FRTMProxyTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - FRTMProxyTests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+  FRTMProxy_Release:
+    build:
+      targets:
+        FRTMProxy: all
+    run:
+      config: Release
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
