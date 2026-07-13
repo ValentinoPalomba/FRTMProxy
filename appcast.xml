@@ -3,13 +3,26 @@
     <channel>
         <title>FRTMProxy</title>
         <item>
+            <title>1.7.0</title>
+            <pubDate>Mon, 13 Jul 2026 15:00:23 +0200</pubDate>
+            <link>https://github.com/ValentinoPalomba/FRTMProxy/releases</link>
+            <sparkle:version>1.7.0</sparkle:version>
+            <sparkle:shortVersionString>1.7.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.1</sparkle:minimumSystemVersion>
+            <enclosure url="https://valentinopalomba.github.io/FRTMProxy/FRTMProxy-1.7.0.zip" length="42625348" type="application/octet-stream" sparkle:edSignature="HsP28Lyo8etjYkBmGJB+O7WZlIYfoxngg71BiMsVyJHfm6CQpfNTwEeljaJ/X6wkemTwuqzPXO2gwzQodmjKCw=="/>
+            <sparkle:deltas>
+                <enclosure url="https://valentinopalomba.github.io/FRTMProxy/FRTMProxy1.7.0-1.6.0.delta" sparkle:deltaFrom="1.6.0" length="1682594" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="860528" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="H5FeRG2PkIWmJQhxp5BRhinjofAllGSNy9rAw2+8jeyPb3s/LTAMdNMF95BJlnxpcK80O93CU7iHegtrzlN4AQ=="/>
+                <enclosure url="https://valentinopalomba.github.io/FRTMProxy/FRTMProxy1.7.0-1.5.1.delta" sparkle:deltaFrom="1.5.1" length="1682482" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="860528" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="y4Ld6Qk/xqG+Aw1XGt7pa+0cL+YBNewL6oyn4wAEZyK0paqh5LMogD6UZFecO4KYZdO/ouEScAKyWlukVvLfCw=="/>
+            </sparkle:deltas>
+        </item>
+        <item>
             <title>1.6.0</title>
             <pubDate>Tue, 03 Mar 2026 09:29:50 +0100</pubDate>
             <link>https://github.com/ValentinoPalomba/FRTMProxy/releases</link>
             <sparkle:version>1.6.0</sparkle:version>
             <sparkle:shortVersionString>1.6.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.1</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/ValentinoPalomba/FRTMProxy/releases/download/v.1.6.0/FRTMProxy-1.6.0.zip" length="42448426" type="application/octet-stream" sparkle:edSignature="G//WdQKL8mAg2nzT1e1BZYyT6HpQKcjwwSaA+uIaFVnjATdfqSIA2pwg/N8EvhmJle9Dfz8bvT7ehiS9lbpgAQ=="/>
+            <enclosure url="https://valentinopalomba.github.io/FRTMProxy/FRTMProxy-1.6.0.zip" length="42041642" type="application/octet-stream" sparkle:edSignature="LuKM3En3nyA6Cpb1Oe2RmqcT3FqeFKPovvkBJXLKpt6LhvXSNuQdf5J9ieVWWyCYLaS5XbdaKhK4Ykim+qqNBw=="/>
             <sparkle:deltas>
                 <enclosure url="https://github.com/ValentinoPalomba/FRTMProxy/releases/download/v.1.6.0/FRTMProxy1.6.0-1.5.1.delta" sparkle:deltaFrom="1.5.1" length="2506" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="860528" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="HwbKEcgnUvVqBs3ympMsMTC2hGh/gB35hpGwfVH7LwboFuARTD2gsPxGFzVVNjLZJBfaI8qhpGR6s0TptQ0LDA=="/>
             </sparkle:deltas>
@@ -21,7 +34,7 @@
             <sparkle:version>1.5.1</sparkle:version>
             <sparkle:shortVersionString>1.5.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.1</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/ValentinoPalomba/FRTMProxy/releases/download/v.1.6.0/FRTMProxy-1.5.1.zip" length="42041645" type="application/octet-stream" sparkle:edSignature="1dMpEHPNUxojWhhe3cBIJDEBc4cEUtdXtb9KxtnK3OmN0eo/tEuRuMreur5iEu140M0LjQwbjnJ3zo/03nY8BA=="/>
+            <enclosure url="https://valentinopalomba.github.io/FRTMProxy/FRTMProxy-1.5.1.zip" length="42041645" type="application/octet-stream" sparkle:edSignature="1dMpEHPNUxojWhhe3cBIJDEBc4cEUtdXtb9KxtnK3OmN0eo/tEuRuMreur5iEu140M0LjQwbjnJ3zo/03nY8BA=="/>
         </item>
     </channel>
 </rss>
