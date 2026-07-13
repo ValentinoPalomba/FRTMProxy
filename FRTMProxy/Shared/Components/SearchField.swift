@@ -24,7 +24,8 @@ struct SearchField: View {
                         .foregroundStyle(colors.textSecondary)
                 }
                 .buttonStyle(.plain)
-                .padding(.trailing, DesignSystem.Metrics.scaled(12))
+                .accessibilityLabel("Clear search")
+                .padding(.trailing, DesignSystem.Spacing.md)
             }
         }
         .frame(height: DesignSystem.Metrics.scaled(34))

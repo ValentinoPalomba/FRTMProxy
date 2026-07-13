@@ -7,11 +7,14 @@ struct SimulatorCertificateInstaller {
     }
 
     enum InstallerError: LocalizedError {
+        case noBootedSimulators
         case simctlFailed(String)
         case commandFailed(String)
 
         var errorDescription: String? {
             switch self {
+            case .noBootedSimulators:
+                return "No booted simulator found. Open a simulator (Xcode → Open Developer Tool → Simulator), boot a device, then try again."
             case .simctlFailed(let reason):
                 return """
                 simctl returned an error: \(reason.isEmpty ? "launch at least one simulator before continuing" : reason)
@@ -25,7 +28,7 @@ struct SimulatorCertificateInstaller {
     func installCertificateOnBootedSimulators() throws -> String {
         let booted = try bootedSimulators()
         guard !booted.isEmpty else {
-            throw InstallerError.simctlFailed("no booted simulators")
+            throw InstallerError.noBootedSimulators
         }
 
         let certificateDER = try MitmproxyCertificateLoader().loadRootCADER()

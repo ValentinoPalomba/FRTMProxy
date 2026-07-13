@@ -14,7 +14,7 @@ struct FlowHeaderView: View {
     var body: some View {
         HStack {
             Spacer(minLength: 0)
-            HStack(spacing: DesignSystem.Metrics.scaled(6)) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 if let onMapLocal {
                     ControlButton(title: "Map Local", systemImage: "app.badge", style: .ghost(colors)) { onMapLocal() }
                         .onboardingTarget(.mapResponse)
@@ -29,12 +29,12 @@ struct FlowHeaderView: View {
                     )
                 }
             }
-            .padding(DesignSystem.Metrics.scaled(6))
+            .padding(DesignSystem.Spacing.sm)
             .background(
-                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(12), style: .continuous)
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                     .fill(colors.surfaceElevated)
                     .overlay(
-                        RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(12))
+                        RoundedRectangle(cornerRadius: DesignSystem.Radius.lg)
                             .stroke(colors.border.opacity(0.7), lineWidth: 1)
                     )
             )
@@ -59,20 +59,20 @@ private struct BreakpointSelectorButton: View {
         } label: {
             Label("Breakpoint", systemImage: hasBreakpointEnabled ? "record.circle.fill" : "record.circle")
                 .font(DesignSystem.Fonts.mono(13, weight: .semibold))
-                .padding(.horizontal, DesignSystem.Metrics.scaled(14))
-                .padding(.vertical, DesignSystem.Metrics.scaled(9))
+                .padding(.horizontal, DesignSystem.Spacing.md)
+                .padding(.vertical, DesignSystem.Spacing.sm)
                 .frame(minHeight: DesignSystem.Metrics.scaled(34))
                 .background(hasBreakpointEnabled ? colors.accent.opacity(0.9) : colors.surface)
                 .foregroundStyle(hasBreakpointEnabled ? Color.black.opacity(0.9) : colors.textPrimary)
                 .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                         .stroke(hasBreakpointEnabled ? colors.accent : colors.border, lineWidth: 1)
                 )
-                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10)))
+                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.md))
         }
         .buttonStyle(.plain)
         .popover(isPresented: $isPresented, arrowEdge: .bottom) {
-            VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(14)) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                 Text("Pause")
                     .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                     .foregroundStyle(colors.textSecondary)
@@ -93,10 +93,10 @@ private struct BreakpointSelectorButton: View {
                     onToggle(.response, !isResponseEnabled)
                 }
             }
-            .padding(DesignSystem.Metrics.scaled(16))
+            .padding(DesignSystem.Spacing.lg)
             .frame(width: DesignSystem.Metrics.scaled(240))
             .background(
-                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(16), style: .continuous)
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                     .fill(colors.surface)
                     .shadow(color: Color.black.opacity(0.18), radius: 18, y: 8)
             )
@@ -113,11 +113,11 @@ private struct BreakpointToggleRow: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: DesignSystem.Metrics.scaled(12)) {
+            HStack(spacing: DesignSystem.Spacing.md) {
                 Image(systemName: isEnabled ? "checkmark.circle.fill" : "circle")
                     .foregroundStyle(isEnabled ? colors.accent : colors.border)
                     .font(.system(size: DesignSystem.Metrics.scaled(18)))
-                VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(2)) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
                     Text(title)
                         .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                         .foregroundStyle(colors.textPrimary)
@@ -127,12 +127,12 @@ private struct BreakpointToggleRow: View {
                 }
                 Spacer()
             }
-            .padding(DesignSystem.Metrics.scaled(12))
+            .padding(DesignSystem.Spacing.md)
             .background(
-                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(12))
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.lg)
                     .fill(colors.surfaceElevated)
                     .overlay(
-                        RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(12))
+                        RoundedRectangle(cornerRadius: DesignSystem.Radius.lg)
                             .stroke(isEnabled ? colors.accent : colors.border.opacity(0.8), lineWidth: 1)
                     )
             )

@@ -12,8 +12,10 @@ struct ControlButton: View {
     let style: ControlButtonStyle
     let disabled: Bool
     let action: () -> Void
-    @Environment(\.colorScheme) private var colorScheme
-    
+
+    @State private var isHovering = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     init(title: String, systemImage: String, style: ControlButtonStyle, disabled: Bool = false, action: @escaping () -> Void) {
         self.title = title
         self.systemImage = systemImage
@@ -21,72 +23,91 @@ struct ControlButton: View {
         self.disabled = disabled
         self.action = action
     }
-    
+
     var body: some View {
         Button(action: action) {
-            HStack(spacing: DesignSystem.Metrics.scaled(6)) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 Image(systemName: systemImage)
                 Text(title)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
                     .allowsTightening(true)
             }
-            .font(DesignSystem.Fonts.mono(13, weight: .semibold))
-            .padding(.horizontal, DesignSystem.Metrics.scaled(14))
-            .padding(.vertical, DesignSystem.Metrics.scaled(9))
-            .frame(minHeight: DesignSystem.Metrics.scaled(34))
-            .background(background)
+            .font(DesignSystem.Fonts.sans(13, weight: .semibold))
+            .padding(.horizontal, DesignSystem.Spacing.md)
+            .padding(.vertical, DesignSystem.Spacing.sm)
+            .frame(minHeight: DesignSystem.Metrics.scaled(32))
+            .background(backgroundView)
             .foregroundStyle(foreground)
             .overlay(
-                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
-                    .stroke(border, lineWidth: 1)
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
+                    .strokeBorder(border, lineWidth: 1)
             )
-            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10)))
-            .accessibilityLabel(Text(title))
+            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous))
         }
-        .buttonStyle(.plain)
-        .opacity(disabled ? 0.55 : 1)
-        .animation(.easeInOut(duration: 0.15), value: disabled)
-        .scaleEffect(disabled ? 1.0 : 1.0)
+        .buttonStyle(.pressable)
+        .opacity(disabled ? 0.5 : 1)
+        .onHover { hovering in
+            guard !disabled else { return }
+            withAnimation(DesignSystem.Motion.adaptive(DesignSystem.Motion.fast, reduceMotion: reduceMotion)) {
+                isHovering = hovering
+            }
+        }
         .disabled(disabled)
+        .accessibilityLabel(Text(title))
+        .accessibilityAddTraits(.isButton)
     }
-    
-    private var background: AnyShapeStyle {
+
+    private var showHover: Bool {
+        isHovering && !disabled
+    }
+
+    private var backgroundView: some View {
+        ZStack {
+            fillColor
+            (showHover ? hoverTint : Color.clear)
+        }
+    }
+
+    private var fillColor: Color {
         switch style {
         case .filled(let palette):
-            return AnyShapeStyle(
-                palette.accent.opacity(disabled ? 0.4 : 1)
-            )
+            return palette.accent.opacity(disabled ? 0.45 : 1)
         case .ghost(let palette):
-            return AnyShapeStyle(palette.surface.opacity(colorScheme == .dark ? 0.75 : 1))
+            return palette.surface
         case .destructive(let palette):
-            return AnyShapeStyle(
-                palette.destructive.opacity(disabled ? 0.35 : 1)
-            )
+            return palette.destructive.opacity(disabled ? 0.4 : 1)
         }
     }
-    
+
+    private var hoverTint: Color {
+        switch style {
+        case .ghost(let palette):
+            return palette.textPrimary.opacity(0.06)
+        case .filled, .destructive:
+            return Color.white.opacity(0.12)
+        }
+    }
+
     private var border: Color {
         switch style {
         case .filled(let palette):
-            return palette.accent.opacity(disabled ? 0.35 : 0.9)
+            return palette.accent.opacity(disabled ? 0.35 : 0.6)
         case .ghost(let palette):
-            return palette.border.opacity(0.9)
+            return palette.border
         case .destructive(let palette):
-            return palette.destructive.opacity(disabled ? 0.3 : 0.8)
+            return palette.destructive.opacity(disabled ? 0.3 : 0.6)
         }
     }
-    
+
     private var foreground: Color {
         switch style {
         case .filled:
-            // Dark mode accent (#1FD4A9 teal) is light → dark text reads well.
-            // Light mode accent (#007AFF blue) is saturated → white text is standard.
-            return colorScheme == .dark ? Color.black.opacity(0.9) : .white
+            return .white
         case .ghost(let palette):
             return palette.textPrimary
         case .destructive:
-            return Color.white
+            return .white
         }
     }
 }
@@ -96,28 +117,38 @@ struct FilterChip: View {
     @Binding var isOn: Bool
     let color: Color
     let colors: DesignSystem.ColorPalette
-    
+
+    @State private var isHovering = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         Button(action: { isOn.toggle() }) {
-            HStack(spacing: 6) {
+            HStack(spacing: DesignSystem.Spacing.xs) {
                 Circle()
-                    .fill(isOn ? color : colors.border)
-                    .frame(width: DesignSystem.Metrics.scaled(10), height: DesignSystem.Metrics.scaled(10))
+                    .fill(isOn ? color : colors.textSecondary.opacity(0.6))
+                    .frame(width: DesignSystem.Metrics.scaled(8), height: DesignSystem.Metrics.scaled(8))
                 Text(title)
-                    .font(DesignSystem.Fonts.mono(12, weight: .semibold))
+                    .font(DesignSystem.Fonts.label)
             }
-            .padding(.horizontal, DesignSystem.Metrics.scaled(10))
-            .padding(.vertical, DesignSystem.Metrics.scaled(6))
+            .padding(.horizontal, DesignSystem.Spacing.md)
+            .padding(.vertical, DesignSystem.Spacing.xs + DesignSystem.Spacing.xxs)
             .background(
-                RoundedRectangle(cornerRadius: 999)
-                    .fill(isOn ? color.opacity(0.16) : colors.surface)
+                Capsule(style: .continuous)
+                    .fill(isOn ? color.opacity(0.16) : colors.textPrimary.opacity(isHovering ? 0.06 : 0))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 999)
-                    .stroke(isOn ? color.opacity(0.9) : colors.border, lineWidth: 1)
+                Capsule(style: .continuous)
+                    .strokeBorder(isOn ? color.opacity(0.7) : colors.border, lineWidth: 1)
             )
+            .foregroundStyle(isOn ? colors.textPrimary : colors.textSecondary)
         }
-        .buttonStyle(.plain)
-        .animation(.easeInOut(duration: 0.12), value: isOn)
+        .buttonStyle(.pressable)
+        .onHover { hovering in
+            withAnimation(DesignSystem.Motion.adaptive(DesignSystem.Motion.fast, reduceMotion: reduceMotion)) {
+                isHovering = hovering
+            }
+        }
+        .animation(DesignSystem.Motion.adaptive(DesignSystem.Motion.fast, reduceMotion: reduceMotion), value: isOn)
+        .accessibilityAddTraits(isOn ? [.isButton, .isSelected] : .isButton)
     }
 }

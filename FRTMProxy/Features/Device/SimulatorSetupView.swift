@@ -68,20 +68,20 @@ struct SimulatorSetupView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
             header
             instructionList
             simulatorSection
             actionButtons
             statusSection
         }
-        .padding(18)
+        .padding(DesignSystem.Spacing.lg)
         .surfaceCard(fill: colors.surface, stroke: colors.border.opacity(0.9), shadowOpacity: 0.10)
         .onAppear { model.refresh() }
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
             Text("iOS Simulator")
                 .font(DesignSystem.Fonts.mono(16, weight: .bold))
                 .foregroundStyle(colors.textPrimary)
@@ -92,7 +92,7 @@ struct SimulatorSetupView: View {
     }
 
     private var instructionList: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             instructionRow(1, "Launch at least one simulator from Xcode so it appears as booted.")
             instructionRow(2, "Press “Install certificate” to push the mitmproxy CA into every booted simulator.")
             instructionRow(3, "Restart the target app inside the simulator to pick up the new certificate.")
@@ -100,7 +100,7 @@ struct SimulatorSetupView: View {
     }
 
     private var simulatorSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             Text("Simulators")
                 .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)
@@ -108,7 +108,7 @@ struct SimulatorSetupView: View {
             if model.bootedSimulators.isEmpty {
                 callout("No booted simulators detected. Open Simulator/Xcode and tap “Refresh booted”.", icon: "exclamationmark.circle", tint: colors.warning)
             } else {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                     ForEach(model.bootedSimulators, id: \.udid) { simulator in
                         simulatorBadge(simulator)
                     }
@@ -118,8 +118,8 @@ struct SimulatorSetupView: View {
     }
 
     private var actionButtons: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 ControlButton(
                     title: model.isRefreshing ? "Refreshing…" : "Refresh booted",
                     systemImage: "arrow.clockwise",
@@ -142,7 +142,7 @@ struct SimulatorSetupView: View {
     }
 
     private var statusSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             if let status = model.statusMessage {
                 callout(status, icon: "checkmark.circle.fill", tint: colors.success)
             }
@@ -153,7 +153,7 @@ struct SimulatorSetupView: View {
     }
 
     private func instructionRow(_ step: Int, _ text: String) -> some View {
-        HStack(alignment: .top, spacing: 8) {
+        HStack(alignment: .top, spacing: DesignSystem.Spacing.sm) {
             Text("\(step).")
                 .font(DesignSystem.Fonts.mono(12, weight: .bold))
                 .foregroundStyle(colors.accent)
@@ -165,8 +165,8 @@ struct SimulatorSetupView: View {
     }
 
     private func simulatorBadge(_ simulator: SimulatorCertificateInstaller.BootedSimulator) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+        HStack(alignment: .top, spacing: DesignSystem.Spacing.sm) {
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                 .fill(colors.surfaceElevated)
                 .frame(width: 42, height: 42)
                 .overlay(
@@ -174,7 +174,7 @@ struct SimulatorSetupView: View {
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(colors.accentSecondary)
                 )
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
                 Text(simulator.name)
                     .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
@@ -184,23 +184,23 @@ struct SimulatorSetupView: View {
                     .textSelection(.enabled)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, DesignSystem.Spacing.xs)
     }
 
     private func callout(_ text: String, icon: String, tint: Color) -> some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .top, spacing: DesignSystem.Spacing.sm) {
             Image(systemName: icon)
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(tint)
-                .padding(8)
-                .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .padding(DesignSystem.Spacing.sm)
+                .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous))
             Text(text)
                 .font(DesignSystem.Fonts.sans(12, weight: .medium))
                 .foregroundStyle(colors.textPrimary)
         }
-        .padding(10)
+        .padding(DesignSystem.Spacing.sm)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(tint.opacity(0.08))
         )
     }

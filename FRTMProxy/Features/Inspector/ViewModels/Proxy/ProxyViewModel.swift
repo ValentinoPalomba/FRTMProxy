@@ -52,6 +52,7 @@ final class ProxyViewModel: ObservableObject {
     let networkPathMonitorQueue = DispatchQueue(label: "com.frtmproxy.network-path-monitor", qos: .utility)
     var wakeObserver: NSObjectProtocol?
     var lastProxyReassertAt: Date = .distantPast
+    var onToast: ((String, ToastStyle) -> Void)?
 
     init(
         service: ProxyServiceProtocol = MitmproxyService(config: MitmproxyConfig()),
@@ -111,6 +112,7 @@ final class ProxyViewModel: ObservableObject {
             reapplyBreakpointRules()
         } catch {
             logText.append("\n\(error.localizedDescription)")
+            onToast?("Failed to start proxy: \(error.localizedDescription)", .error)
         }
     }
 

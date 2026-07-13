@@ -18,7 +18,7 @@ struct ScriptsManagerView: View {
     }
 
     var body: some View {
-        VStack(spacing: DesignSystem.Metrics.scaled(16)) {
+        VStack(spacing: DesignSystem.Spacing.lg) {
             header
             Divider()
             if scripts.isEmpty {
@@ -27,7 +27,7 @@ struct ScriptsManagerView: View {
                 scriptsList
             }
         }
-        .padding(DesignSystem.Metrics.scaled(20))
+        .padding(DesignSystem.Spacing.lg)
         .frame(minWidth: 780, minHeight: 500)
         .background(colors.background)
         .sheet(item: $editingScript) { script in
@@ -61,8 +61,8 @@ struct ScriptsManagerView: View {
     // MARK: - Header
 
     private var header: some View {
-        HStack(spacing: DesignSystem.Metrics.scaled(12)) {
-            VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(4)) {
+        HStack(spacing: DesignSystem.Spacing.md) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text("Script Rules")
                     .font(DesignSystem.Fonts.sans(20, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
@@ -84,7 +84,7 @@ struct ScriptsManagerView: View {
 
     private var scriptsList: some View {
         ScrollView {
-            LazyVStack(spacing: DesignSystem.Metrics.scaled(8)) {
+            LazyVStack(spacing: DesignSystem.Spacing.sm) {
                 ForEach($scripts) { $script in
                     ScriptRuleRow(
                         script: $script,
@@ -97,27 +97,22 @@ struct ScriptsManagerView: View {
                     )
                 }
             }
-            .padding(.vertical, DesignSystem.Metrics.scaled(4))
+            .padding(.vertical, DesignSystem.Spacing.xs)
         }
     }
 
     // MARK: - Empty state
 
     private var emptyState: some View {
-        VStack(spacing: DesignSystem.Metrics.scaled(12)) {
-            Spacer()
-            Image(systemName: "curlybraces")
-                .font(.system(size: 36))
-                .foregroundStyle(colors.textSecondary.opacity(0.5))
-            Text("No script rules")
-                .font(DesignSystem.Fonts.sans(16, weight: .semibold))
-                .foregroundStyle(colors.textPrimary)
-            Text("Add a script to transform responses dynamically.")
-                .font(DesignSystem.Fonts.sans(13))
-                .foregroundStyle(colors.textSecondary)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity)
+        StateView(
+            kind: .empty(
+                title: "No script rules",
+                message: "Add a script to transform responses dynamically.",
+                systemImage: "curlybraces"
+            ),
+            palette: colors
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -130,13 +125,13 @@ private struct ScriptRuleRow: View {
     let onDelete: () -> Void
 
     var body: some View {
-        HStack(spacing: DesignSystem.Metrics.scaled(12)) {
+        HStack(spacing: DesignSystem.Spacing.md) {
             Toggle("", isOn: $script.isEnabled)
                 .toggleStyle(.switch)
                 .labelsHidden()
                 .scaleEffect(0.75)
 
-            VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(3)) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text(script.name.isEmpty ? "(Untitled)" : script.name)
                     .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
@@ -149,12 +144,12 @@ private struct ScriptRuleRow: View {
             ControlButton(title: "Edit", systemImage: "pencil", style: .ghost(colors)) { onEdit() }
             ControlButton(title: "Delete", systemImage: "trash", style: .destructive(colors)) { onDelete() }
         }
-        .padding(DesignSystem.Metrics.scaled(12))
+        .padding(DesignSystem.Spacing.md)
         .background(
-            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(12))
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(colors.surfaceElevated)
                 .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(12))
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                         .stroke(colors.border.opacity(0.7), lineWidth: 1)
                 )
         )
@@ -185,7 +180,7 @@ private struct ScriptEditorSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            HStack(spacing: DesignSystem.Metrics.scaled(12)) {
+            HStack(spacing: DesignSystem.Spacing.md) {
                 Image(systemName: "curlybraces")
                     .font(.system(size: DesignSystem.Metrics.scaled(16), weight: .semibold))
                     .foregroundStyle(colors.accent)
@@ -196,12 +191,12 @@ private struct ScriptEditorSheet: View {
                 ControlButton(title: "Cancel", systemImage: "xmark", style: .ghost(colors)) { onClose() }
                 ControlButton(title: "Save", systemImage: "checkmark", style: .filled(colors)) { onSave(script) }
             }
-            .padding(DesignSystem.Metrics.scaled(16))
+            .padding(DesignSystem.Spacing.lg)
             .background(colors.surfaceElevated)
             .overlay(Rectangle().frame(height: 1).foregroundStyle(colors.border.opacity(0.7)), alignment: .bottom)
 
             ScrollView {
-                VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(16)) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
                     // Name
                     formField(label: "Name") {
                         TextField("My script", text: $script.name)
@@ -210,7 +205,7 @@ private struct ScriptEditorSheet: View {
                     }
 
                     // Match
-                    HStack(spacing: DesignSystem.Metrics.scaled(12)) {
+                    HStack(spacing: DesignSystem.Spacing.md) {
                         formField(label: "Host") {
                             TextField("api.example.com", text: $script.host)
                                 .textFieldStyle(ProxyTextFieldStyle(palette: colors))
@@ -224,14 +219,14 @@ private struct ScriptEditorSheet: View {
                     }
 
                     // Code editor
-                    VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(6)) {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                         Text("Script")
                             .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                             .foregroundStyle(colors.textSecondary)
                         CodeEditorView(text: $script.code, isEditable: true, minHeight: 300)
                             .frame(maxWidth: .infinity, minHeight: 300)
                             .overlay(
-                                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
+                                RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                                     .stroke(colors.border.opacity(0.7), lineWidth: 1)
                             )
                     }
@@ -240,11 +235,11 @@ private struct ScriptEditorSheet: View {
                     Text("The function `transform(flow)` receives `{ request: { url, method, headers, body }, response: { status, headers, body } }`. Return an object with `status`, `headers`, `body` to override, or `null` to pass through.")
                         .font(DesignSystem.Fonts.sans(11))
                         .foregroundStyle(colors.textSecondary)
-                        .padding(DesignSystem.Metrics.scaled(10))
+                        .padding(DesignSystem.Spacing.sm)
                         .background(colors.surfaceElevated)
-                        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8)))
+                        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous))
                 }
-                .padding(DesignSystem.Metrics.scaled(20))
+                .padding(DesignSystem.Spacing.lg)
             }
         }
         .background(colors.surface)
@@ -252,7 +247,7 @@ private struct ScriptEditorSheet: View {
     }
 
     private func formField<Content: View>(label: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(6)) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             Text(label)
                 .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)

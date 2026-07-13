@@ -1,6 +1,62 @@
 import AppKit
 import SwiftUI
 
+enum FlowColumn: String, CaseIterable, Identifiable {
+    case method, path, status, app, host, map, start, end, duration
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .method: return "Method"
+        case .path: return "Path"
+        case .status: return "Status"
+        case .app: return "App"
+        case .host: return "Host"
+        case .map: return "Map"
+        case .start: return "Start"
+        case .end: return "End"
+        case .duration: return "Duration"
+        }
+    }
+
+    var isToggleable: Bool { self != .method && self != .path }
+    var isSortable: Bool { self != .map }
+
+    var width: CGFloat? {
+        switch self {
+        case .path: return nil
+        case .method: return DesignSystem.Metrics.scaled(86)
+        case .status: return DesignSystem.Metrics.scaled(112)
+        case .app: return DesignSystem.Metrics.scaled(210)
+        case .host: return DesignSystem.Metrics.scaled(220)
+        case .map: return DesignSystem.Metrics.scaled(64)
+        case .start: return DesignSystem.Metrics.scaled(128)
+        case .end: return DesignSystem.Metrics.scaled(128)
+        case .duration: return DesignSystem.Metrics.scaled(100)
+        }
+    }
+
+    var alignment: Alignment {
+        switch self {
+        case .map: return .center
+        case .start, .end, .duration: return .trailing
+        default: return .leading
+        }
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func flowColumnFrame(_ column: FlowColumn) -> some View {
+        if let width = column.width {
+            frame(width: width, alignment: column.alignment)
+        } else {
+            frame(minWidth: 180, maxWidth: .infinity, alignment: column.alignment)
+        }
+    }
+}
+
 struct FlowTableView: View {
     let flows: [MitmFlow]
     @Binding var selection: String?
@@ -18,66 +74,46 @@ struct FlowTableView: View {
     let onFilterApp: (FlowClientApp) -> Void
     let onFilterDevice: (String) -> Void
 
+    @State private var sortColumn: FlowColumn?
+    @State private var sortAscending = true
+    @AppStorage("inspector.hiddenFlowColumns") private var hiddenColumnsRaw = ""
+
+    private var hiddenColumns: Set<String> {
+        Set(hiddenColumnsRaw.split(separator: ",").map(String.init))
+    }
+
+    private var visibleColumns: [FlowColumn] {
+        FlowColumn.allCases.filter { !hiddenColumns.contains($0.id) }
+    }
+
+    private var sortedFlows: [MitmFlow] {
+        guard let sortColumn else { return flows }
+        let sorted = flows.sorted { compare($0, $1, by: sortColumn) }
+        return sortAscending ? sorted : sorted.reversed()
+    }
+
     var body: some View {
         if flows.isEmpty {
-            VStack(spacing: DesignSystem.Metrics.scaled(12)) {
-                Image(systemName: "antenna.radiowaves.left.and.right")
-                    .font(.system(size: DesignSystem.Metrics.scaled(42)))
-                    .foregroundStyle(colors.textSecondary)
-                Text(emptyMessage)
-                    .font(DesignSystem.Fonts.mono(15, weight: .semibold))
-                    .foregroundStyle(colors.textSecondary)
-            }
+            StateView(
+                kind: .empty(title: emptyMessage, message: nil, systemImage: "antenna.radiowaves.left.and.right"),
+                palette: colors
+            )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             VStack(spacing: 0) {
-                FlowTableHeader(colors: colors)
+                FlowTableHeader(
+                    colors: colors,
+                    visibleColumns: visibleColumns,
+                    sortColumn: sortColumn,
+                    sortAscending: sortAscending,
+                    hiddenColumns: hiddenColumns,
+                    onToggleSort: toggleSort,
+                    onToggleColumn: toggleColumn
+                )
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        ForEach(flows) { flow in
-                            let appID = FlowClientApp.normalizedID(flow.clientApp?.id ?? "")
-                            FlowTableRow(
-                                flow: flow,
-                                isSelected: selection == flow.id,
-                                isCompareSelected: compareSelection == flow.id,
-                                colors: colors,
-                                isHostPinned: pinnedHostnames.contains(PinnedHost.normalized(flow.host)),
-                                isAppPinned: !appID.isEmpty && pinnedAppIDs.contains(appID),
-                                onSelect: {
-                                    selection = flow.id
-                                    compareSelection = nil
-                                },
-                                onCompareSelect: {
-                                    if compareSelection == flow.id {
-                                        compareSelection = nil
-                                    } else {
-                                        compareSelection = flow.id
-                                    }
-                                },
-                                onMapLocal: {
-                                    selection = flow.id
-                                    onMapLocal(flow)
-                                },
-                                onEditRetry: {
-                                    selection = flow.id
-                                    onEditRetry(flow)
-                                },
-                                onPinHost: { onPinHost(flow.host) },
-                                onUnpinHost: { onUnpinHost(flow.host) },
-                                onPinApp: {
-                                    guard let app = flow.clientApp else { return }
-                                    onPinApp(app)
-                                },
-                                onUnpinApp: {
-                                    guard let app = flow.clientApp else { return }
-                                    onUnpinApp(app.id)
-                                },
-                                onFilterApp: {
-                                    guard let app = flow.clientApp else { return }
-                                    onFilterApp(app)
-                                },
-                                onFilterDevice: { onFilterDevice(flow.clientIP) }
-                            )
+                        ForEach(sortedFlows) { flow in
+                            row(for: flow)
                         }
                     }
                 }
@@ -91,37 +127,132 @@ struct FlowTableView: View {
         }
     }
 
+    private func row(for flow: MitmFlow) -> some View {
+        let appID = FlowClientApp.normalizedID(flow.clientApp?.id ?? "")
+        return FlowTableRow(
+            flow: flow,
+            visibleColumns: visibleColumns,
+            isSelected: selection == flow.id,
+            isCompareSelected: compareSelection == flow.id,
+            colors: colors,
+            isHostPinned: pinnedHostnames.contains(PinnedHost.normalized(flow.host)),
+            isAppPinned: !appID.isEmpty && pinnedAppIDs.contains(appID),
+            onSelect: {
+                selection = flow.id
+                compareSelection = nil
+            },
+            onCompareSelect: {
+                compareSelection = (compareSelection == flow.id) ? nil : flow.id
+            },
+            onMapLocal: {
+                selection = flow.id
+                onMapLocal(flow)
+            },
+            onEditRetry: {
+                selection = flow.id
+                onEditRetry(flow)
+            },
+            onPinHost: { onPinHost(flow.host) },
+            onUnpinHost: { onUnpinHost(flow.host) },
+            onPinApp: {
+                guard let app = flow.clientApp else { return }
+                onPinApp(app)
+            },
+            onUnpinApp: {
+                guard let app = flow.clientApp else { return }
+                onUnpinApp(app.id)
+            },
+            onFilterApp: {
+                guard let app = flow.clientApp else { return }
+                onFilterApp(app)
+            },
+            onFilterDevice: { onFilterDevice(flow.clientIP) }
+        )
+    }
+
+    private func toggleSort(_ column: FlowColumn) {
+        guard column.isSortable else { return }
+        if sortColumn == column {
+            sortAscending.toggle()
+        } else {
+            sortColumn = column
+            sortAscending = true
+        }
+    }
+
+    private func toggleColumn(_ column: FlowColumn) {
+        guard column.isToggleable else { return }
+        var hidden = hiddenColumns
+        if hidden.contains(column.id) {
+            hidden.remove(column.id)
+        } else {
+            hidden.insert(column.id)
+        }
+        hiddenColumnsRaw = hidden.sorted().joined(separator: ",")
+    }
+
+    private func compare(_ a: MitmFlow, _ b: MitmFlow, by column: FlowColumn) -> Bool {
+        switch column {
+        case .method:
+            return (a.request?.method ?? "") < (b.request?.method ?? "")
+        case .path:
+            return a.path.localizedCaseInsensitiveCompare(b.path) == .orderedAscending
+        case .status:
+            return (a.response?.status ?? -1) < (b.response?.status ?? -1)
+        case .app:
+            return appSortKey(a).localizedCaseInsensitiveCompare(appSortKey(b)) == .orderedAscending
+        case .host:
+            return a.host.localizedCaseInsensitiveCompare(b.host) == .orderedAscending
+        case .start:
+            return startSortKey(a) < startSortKey(b)
+        case .end:
+            return (a.responseTimestamp ?? 0) < (b.responseTimestamp ?? 0)
+        case .duration:
+            return (a.duration ?? -1) < (b.duration ?? -1)
+        case .map:
+            return false
+        }
+    }
+
+    private func appSortKey(_ flow: MitmFlow) -> String {
+        let name = flow.clientApp?.displayName.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return name.isEmpty ? flow.clientIP : name
+    }
+
+    private func startSortKey(_ flow: MitmFlow) -> TimeInterval {
+        flow.requestTimestamp ?? flow.timestamp ?? 0
+    }
+
     private func handleKeyEvent(_ event: NSEvent) -> Bool {
-        guard !flows.isEmpty else { return false }
+        let list = sortedFlows
+        guard !list.isEmpty else { return false }
         guard shouldHandleKeyboardNavigation() else { return false }
         let currentIndex = selection.flatMap { id in
-            flows.firstIndex(where: { $0.id == id })
+            list.firstIndex(where: { $0.id == id })
         }
 
         switch event.keyCode {
-        case 125: // down
-            let nextIndex = min((currentIndex ?? -1) + 1, flows.count - 1)
-            selection = flows[nextIndex].id
+        case 125:
+            let nextIndex = min((currentIndex ?? -1) + 1, list.count - 1)
+            selection = list[nextIndex].id
             return true
-        case 126: // up
-            let nextIndex = max((currentIndex ?? flows.count) - 1, 0)
-            selection = flows[nextIndex].id
+        case 126:
+            let nextIndex = max((currentIndex ?? list.count) - 1, 0)
+            selection = list[nextIndex].id
             return true
-        case 115: // home
-            selection = flows.first?.id
+        case 115:
+            selection = list.first?.id
             return true
-        case 119: // end
-            selection = flows.last?.id
+        case 119:
+            selection = list.last?.id
             return true
-        case 116: // page up
-            let jump = 10
-            let nextIndex = max((currentIndex ?? 0) - jump, 0)
-            selection = flows[nextIndex].id
+        case 116:
+            let nextIndex = max((currentIndex ?? 0) - 10, 0)
+            selection = list[nextIndex].id
             return true
-        case 121: // page down
-            let jump = 10
-            let nextIndex = min((currentIndex ?? -1) + jump, flows.count - 1)
-            selection = flows[nextIndex].id
+        case 121:
+            let nextIndex = min((currentIndex ?? -1) + 10, list.count - 1)
+            selection = list[nextIndex].id
             return true
         default:
             return false
@@ -137,75 +268,26 @@ struct FlowTableView: View {
     }
 }
 
-private struct KeyEventMonitorView: NSViewRepresentable {
-    let onKeyDown: (NSEvent) -> Bool
-
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        context.coordinator.installMonitor(onKeyDown: onKeyDown)
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        context.coordinator.onKeyDown = onKeyDown
-    }
-
-    static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
-        coordinator.removeMonitor()
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onKeyDown: onKeyDown)
-    }
-
-    final class Coordinator {
-        var onKeyDown: (NSEvent) -> Bool
-        private var monitor: Any?
-
-        init(onKeyDown: @escaping (NSEvent) -> Bool) {
-            self.onKeyDown = onKeyDown
-        }
-
-        func installMonitor(onKeyDown: @escaping (NSEvent) -> Bool) {
-            self.onKeyDown = onKeyDown
-            guard monitor == nil else { return }
-            monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-                guard let self else { return event }
-                return self.onKeyDown(event) ? nil : event
-            }
-        }
-
-        func removeMonitor() {
-            if let monitor {
-                NSEvent.removeMonitor(monitor)
-                self.monitor = nil
-            }
-        }
-    }
-}
-
-private enum ColumnWidths {
-    static var method: CGFloat { DesignSystem.Metrics.scaled(86) }
-    static var status: CGFloat { DesignSystem.Metrics.scaled(112) }
-    static var app: CGFloat { DesignSystem.Metrics.scaled(210) }
-    static var host: CGFloat { DesignSystem.Metrics.scaled(220) }
-    static var map: CGFloat { DesignSystem.Metrics.scaled(64) }
-    static var start: CGFloat { DesignSystem.Metrics.scaled(128) }
-    static var end: CGFloat { DesignSystem.Metrics.scaled(128) }
-    static var duration: CGFloat { DesignSystem.Metrics.scaled(100) }
-}
-
 private struct FlowTableHeader: View {
     let colors: DesignSystem.ColorPalette
-    
+    let visibleColumns: [FlowColumn]
+    let sortColumn: FlowColumn?
+    let sortAscending: Bool
+    let hiddenColumns: Set<String>
+    let onToggleSort: (FlowColumn) -> Void
+    let onToggleColumn: (FlowColumn) -> Void
+
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            regularHeader
-            compactHeader
-            minimalHeader
+        HStack(spacing: 0) {
+            ForEach(visibleColumns) { column in
+                headerCell(column)
+                    .flowColumnFrame(column)
+            }
+            columnMenu
+                .frame(width: DesignSystem.Metrics.scaled(30), alignment: .center)
         }
-        .padding(.horizontal, DesignSystem.Metrics.scaled(14))
-        .padding(.vertical, DesignSystem.Metrics.scaled(9))
+        .padding(.horizontal, DesignSystem.Spacing.md)
+        .padding(.vertical, DesignSystem.Spacing.sm)
         .background(colors.surfaceElevated)
         .overlay(
             Rectangle()
@@ -215,72 +297,50 @@ private struct FlowTableHeader: View {
         )
     }
 
-    private var regularHeader: some View {
-        HStack(spacing: 0) {
-            headerLabel("Method")
-                .frame(width: ColumnWidths.method, alignment: .leading)
-            headerLabel("Path")
-                .frame(minWidth: 180, maxWidth: .infinity, alignment: .leading)
-            headerLabel("Status")
-                .frame(width: ColumnWidths.status, alignment: .leading)
-            headerLabel("App")
-                .frame(width: ColumnWidths.app, alignment: .leading)
-            headerLabel("Host")
-                .frame(width: ColumnWidths.host, alignment: .leading)
-            headerLabel("Map")
-                .frame(width: ColumnWidths.map, alignment: .center)
-            headerLabel("Start")
-                .frame(width: ColumnWidths.start, alignment: .trailing)
-            headerLabel("End")
-                .frame(width: ColumnWidths.end, alignment: .trailing)
-            headerLabel("Duration")
-                .frame(width: ColumnWidths.duration, alignment: .trailing)
+    private func headerCell(_ column: FlowColumn) -> some View {
+        Button {
+            onToggleSort(column)
+        } label: {
+            HStack(spacing: DesignSystem.Spacing.xs) {
+                Text(column.title.uppercased())
+                    .font(DesignSystem.Fonts.mono(11, weight: .semibold))
+                    .foregroundStyle(sortColumn == column ? colors.accent : colors.textSecondary)
+                if sortColumn == column {
+                    Image(systemName: sortAscending ? "chevron.up" : "chevron.down")
+                        .font(.system(size: DesignSystem.Metrics.font(9), weight: .semibold))
+                        .foregroundStyle(colors.accent)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: column.alignment)
+            .contentShape(.rect)
         }
+        .buttonStyle(.plain)
+        .disabled(!column.isSortable)
     }
 
-    private var compactHeader: some View {
-        HStack(spacing: 0) {
-            headerLabel("Method")
-                .frame(width: ColumnWidths.method, alignment: .leading)
-            headerLabel("Path")
-                .frame(minWidth: 180, maxWidth: .infinity, alignment: .leading)
-            headerLabel("Status")
-                .frame(width: ColumnWidths.status, alignment: .leading)
-            headerLabel("App")
-                .frame(width: ColumnWidths.app, alignment: .leading)
-            headerLabel("Host")
-                .frame(width: ColumnWidths.host, alignment: .leading)
-            headerLabel("Start")
-                .frame(width: ColumnWidths.start, alignment: .trailing)
-            headerLabel("End")
-                .frame(width: ColumnWidths.end, alignment: .trailing)
-            headerLabel("Duration")
-                .frame(width: ColumnWidths.duration, alignment: .trailing)
+    private var columnMenu: some View {
+        Menu {
+            ForEach(FlowColumn.allCases.filter(\.isToggleable)) { column in
+                Toggle(column.title, isOn: Binding(
+                    get: { !hiddenColumns.contains(column.id) },
+                    set: { _ in onToggleColumn(column) }
+                ))
+            }
+        } label: {
+            Image(systemName: "slider.horizontal.3")
+                .font(.system(size: DesignSystem.Metrics.font(11), weight: .semibold))
+                .foregroundStyle(colors.textSecondary)
         }
-    }
-
-    private var minimalHeader: some View {
-        HStack(spacing: 0) {
-            headerLabel("Method")
-                .frame(width: ColumnWidths.method, alignment: .leading)
-            headerLabel("Path")
-                .frame(minWidth: 180, maxWidth: .infinity, alignment: .leading)
-            headerLabel("Status")
-                .frame(width: ColumnWidths.status, alignment: .leading)
-            headerLabel("App")
-                .frame(width: ColumnWidths.app, alignment: .leading)
-        }
-    }
-    
-    private func headerLabel(_ text: String) -> some View {
-        Text(text.uppercased())
-            .font(DesignSystem.Fonts.mono(11, weight: .semibold))
-            .foregroundStyle(colors.textSecondary)
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Show or hide columns")
     }
 }
 
 private struct FlowTableRow: View {
     let flow: MitmFlow
+    let visibleColumns: [FlowColumn]
     let isSelected: Bool
     let isCompareSelected: Bool
     let colors: DesignSystem.ColorPalette
@@ -297,6 +357,9 @@ private struct FlowTableRow: View {
     let onFilterApp: () -> Void
     let onFilterDevice: () -> Void
 
+    @State private var isHovering = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         Button {
             if NSApp.currentEvent?.modifierFlags.contains(.command) == true {
@@ -305,14 +368,25 @@ private struct FlowTableRow: View {
                 onSelect()
             }
         } label: {
-            regularRow
-            .padding(.horizontal, DesignSystem.Metrics.scaled(14))
-            .padding(.vertical, DesignSystem.Metrics.scaled(4))
-            .background(rowBackground)
+            HStack(spacing: 0) {
+                ForEach(visibleColumns) { column in
+                    cell(for: column)
+                        .flowColumnFrame(column)
+                }
+                Color.clear.frame(width: DesignSystem.Metrics.scaled(30))
+            }
+            .padding(.horizontal, DesignSystem.Spacing.md)
+            .padding(.vertical, DesignSystem.Spacing.xs)
+            .background(rowBackgroundColor)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .help("⌘ Click to select as compare target")
+        .onHover { hovering in
+            withAnimation(DesignSystem.Motion.adaptive(DesignSystem.Motion.fast, reduceMotion: reduceMotion)) {
+                isHovering = hovering
+            }
+        }
+        .help("⌘-click to set as compare target")
         .contextMenu {
             FlowContextMenuContent(
                 flow: flow,
@@ -334,29 +408,30 @@ private struct FlowTableRow: View {
                 .foregroundStyle(colors.border.opacity(0.7)),
             alignment: .bottom
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityText)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 
-    private var regularRow: some View {
-        HStack(spacing: 0) {
-            methodLabel
-                .frame(width: ColumnWidths.method, alignment: .leading)
-            pathLabel
-                .frame(minWidth: 180, maxWidth: .infinity, alignment: .leading)
-            StatusBadge(status: flow.response?.status, colors: colors)
-                .frame(width: ColumnWidths.status, alignment: .leading)
-            appLabel
-                .frame(width: ColumnWidths.app, alignment: .leading)
-            hostLabel
-                .frame(width: ColumnWidths.host, alignment: .leading)
-            mapIndicator
-                .frame(width: ColumnWidths.map, alignment: .center)
-            startLabel
-                .frame(width: ColumnWidths.start, alignment: .trailing)
-            endLabel
-                .frame(width: ColumnWidths.end, alignment: .trailing)
-            durationLabel
-                .frame(width: ColumnWidths.duration, alignment: .trailing)
+    @ViewBuilder
+    private func cell(for column: FlowColumn) -> some View {
+        switch column {
+        case .method: methodLabel
+        case .path: pathLabel
+        case .status: StatusBadge(status: flow.response?.status, colors: colors)
+        case .app: appLabel
+        case .host: hostLabel
+        case .map: mapIndicator
+        case .start: startLabel
+        case .end: endLabel
+        case .duration: durationLabel
         }
+    }
+
+    private var accessibilityText: String {
+        let method = flow.request?.method.uppercased() ?? ""
+        let status = flow.response?.status.map { "status \($0)" } ?? "pending"
+        return "\(method) \(flow.host)\(flow.path), \(status)"
     }
 
     private var methodLabel: some View {
@@ -365,39 +440,39 @@ private struct FlowTableRow: View {
             .font(DesignSystem.Fonts.mono(13, weight: .medium))
             .foregroundStyle(DesignSystem.Colors.methodColor(method, palette: colors))
     }
-    
+
     private var mapIndicator: some View {
         Group {
             if flow.isMapped {
                 Image(systemName: "pencil.and.outline")
                     .foregroundStyle(colors.accent)
-                    .padding(DesignSystem.Metrics.scaled(6))
-                    .background(
-                        Circle().fill(colors.accent.opacity(0.12))
-                    )
+                    .padding(DesignSystem.Spacing.xs)
+                    .background(Circle().fill(colors.accent.opacity(0.12)))
             } else {
                 Text("—")
                     .foregroundStyle(colors.textSecondary.opacity(0.6))
             }
         }
     }
-    
-    private var rowBackground: some View {
-        Group {
-            if isSelected {
-                colors.accent.opacity(0.18)
-            } else if isCompareSelected {
-                colors.accentSecondary.opacity(0.18)
-            } else {
-                (flow.response?.status ?? 0) >= 400
-                    ? colors.danger.opacity(0.08)
-                    : colors.surface
-            }
+
+    private var rowBackgroundColor: Color {
+        if isSelected {
+            return colors.accent.opacity(0.18)
         }
+        if isCompareSelected {
+            return colors.accentSecondary.opacity(0.18)
+        }
+        if (flow.response?.status ?? 0) >= 400 {
+            return colors.danger.opacity(isHovering ? 0.13 : 0.08)
+        }
+        if isHovering {
+            return colors.textPrimary.opacity(0.05)
+        }
+        return colors.surface
     }
 
     private var hostLabel: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: DesignSystem.Spacing.xs) {
             Text(flow.host)
                 .font(DesignSystem.Fonts.mono(13, weight: .medium))
                 .foregroundStyle(isHostPinned ? colors.accent : colors.textSecondary)
@@ -407,7 +482,7 @@ private struct FlowTableRow: View {
             if isHostPinned {
                 Image(systemName: "pin.fill")
                     .foregroundStyle(colors.accent)
-                    .font(.system(size: DesignSystem.Metrics.scaled(11), weight: .semibold))
+                    .font(.system(size: DesignSystem.Metrics.font(11), weight: .semibold))
             }
         }
         .help(flow.host)
@@ -429,10 +504,14 @@ private struct FlowTableRow: View {
                     .truncationMode(.middle)
                     .textSelection(.enabled)
             } else {
-                HStack(spacing: 8) {
-                    appIcon
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 6) {
+                HStack(spacing: DesignSystem.Spacing.sm) {
+                    AppBadgeIconView(
+                        title: flow.clientApp?.displayName ?? "",
+                        seed: flow.clientApp?.id,
+                        size: DesignSystem.Metrics.scaled(18)
+                    )
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
+                        HStack(spacing: DesignSystem.Spacing.xs) {
                             Text(appName)
                                 .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                                 .foregroundStyle(colors.textSecondary)
@@ -442,7 +521,7 @@ private struct FlowTableRow: View {
                             if isAppPinned {
                                 Image(systemName: "pin.fill")
                                     .foregroundStyle(colors.accent)
-                                    .font(.system(size: DesignSystem.Metrics.scaled(11), weight: .semibold))
+                                    .font(.system(size: DesignSystem.Metrics.font(11), weight: .semibold))
                             }
                         }
                         if !ip.isEmpty {
@@ -460,25 +539,12 @@ private struct FlowTableRow: View {
         }
     }
 
-    @ViewBuilder
-    private var appIcon: some View {
-        AppBadgeIconView(
-            title: flow.clientApp?.displayName ?? "",
-            seed: flow.clientApp?.id,
-            size: DesignSystem.Metrics.scaled(18)
-        )
-    }
-
     private var appHelpText: String {
         guard let app = flow.clientApp else { return "" }
         let pidText = app.pid.map { "pid: \($0)" } ?? ""
-        return [
-            app.displayName,
-            app.bundleIdentifier ?? "",
-            pidText
-        ]
-        .filter { !$0.isEmpty }
-        .joined(separator: "\n")
+        return [app.displayName, app.bundleIdentifier ?? "", pidText]
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n")
     }
 
     private var pathLabel: some View {

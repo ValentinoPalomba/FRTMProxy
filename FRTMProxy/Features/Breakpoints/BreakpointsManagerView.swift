@@ -21,7 +21,7 @@ struct BreakpointsManagerView: View {
     }
 
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: DesignSystem.Spacing.lg) {
             header
             Divider()
             creationCard
@@ -31,14 +31,14 @@ struct BreakpointsManagerView: View {
                 rulesList
             }
         }
-        .padding(20)
+        .padding(DesignSystem.Spacing.lg)
         .frame(minWidth: 900, minHeight: 600)
         .background(colors.background)
     }
 
     private var header: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: DesignSystem.Spacing.md) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text("Breakpoints")
                     .font(DesignSystem.Fonts.mono(20, weight: .semibold))
                 Text("Create and enable persistent breakpoints for requests and responses.")
@@ -53,7 +53,7 @@ struct BreakpointsManagerView: View {
     }
 
     private var creationCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             HStack {
                 Text("New breakpoint")
                     .font(DesignSystem.Fonts.sans(14, weight: .semibold))
@@ -69,7 +69,7 @@ struct BreakpointsManagerView: View {
                 .disabled(viewModel.selectedFlow == nil)
             }
 
-            HStack(spacing: 12) {
+            HStack(spacing: DesignSystem.Spacing.md) {
                 TextField("Host (e.g. api.example.com)", text: $newHost)
                     .textFieldStyle(ProxyTextFieldStyle(palette: colors))
                     .onChange(of: newHost) { oldValue, newValue in
@@ -82,7 +82,7 @@ struct BreakpointsManagerView: View {
                     }
             }
 
-            HStack(spacing: 12) {
+            HStack(spacing: DesignSystem.Spacing.md) {
                 PhaseChip(
                     title: "Request",
                     subtitle: "Pause before it starts",
@@ -108,13 +108,13 @@ struct BreakpointsManagerView: View {
                 }
             }
         }
-        .padding(16)
+        .padding(DesignSystem.Spacing.lg)
         .surfaceCard(fill: colors.surface, stroke: colors.border.opacity(0.8), shadowOpacity: 0.05)
     }
 
     private var rulesList: some View {
         ScrollView {
-            LazyVStack(spacing: 10) {
+            LazyVStack(spacing: DesignSystem.Spacing.sm) {
                 ForEach(breakpointRules) { rule in
                     BreakpointRow(
                         rule: rule,
@@ -142,30 +142,27 @@ struct BreakpointsManagerView: View {
                     )
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, DesignSystem.Spacing.xs)
         }
         .background(
-            RoundedRectangle(cornerRadius: 18)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(colors.surface)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18)
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                         .stroke(colors.border.opacity(0.6), lineWidth: 1)
                 )
         )
     }
 
     private var emptyPlaceholder: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "exclamationmark.shield")
-                .font(.system(size: 46))
-                .foregroundStyle(colors.textSecondary)
-            Text("No breakpoints configured")
-                .font(DesignSystem.Fonts.sans(16, weight: .semibold))
-                .foregroundStyle(colors.textSecondary)
-            Text("Add a host/path to pause requests or responses before they pass through the proxy.")
-                .font(DesignSystem.Fonts.sans(13))
-                .foregroundStyle(colors.textSecondary)
-        }
+        StateView(
+            kind: .empty(
+                title: "No breakpoints configured",
+                message: "Add a host/path to pause requests or responses before they pass through the proxy.",
+                systemImage: "exclamationmark.shield"
+            ),
+            palette: colors
+        )
         .frame(maxWidth: .infinity, minHeight: 220)
     }
 
@@ -239,8 +236,8 @@ private struct BreakpointRow: View {
     let onDelete: () -> Void
 
     var body: some View {
-        HStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: DesignSystem.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text(rule.host)
                     .font(DesignSystem.Fonts.sans(15, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
@@ -275,13 +272,14 @@ private struct BreakpointRow: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(colors.danger)
+            .accessibilityLabel("Delete breakpoint")
         }
-        .padding(16)
+        .padding(DesignSystem.Spacing.lg)
         .background(
-            RoundedRectangle(cornerRadius: 14)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(colors.surfaceElevated)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14)
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                         .stroke(colors.border.opacity(0.7), lineWidth: 1)
                 )
         )
@@ -297,7 +295,7 @@ private struct PhaseChip: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
                 Text(title)
                     .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                     .foregroundStyle(isOn ? colors.accent : colors.textSecondary)
@@ -307,13 +305,13 @@ private struct PhaseChip: View {
                         .foregroundStyle(colors.textSecondary)
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, DesignSystem.Spacing.md)
+            .padding(.vertical, DesignSystem.Spacing.sm)
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                     .fill(isOn ? colors.accent.opacity(0.2) : colors.surface)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
+                        RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                             .stroke(isOn ? colors.accent : colors.border.opacity(0.8), lineWidth: 1)
                     )
             )

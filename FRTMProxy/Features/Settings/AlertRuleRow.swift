@@ -8,9 +8,9 @@ struct AlertRuleRow: View {
     let onDelete: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
             Toggle(isOn: Binding(get: { rule.isEnabled }, set: onToggle)) {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                     Text(rule.name.isEmpty ? "Untitled" : rule.name)
                         .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                         .foregroundStyle(colors.textPrimary)
@@ -25,7 +25,7 @@ struct AlertRuleRow: View {
 
             Spacer()
 
-            VStack(alignment: .trailing, spacing: 8) {
+            VStack(alignment: .trailing, spacing: DesignSystem.Spacing.sm) {
                 Button("Edit", systemImage: "pencil", action: onEdit)
                     .buttonStyle(.borderless)
 
@@ -33,13 +33,13 @@ struct AlertRuleRow: View {
                     .buttonStyle(.borderless)
             }
         }
-        .padding(12)
+        .padding(DesignSystem.Spacing.md)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(colors.surfaceElevated)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .stroke(colors.border.opacity(0.6), lineWidth: 1)
         )
     }

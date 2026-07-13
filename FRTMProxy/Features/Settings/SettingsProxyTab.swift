@@ -11,7 +11,7 @@ struct SettingsProxyTab: View {
             colors: colors
         ) {
             SettingsCard(title: "Behavior", colors: colors) {
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                     Toggle(isOn: $settings.autoStartProxy) {
                         Text("Start proxy automatically")
                             .font(DesignSystem.Fonts.sans(13, weight: .medium))
@@ -39,8 +39,8 @@ struct SettingsProxyTab: View {
                 Divider()
                     .overlay(colors.border.opacity(0.6))
 
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                    HStack(spacing: DesignSystem.Spacing.md) {
                         Text("Default port")
                             .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                             .foregroundStyle(colors.textPrimary)

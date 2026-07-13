@@ -11,8 +11,8 @@ struct SettingsTrafficTab: View {
             colors: colors
         ) {
             SettingsCard(title: "Traffic Profile", colors: colors) {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                    HStack(spacing: DesignSystem.Spacing.md) {
                         Text("Simulated network")
                             .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                             .foregroundStyle(colors.textPrimary)
@@ -42,7 +42,7 @@ struct SettingsTrafficTab: View {
     }
 
     private var manualConfigurationSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             Divider()
                 .overlay(colors.border.opacity(0.6))
 
@@ -50,13 +50,13 @@ struct SettingsTrafficTab: View {
                 .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                 .foregroundStyle(colors.textPrimary)
 
-            HStack(spacing: 12) {
+            HStack(spacing: DesignSystem.Spacing.md) {
                 manualIntField("Latency (ms)", value: $settings.customTrafficLatencyMs)
                 manualIntField("Jitter (ms)", value: $settings.customTrafficJitterMs)
                 manualIntField("Response delay (ms)", value: $settings.customTrafficResponseDelayMs)
             }
 
-            HStack(spacing: 12) {
+            HStack(spacing: DesignSystem.Spacing.md) {
                 manualIntField("Download (kbps)", value: $settings.customTrafficDownstreamKbps)
                 manualIntField("Upload (kbps)", value: $settings.customTrafficUpstreamKbps)
                 manualDoubleField("Packet loss (%)", value: $settings.customTrafficPacketLossPercent)
@@ -69,7 +69,7 @@ struct SettingsTrafficTab: View {
     }
 
     private func manualIntField(_ title: String, value: Binding<Int>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             Text(title)
                 .font(DesignSystem.Fonts.sans(11, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)
@@ -80,7 +80,7 @@ struct SettingsTrafficTab: View {
     }
 
     private func manualDoubleField(_ title: String, value: Binding<Double>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             Text(title)
                 .font(DesignSystem.Fonts.sans(11, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)

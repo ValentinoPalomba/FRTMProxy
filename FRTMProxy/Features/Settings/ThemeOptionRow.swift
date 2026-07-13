@@ -11,10 +11,10 @@ struct ThemeOptionRow: View {
         Button {
             selection = theme.id
         } label: {
-            HStack(spacing: 16) {
+            HStack(spacing: DesignSystem.Spacing.lg) {
                 ThemePreviewSwatches(swatches: theme.previewSwatches, colors: colors)
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                     Text(theme.name)
                         .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                         .foregroundStyle(colors.textPrimary)
@@ -30,13 +30,13 @@ struct ThemeOptionRow: View {
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(isSelected ? colors.accent : colors.textSecondary)
             }
-            .padding(14)
+            .padding(DesignSystem.Spacing.md)
             .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                     .fill(isSelected ? colors.accent.opacity(0.12) : colors.surfaceElevated)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                     .stroke(isSelected ? colors.accent.opacity(0.6) : colors.border.opacity(0.6), lineWidth: 1)
             )
         }

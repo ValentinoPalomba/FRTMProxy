@@ -13,13 +13,13 @@ struct GitCollectionsSheet: View {
     @State private var confirmRemoveID: UUID?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
             header
 
             addSection
             sourcesSection
         }
-        .padding(20)
+        .padding(DesignSystem.Spacing.lg)
         .frame(minWidth: 820, minHeight: 520)
         .background(colors.background)
         .alert(
@@ -56,8 +56,8 @@ struct GitCollectionsSheet: View {
     }
 
     private var header: some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
+        HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                 Text("Git Collections")
                     .font(DesignSystem.Fonts.mono(22, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
@@ -81,17 +81,17 @@ struct GitCollectionsSheet: View {
                 dismiss()
             }
         }
-        .padding(16)
+        .padding(DesignSystem.Spacing.lg)
         .surfaceCard(fill: colors.surface, stroke: colors.border.opacity(0.9), shadowOpacity: 0.08)
     }
 
     private var addSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             Text("Add Repository")
                 .font(DesignSystem.Fonts.sans(16, weight: .semibold))
                 .foregroundStyle(colors.textPrimary)
 
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                 TextField("Remote URL", text: $remoteURL)
                     .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "link"))
 
@@ -107,7 +107,7 @@ struct GitCollectionsSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            HStack(spacing: 10) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 ControlButton(
                     title: "Add & Sync",
                     systemImage: "square.and.arrow.down",
@@ -125,13 +125,13 @@ struct GitCollectionsSheet: View {
                 Spacer()
             }
         }
-        .padding(16)
+        .padding(DesignSystem.Spacing.lg)
         .surfaceCard(fill: colors.surface, stroke: colors.border.opacity(0.9), shadowOpacity: 0.08)
     }
 
     private var sourcesSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .center, spacing: 10) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            HStack(alignment: .center, spacing: DesignSystem.Spacing.sm) {
                 Text("Repositories")
                     .font(DesignSystem.Fonts.sans(16, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
@@ -139,8 +139,8 @@ struct GitCollectionsSheet: View {
                 Text("\(viewModel.gitCollectionSources.count)")
                     .font(DesignSystem.Fonts.mono(12, weight: .semibold))
                     .foregroundStyle(colors.textSecondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, DesignSystem.Spacing.sm)
+                    .padding(.vertical, DesignSystem.Spacing.sm)
                     .background(
                         Capsule()
                             .fill(colors.surfaceElevated)
@@ -154,23 +154,18 @@ struct GitCollectionsSheet: View {
             Divider()
 
             if viewModel.gitCollectionSources.isEmpty {
-                VStack(spacing: 10) {
-                    Image(systemName: "arrow.triangle.branch")
-                        .font(DesignSystem.Fonts.sans(26, weight: .semibold))
-                        .foregroundStyle(colors.textSecondary)
-                    Text("No repository configured.")
-                        .font(DesignSystem.Fonts.sans(14, weight: .semibold))
-                        .foregroundStyle(colors.textPrimary)
-                    Text("Add a repo on the left to import collections collaboratively via Git.")
-                        .font(DesignSystem.Fonts.mono(12))
-                        .foregroundStyle(colors.textSecondary)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                StateView(
+                    kind: .empty(
+                        title: "No repository configured.",
+                        message: "Add a repo on the left to import collections collaboratively via Git.",
+                        systemImage: "arrow.triangle.branch"
+                    ),
+                    palette: colors
+                )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 10) {
+                    LazyVStack(spacing: DesignSystem.Spacing.sm) {
                         ForEach(viewModel.gitCollectionSources) { source in
                             GitSourceRow(
                                 source: source,
@@ -181,12 +176,12 @@ struct GitCollectionsSheet: View {
                             )
                         }
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, DesignSystem.Spacing.xs)
                 }
                 .scrollIndicators(.hidden)
             }
         }
-        .padding(16)
+        .padding(DesignSystem.Spacing.lg)
         .surfaceCard(fill: colors.surface, stroke: colors.border.opacity(0.9), shadowOpacity: 0.08)
     }
 
@@ -243,16 +238,16 @@ private struct GitSourceRow: View {
     let onRemove: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+            HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                     Text(source.remoteURL)
                         .font(DesignSystem.Fonts.mono(12, weight: .semibold))
                         .foregroundStyle(colors.textPrimary)
                         .lineLimit(1)
                         .truncationMode(.middle)
 
-                    HStack(spacing: 8) {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
                         Label("ref: \(source.reference)", systemImage: "arrow.triangle.branch")
                             .labelStyle(.titleAndIcon)
                         if let subdirectoryLabel {
@@ -266,7 +261,7 @@ private struct GitSourceRow: View {
 
                 Spacer()
 
-                HStack(spacing: 10) {
+                HStack(spacing: DesignSystem.Spacing.sm) {
                     InlineActionButton(
                         title: isWorking ? "Syncing…" : "Sync",
                         systemImage: "arrow.triangle.2.circlepath",
@@ -287,7 +282,7 @@ private struct GitSourceRow: View {
             }
 
             if let lastSyncedAt = source.lastSyncedAt {
-                HStack(spacing: 10) {
+                HStack(spacing: DesignSystem.Spacing.sm) {
                     Label("Last sync \(lastSyncedAt.formatted(date: .abbreviated, time: .shortened))", systemImage: "clock")
                     if let commitLabel {
                         Label(commitLabel, systemImage: "number")
@@ -297,13 +292,13 @@ private struct GitSourceRow: View {
                 .foregroundStyle(colors.textSecondary)
             }
         }
-        .padding(14)
+        .padding(DesignSystem.Spacing.md)
         .background(
-            RoundedRectangle(cornerRadius: 14)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(colors.surfaceElevated)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 14)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .stroke(colors.border.opacity(0.7), lineWidth: 1)
         )
     }
@@ -333,17 +328,17 @@ private struct InlineActionButton: View {
             Label(title, systemImage: systemImage)
                 .font(DesignSystem.Fonts.mono(11, weight: .semibold))
                 .foregroundStyle(foreground)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
+                .padding(.horizontal, DesignSystem.Spacing.sm)
+                .padding(.vertical, DesignSystem.Spacing.sm)
                 .background(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                         .fill(background)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                         .stroke(border, lineWidth: 1)
                 )
-                .clipShape(.rect(cornerRadius: 10))
+                .clipShape(.rect(cornerRadius: DesignSystem.Radius.md))
         }
         .buttonStyle(.plain)
         .disabled(disabled)

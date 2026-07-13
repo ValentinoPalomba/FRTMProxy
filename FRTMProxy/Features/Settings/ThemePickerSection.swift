@@ -9,7 +9,7 @@ struct ThemePickerSection: View {
 
     var body: some View {
         SettingsCard(title: title, subtitle: subtitle, colors: colors) {
-            VStack(spacing: 10) {
+            VStack(spacing: DesignSystem.Spacing.sm) {
                 ForEach(themes) { theme in
                     ThemeOptionRow(theme: theme, selection: $selection, colors: colors)
                 }

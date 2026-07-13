@@ -13,7 +13,7 @@ struct FlowSplitInspector: View {
     let onToggleBreakpoint: ((FlowBreakpointPhase, Bool) -> Void)?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(8)) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             FlowMetaBar(
                 flow: flow,
                 colors: colors,
@@ -23,7 +23,7 @@ struct FlowSplitInspector: View {
                 onToggleBreakpoint: onToggleBreakpoint
             )
 
-            HStack(spacing: DesignSystem.Metrics.scaled(16)) {
+            HStack(spacing: DesignSystem.Spacing.lg) {
                 FlowPanel(
                     title: "Request",
                     method: flow.request?.method,
@@ -31,7 +31,7 @@ struct FlowSplitInspector: View {
                     headers: flow.request?.headers ?? [:],
                     queryParameters: queryParameters(in: flow.request?.url),
                     bodyFlow: flow.request?.body,
-                    emptyText: "Request non disponibile",
+                    emptyText: "Request unavailable",
                     isMapped: false,
                     colors: colors
                 )
@@ -45,7 +45,7 @@ struct FlowSplitInspector: View {
                     headers: flow.response?.headers ?? [:],
                     queryParameters: [],
                     bodyFlow: flow.response?.body,
-                    emptyText: "Response non disponibile",
+                    emptyText: "Response unavailable",
                     isMapped: flow.isMapped,
                     colors: colors,
                     timingData: FlowTimingData(
@@ -106,7 +106,7 @@ private struct FlowMetaBar: View {
     }
 
     var body: some View {
-        HStack(spacing: DesignSystem.Metrics.scaled(10)) {
+        HStack(spacing: DesignSystem.Spacing.sm) {
             Group {
                 if let text = styledURLText {
                     text
@@ -127,7 +127,7 @@ private struct FlowMetaBar: View {
             .layoutPriority(1)
 
             if !flow.formattedTimestamp.isEmpty {
-                HStack(spacing: DesignSystem.Metrics.scaled(4)) {
+                HStack(spacing: DesignSystem.Spacing.xs) {
                     Image(systemName: "clock")
                     Text(flow.formattedTimestamp)
                 }
@@ -140,15 +140,15 @@ private struct FlowMetaBar: View {
             }
 
             if let clientLabel {
-                HStack(spacing: DesignSystem.Metrics.scaled(6)) {
+                HStack(spacing: DesignSystem.Spacing.sm) {
                     Image(systemName: clientIcon)
                     Text(clientLabel)
                         .lineLimit(1)
                         .truncationMode(.tail)
                 }
                 .font(DesignSystem.Fonts.sans(10, weight: .semibold))
-                .padding(.horizontal, DesignSystem.Metrics.scaled(8))
-                .padding(.vertical, DesignSystem.Metrics.scaled(4))
+                .padding(.horizontal, DesignSystem.Spacing.sm)
+                .padding(.vertical, DesignSystem.Spacing.xs)
                 .background(
                     Capsule().fill(colors.surface)
                 )
@@ -156,13 +156,13 @@ private struct FlowMetaBar: View {
             }
 
             if flow.isMapped {
-                HStack(spacing: DesignSystem.Metrics.scaled(6)) {
+                HStack(spacing: DesignSystem.Spacing.sm) {
                     Image(systemName: "pencil.and.outline")
                     Text("Mapped")
                 }
                 .font(DesignSystem.Fonts.sans(10, weight: .semibold))
-                .padding(.horizontal, DesignSystem.Metrics.scaled(8))
-                .padding(.vertical, DesignSystem.Metrics.scaled(4))
+                .padding(.horizontal, DesignSystem.Spacing.sm)
+                .padding(.vertical, DesignSystem.Spacing.xs)
                 .background(
                     Capsule().fill(colors.accent.opacity(0.12))
                 )
@@ -171,7 +171,7 @@ private struct FlowMetaBar: View {
 
             Spacer(minLength: 0)
 
-            HStack(spacing: DesignSystem.Metrics.scaled(6)) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 if let onMapLocal {
                     ControlButton(title: "Map Local", systemImage: "app.badge", style: .ghost(colors)) { onMapLocal() }
                         .onboardingTarget(.mapResponse)
@@ -188,15 +188,15 @@ private struct FlowMetaBar: View {
             }
             .fixedSize(horizontal: true, vertical: false)
         }
-        .padding(.horizontal, DesignSystem.Metrics.scaled(12))
-        .padding(.vertical, DesignSystem.Metrics.scaled(6))
+        .padding(.horizontal, DesignSystem.Spacing.md)
+        .padding(.vertical, DesignSystem.Spacing.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10), style: .continuous)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                 .fill(colors.surfaceElevated)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10), style: .continuous)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                 .stroke(colors.border.opacity(0.7), lineWidth: 1)
         )
     }
@@ -217,7 +217,7 @@ private struct BreakpointSelectorButton: View {
         Button {
             isPresented.toggle()
         } label: {
-            HStack(spacing: DesignSystem.Metrics.scaled(6)) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 Image(systemName: hasBreakpointEnabled ? "record.circle.fill" : "record.circle")
                 Text("Breakpoint")
                     .lineLimit(1)
@@ -225,20 +225,20 @@ private struct BreakpointSelectorButton: View {
                     .allowsTightening(true)
             }
             .font(DesignSystem.Fonts.mono(13, weight: .semibold))
-            .padding(.horizontal, DesignSystem.Metrics.scaled(14))
-            .padding(.vertical, DesignSystem.Metrics.scaled(9))
+            .padding(.horizontal, DesignSystem.Spacing.md)
+            .padding(.vertical, DesignSystem.Spacing.sm)
             .frame(minHeight: DesignSystem.Metrics.scaled(34))
             .background(hasBreakpointEnabled ? colors.accent.opacity(0.9) : colors.surface)
             .foregroundStyle(hasBreakpointEnabled ? Color.black.opacity(0.9) : colors.textPrimary)
             .overlay(
-                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                     .stroke(hasBreakpointEnabled ? colors.accent : colors.border, lineWidth: 1)
             )
-            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10)))
+            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.md))
         }
         .buttonStyle(.plain)
         .popover(isPresented: $isPresented, arrowEdge: .bottom) {
-            VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(14)) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                 Text("Pause")
                     .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                     .foregroundStyle(colors.textSecondary)
@@ -259,10 +259,10 @@ private struct BreakpointSelectorButton: View {
                     onToggle(.response, !isResponseEnabled)
                 }
             }
-            .padding(DesignSystem.Metrics.scaled(16))
+            .padding(DesignSystem.Spacing.lg)
             .frame(width: DesignSystem.Metrics.scaled(240))
             .background(
-                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(16), style: .continuous)
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                     .fill(colors.surface)
                     .shadow(color: Color.black.opacity(0.18), radius: 18, y: 8)
             )
@@ -279,11 +279,11 @@ private struct BreakpointToggleRow: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: DesignSystem.Metrics.scaled(12)) {
+            HStack(spacing: DesignSystem.Spacing.md) {
                 Image(systemName: isEnabled ? "checkmark.circle.fill" : "circle")
                     .foregroundStyle(isEnabled ? colors.accent : colors.border)
                     .font(.system(size: DesignSystem.Metrics.scaled(18)))
-                VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(2)) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
                     Text(title)
                         .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                         .foregroundStyle(colors.textPrimary)
@@ -293,12 +293,12 @@ private struct BreakpointToggleRow: View {
                 }
                 Spacer()
             }
-            .padding(DesignSystem.Metrics.scaled(12))
+            .padding(DesignSystem.Spacing.md)
             .background(
-                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(12))
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.lg)
                     .fill(colors.surfaceElevated)
                     .overlay(
-                        RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(12))
+                        RoundedRectangle(cornerRadius: DesignSystem.Radius.lg)
                             .stroke(isEnabled ? colors.accent : colors.border.opacity(0.8), lineWidth: 1)
                     )
             )

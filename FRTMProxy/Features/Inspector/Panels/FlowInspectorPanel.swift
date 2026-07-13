@@ -23,8 +23,8 @@ struct FlowInspectorPanel: View {
             isResponseBreakpointEnabled: isResponseBreakpointEnabled,
             onToggleBreakpoint: onToggleBreakpoint
         )
-        .padding(.horizontal, DesignSystem.Metrics.scaled(12))
-        .padding(.vertical, DesignSystem.Metrics.scaled(12))
+        .padding(.horizontal, DesignSystem.Spacing.md)
+        .padding(.vertical, DesignSystem.Spacing.md)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(colors.surface)
     }

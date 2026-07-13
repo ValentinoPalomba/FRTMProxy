@@ -30,12 +30,12 @@ struct CollectionsManagerView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: DesignSystem.Spacing.lg) {
             header
             Divider()
             content
         }
-        .padding(20)
+        .padding(DesignSystem.Spacing.lg)
         .frame(minWidth: 1240, minHeight: 680)
         .background(colors.background)
         .sheet(isPresented: $showStartSheet) {
@@ -85,7 +85,7 @@ struct CollectionsManagerView: View {
                 GitPublishCollectionSheet(viewModel: viewModel, collection: collection, colors: colors)
             } else {
                 Text("Collection not found.")
-                    .padding(24)
+                    .padding(DesignSystem.Spacing.xl)
             }
         }
         .alert(
@@ -127,8 +127,8 @@ struct CollectionsManagerView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: DesignSystem.Spacing.md) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text("Collections")
                     .font(DesignSystem.Fonts.mono(22, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
@@ -198,10 +198,10 @@ struct CollectionsManagerView: View {
     }
 
     private var content: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: DesignSystem.Spacing.lg) {
             collectionSidebar
                 .frame(width: 320)
-            VStack(spacing: 16) {
+            VStack(spacing: DesignSystem.Spacing.lg) {
                 if viewModel.isRecordingCollection {
                     RecordingPreviewView(
                         collectionName: viewModel.recordingCollectionName ?? "",
@@ -245,7 +245,7 @@ struct CollectionsManagerView: View {
 
     private var collectionSidebar: some View {
         ScrollView {
-            LazyVStack(spacing: 8) {
+            LazyVStack(spacing: DesignSystem.Spacing.sm) {
                 if viewModel.collections.isEmpty {
                     collectionsPlaceholder
                 } else {
@@ -269,65 +269,61 @@ struct CollectionsManagerView: View {
                     }
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, DesignSystem.Spacing.xs)
         }
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(colors.surface)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                         .stroke(colors.border.opacity(0.7), lineWidth: 1)
                 )
         )
     }
 
     private var collectionsPlaceholder: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "folder.badge.questionmark")
-                .font(.system(size: 42))
-                .foregroundStyle(colors.textSecondary)
-            Text("No collections")
-                .font(DesignSystem.Fonts.sans(16, weight: .semibold))
-                .foregroundStyle(colors.textSecondary)
-            Text("Start a recording to automatically save a Map Local collection.")
-                .font(DesignSystem.Fonts.sans(13))
-                .foregroundStyle(colors.textSecondary)
-                .multilineTextAlignment(.center)
-        }
+        StateView(
+            kind: .empty(
+                title: "No collections",
+                message: "Start a recording to automatically save a Map Local collection.",
+                systemImage: "folder.badge.questionmark"
+            ),
+            palette: colors
+        )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
     }
 
     private var detailPlaceholder: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "tray")
-                .font(.system(size: 40))
-                .foregroundStyle(colors.textSecondary)
-            Text("Select a collection to view its rules.")
-                .font(DesignSystem.Fonts.sans(15, weight: .semibold))
-                .foregroundStyle(colors.textSecondary)
-        }
+        StateView(
+            kind: .empty(
+                title: "Select a collection to view its rules.",
+                message: nil,
+                systemImage: "tray"
+            ),
+            palette: colors
+        )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(colors.surface)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                         .stroke(colors.border.opacity(0.6), lineWidth: 1)
                 )
         )
     }
 
     private func recordingBadge(name: String, count: Int) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: DesignSystem.Spacing.sm) {
             Circle()
                 .fill(colors.danger)
                 .frame(width: 10, height: 10)
             Text("Recording \"\(name)\" (\(count) \(count == 1 ? "rule" : "rules"))")
                 .font(DesignSystem.Fonts.mono(12, weight: .semibold))
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 4)
+        .padding(.horizontal, DesignSystem.Spacing.sm)
+        .padding(.vertical, DesignSystem.Spacing.xs)
         .background(
             Capsule()
                 .fill(colors.surfaceElevated)
@@ -405,7 +401,7 @@ private struct CollectionCard: View {
 
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text(collection.name)
                     .font(DesignSystem.Fonts.sans(16, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
@@ -420,16 +416,16 @@ private struct CollectionCard: View {
             .toggleStyle(.switch)
             .labelsHidden()
         }
-        .padding(14)
+        .padding(DesignSystem.Spacing.md)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(isSelected ? colors.accent.opacity(0.12) : colors.surface)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                         .stroke(isSelected ? colors.accent.opacity(0.6) : colors.border.opacity(0.6), lineWidth: 1)
                 )
         )
-        .contentShape(RoundedRectangle(cornerRadius: 12))
+        .contentShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous))
         .onTapGesture {
             onSelect()
         }
@@ -449,9 +445,9 @@ private struct RecordingPreviewView: View {
     let onEditRule: (MapRule) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
                     Text("Recording \"\(collectionName)\"")
                         .font(DesignSystem.Fonts.sans(18, weight: .semibold))
                     Text("\(rules.count) \(rules.count == 1 ? "rule" : "rules") captured so far")
@@ -467,7 +463,7 @@ private struct RecordingPreviewView: View {
                     .foregroundStyle(colors.textSecondary)
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 8) {
+                    LazyVStack(spacing: DesignSystem.Spacing.sm) {
                         ForEach(rules) { rule in
                             RecordingPreviewRuleRow(
                                 rule: rule,
@@ -480,12 +476,12 @@ private struct RecordingPreviewView: View {
                 .frame(maxHeight: 220)
             }
         }
-        .padding(16)
+        .padding(DesignSystem.Spacing.lg)
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(colors.surfaceElevated)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                         .stroke(colors.border.opacity(0.6), lineWidth: 1)
                 )
         )
@@ -498,8 +494,8 @@ private struct RecordingPreviewRuleRow: View {
     let onEdit: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
+        HStack(spacing: DesignSystem.Spacing.md) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
                 Text(rule.path)
                     .font(DesignSystem.Fonts.mono(11, weight: .semibold))
                 Text(rule.host)
@@ -514,8 +510,8 @@ private struct RecordingPreviewRuleRow: View {
             Spacer()
             Text("\(rule.status)")
                 .font(DesignSystem.Fonts.mono(11, weight: .semibold))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
+                .padding(.horizontal, DesignSystem.Spacing.sm)
+                .padding(.vertical, DesignSystem.Spacing.xs)
                 .background(
                     Capsule()
                         .fill(colors.surface)
@@ -531,14 +527,15 @@ private struct RecordingPreviewRuleRow: View {
                     .foregroundStyle(colors.textPrimary)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Edit rule")
         }
-        .padding(8)
+        .padding(DesignSystem.Spacing.sm)
         .background(
-            RoundedRectangle(cornerRadius: 10)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                 .fill(colors.surface)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 10)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                 .stroke(colors.border.opacity(0.5), lineWidth: 1)
         )
     }
@@ -568,9 +565,9 @@ private struct CollectionDetailView: View {
     let onDeleteRule: (MapRule) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .center, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+            HStack(alignment: .center, spacing: DesignSystem.Spacing.md) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                     Text(collection.name)
                         .font(DesignSystem.Fonts.sans(20, weight: .semibold))
                     Text("Created \(collection.createdAt.formatted(date: .abbreviated, time: .shortened))")
@@ -600,18 +597,18 @@ private struct CollectionDetailView: View {
             }
             Divider()
             if collection.rules.isEmpty {
-                VStack(spacing: 8) {
-                    Image(systemName: "questionmark.square.dashed")
-                        .font(.system(size: 40))
-                        .foregroundStyle(colors.textSecondary)
-                    Text("No rules saved in this collection")
-                        .font(DesignSystem.Fonts.sans(14, weight: .semibold))
-                        .foregroundStyle(colors.textSecondary)
-                }
+                StateView(
+                    kind: .empty(
+                        title: "No rules saved in this collection",
+                        message: nil,
+                        systemImage: "questionmark.square.dashed"
+                    ),
+                    palette: colors
+                )
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 8) {
+                    LazyVStack(spacing: DesignSystem.Spacing.sm) {
                         ForEach(collection.rules) { rule in
                             CollectionRuleRow(
                                 rule: rule,
@@ -621,17 +618,17 @@ private struct CollectionDetailView: View {
                             )
                         }
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, DesignSystem.Spacing.xs)
                 }
             }
         }
-        .padding(18)
+        .padding(DesignSystem.Spacing.lg)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(colors.surface)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                         .stroke(colors.border.opacity(0.6), lineWidth: 1)
                 )
         )
@@ -650,8 +647,8 @@ private struct CollectionRuleRow: View {
     let onDelete: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: DesignSystem.Spacing.md) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text(rule.path)
                     .font(DesignSystem.Fonts.mono(12, weight: .semibold))
                 Text(rule.host)
@@ -666,8 +663,8 @@ private struct CollectionRuleRow: View {
             Spacer()
             Text("\(rule.status)")
                 .font(DesignSystem.Fonts.mono(12, weight: .semibold))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
+                .padding(.horizontal, DesignSystem.Spacing.sm)
+                .padding(.vertical, DesignSystem.Spacing.xs)
                 .background(
                     Capsule()
                         .fill(colors.surfaceElevated)
@@ -680,27 +677,29 @@ private struct CollectionRuleRow: View {
                 onEdit()
             } label: {
                 Image(systemName: "pencil")
-                    .padding(6)
+                    .padding(DesignSystem.Spacing.sm)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Edit rule")
             Button(role: .destructive) {
                 onDelete()
             } label: {
                 Image(systemName: "trash")
-                    .padding(6)
+                    .padding(DesignSystem.Spacing.sm)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Delete rule")
         }
-        .padding(14)
+        .padding(DesignSystem.Spacing.md)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(colors.surfaceElevated)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .stroke(colors.border.opacity(0.6), lineWidth: 1)
         )
-        .contentShape(RoundedRectangle(cornerRadius: 12))
+        .contentShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous))
         .onTapGesture(count: 2, perform: onEdit)
         .contextMenu {
             Button("Edit") { onEdit() }
@@ -732,7 +731,7 @@ private struct CollectionNameSheet: View {
     let onCancel: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
             Text(title)
                 .font(DesignSystem.Fonts.sans(20, weight: .semibold))
             Text(message)
@@ -750,7 +749,7 @@ private struct CollectionNameSheet: View {
                 .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        .padding(24)
+        .padding(DesignSystem.Spacing.xl)
         .frame(minWidth: 420)
     }
 }

@@ -12,8 +12,8 @@ struct FlowFiltersView: View {
     let onRemovePinnedApp: (PinnedApp) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(8)) {
-            HStack(spacing: DesignSystem.Metrics.scaled(10)) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 SearchField(
                     text: $filter.searchText,
                     placeholder: "Search: keywords, host:, app:, method:, status:, type:, device: (use -term to exclude)",
@@ -25,7 +25,7 @@ struct FlowFiltersView: View {
 
             if !pinnedApps.isEmpty || !pinnedHosts.isEmpty || clientIPs.count > 1 {
                 ScrollView(.horizontal) {
-                    HStack(spacing: DesignSystem.Metrics.scaled(8)) {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
                         ForEach(pinnedApps) { app in
                             PinnedAppChip(
                                 app: app,
@@ -52,7 +52,7 @@ struct FlowFiltersView: View {
                             }
                         }
                     }
-                    .padding(.vertical, DesignSystem.Metrics.scaled(2))
+                    .padding(.vertical, DesignSystem.Spacing.xxs)
                 }
                 .scrollIndicators(.hidden)
             }
@@ -68,21 +68,21 @@ private struct DeviceChip: View {
 
     var body: some View {
         Button(action: onToggle) {
-            HStack(spacing: DesignSystem.Metrics.scaled(6)) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 Image(systemName: "iphone")
                     .font(.system(size: DesignSystem.Metrics.scaled(12), weight: .semibold))
                 Text(ip)
                     .font(DesignSystem.Fonts.mono(12, weight: .semibold))
                     .lineLimit(1)
             }
-            .padding(.horizontal, DesignSystem.Metrics.scaled(12))
-            .padding(.vertical, DesignSystem.Metrics.scaled(6))
+            .padding(.horizontal, DesignSystem.Spacing.md)
+            .padding(.vertical, DesignSystem.Spacing.sm)
             .background(
-                RoundedRectangle(cornerRadius: 999, style: .continuous)
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.pill, style: .continuous)
                     .fill(isActive ? colors.accent.opacity(0.18) : colors.surface)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 999, style: .continuous)
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.pill, style: .continuous)
                     .stroke(isActive ? colors.accent : colors.border, lineWidth: 1)
             )
             .foregroundStyle(isActive ? colors.accent : colors.textPrimary)
@@ -99,21 +99,21 @@ private struct PinnedHostChip: View {
 
     var body: some View {
         Button(action: onToggle) {
-            HStack(spacing: DesignSystem.Metrics.scaled(6)) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 Image(systemName: host.isActive ? "pin.fill" : "pin")
                     .font(.system(size: DesignSystem.Metrics.scaled(12), weight: .semibold))
                 Text(host.host)
                     .font(DesignSystem.Fonts.mono(12, weight: .semibold))
                     .lineLimit(1)
             }
-            .padding(.horizontal, DesignSystem.Metrics.scaled(12))
-            .padding(.vertical, DesignSystem.Metrics.scaled(6))
+            .padding(.horizontal, DesignSystem.Spacing.md)
+            .padding(.vertical, DesignSystem.Spacing.sm)
             .background(
-                RoundedRectangle(cornerRadius: 999, style: .continuous)
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.pill, style: .continuous)
                     .fill(host.isActive ? colors.accent.opacity(0.18) : colors.surface)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 999, style: .continuous)
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.pill, style: .continuous)
                     .stroke(host.isActive ? colors.accent : colors.border, lineWidth: 1)
             )
             .foregroundStyle(host.isActive ? colors.accent : colors.textPrimary)
@@ -137,7 +137,7 @@ private struct PinnedAppChip: View {
 
     var body: some View {
         Button(action: onToggle) {
-            HStack(spacing: DesignSystem.Metrics.scaled(6)) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 appIcon
                 Image(systemName: app.isActive ? "pin.fill" : "pin")
                     .font(.system(size: DesignSystem.Metrics.scaled(12), weight: .semibold))
@@ -145,14 +145,14 @@ private struct PinnedAppChip: View {
                     .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                     .lineLimit(1)
             }
-            .padding(.horizontal, DesignSystem.Metrics.scaled(12))
-            .padding(.vertical, DesignSystem.Metrics.scaled(6))
+            .padding(.horizontal, DesignSystem.Spacing.md)
+            .padding(.vertical, DesignSystem.Spacing.sm)
             .background(
-                RoundedRectangle(cornerRadius: 999, style: .continuous)
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.pill, style: .continuous)
                     .fill(app.isActive ? colors.accent.opacity(0.18) : colors.surface)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 999, style: .continuous)
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.pill, style: .continuous)
                     .stroke(app.isActive ? colors.accent : colors.border, lineWidth: 1)
             )
             .foregroundStyle(app.isActive ? colors.accent : colors.textPrimary)

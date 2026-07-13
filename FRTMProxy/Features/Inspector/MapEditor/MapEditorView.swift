@@ -39,7 +39,7 @@ struct MapEditorView: View {
     @State private var responseTab: EditorTab = .body
     
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(16)) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
             breadcrumb
             
             editorsStack
@@ -48,11 +48,11 @@ struct MapEditorView: View {
             
             actionBar
         }
-        .padding(DesignSystem.Metrics.scaled(20))
+        .padding(DesignSystem.Spacing.lg)
         .background(colors.background)
         .overlay {
             if !isSelectionAvailable {
-                VStack(spacing: DesignSystem.Metrics.scaled(8)) {
+                VStack(spacing: DesignSystem.Spacing.sm) {
                     Image(systemName: "cursorarrow.rays")
                         .font(.system(size: DesignSystem.Metrics.scaled(30)))
                         .foregroundStyle(colors.textSecondary)
@@ -65,7 +65,7 @@ struct MapEditorView: View {
     }
     
     private var breadcrumb: some View {
-        HStack(spacing: DesignSystem.Metrics.scaled(8)) {
+        HStack(spacing: DesignSystem.Spacing.sm) {
             Text(titlePrefix)
                 .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)
@@ -80,7 +80,7 @@ struct MapEditorView: View {
     private var editorsStack: some View {
         Group {
             if showsRequestEditor && showsResponseEditor {
-                HStack(alignment: .top, spacing: DesignSystem.Metrics.scaled(16)) {
+                HStack(alignment: .top, spacing: DesignSystem.Spacing.lg) {
                     requestEditorCard
                     responseEditorCard
                 }
@@ -132,9 +132,9 @@ struct MapEditorView: View {
         trailingHeader: AnyView? = nil,
         topAccessory: AnyView? = nil
     ) -> some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(12)) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             HStack {
-                HStack(spacing: DesignSystem.Metrics.scaled(4)) {
+                HStack(spacing: DesignSystem.Spacing.xs) {
                     Text(title)
                         .font(DesignSystem.Fonts.sans(17, weight: .semibold))
                     if let titleBadge {
@@ -155,7 +155,7 @@ struct MapEditorView: View {
             
             bodyContent(selectedTab.wrappedValue)
         }
-        .padding(DesignSystem.Metrics.scaled(16))
+        .padding(DesignSystem.Spacing.lg)
         .surfaceCard(fill: colors.surface, stroke: colors.border, shadowOpacity: 0.08)
         .disabled(!allowEditing)
         .opacity(!allowEditing ? 0.6 : 1)
@@ -217,9 +217,9 @@ struct MapEditorView: View {
     }
     
     private func tabBar(tabs: [EditorTab], selection: Binding<EditorTab>) -> some View {
-        HStack(spacing: DesignSystem.Metrics.scaled(16)) {
+        HStack(spacing: DesignSystem.Spacing.lg) {
             ForEach(tabs, id: \.self) { tab in
-                VStack(spacing: DesignSystem.Metrics.scaled(6)) {
+                VStack(spacing: DesignSystem.Spacing.sm) {
                     Button {
                         selection.wrappedValue = tab
                     } label: {
@@ -236,11 +236,11 @@ struct MapEditorView: View {
                 }
             }
         }
-        .padding(.bottom, DesignSystem.Metrics.scaled(6))
+        .padding(.bottom, DesignSystem.Spacing.sm)
     }
     
     private var statusField: some View {
-        HStack(spacing: DesignSystem.Metrics.scaled(8)) {
+        HStack(spacing: DesignSystem.Spacing.sm) {
             Text("Status")
                 .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)
@@ -252,7 +252,7 @@ struct MapEditorView: View {
     
     private var actionBar: some View {
         HStack {
-            HStack(spacing: DesignSystem.Metrics.scaled(6)) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 Circle()
                     .fill(viewModel.isModified ? colors.warning : colors.textSecondary.opacity(0.4))
                     .frame(width: DesignSystem.Metrics.scaled(10), height: DesignSystem.Metrics.scaled(10))
@@ -275,7 +275,7 @@ struct MapEditorView: View {
                 }
             }
         }
-        .padding(.top, DesignSystem.Metrics.scaled(8))
+        .padding(.top, DesignSystem.Spacing.sm)
     }
 }
 
@@ -290,7 +290,7 @@ private struct KeyValueEditor: View {
     let onRemove: (UUID) -> Void
 
     var body: some View {
-        VStack(spacing: DesignSystem.Metrics.scaled(10)) {
+        VStack(spacing: DesignSystem.Spacing.sm) {
             if rows.isEmpty {
                 Text(emptyMessage)
                     .foregroundStyle(colors.textSecondary)
@@ -298,7 +298,7 @@ private struct KeyValueEditor: View {
                     .frame(maxWidth: .infinity, minHeight: DesignSystem.Metrics.scaled(60), alignment: .center)
             } else {
                 ScrollView {
-                    LazyVStack(spacing: DesignSystem.Metrics.scaled(10)) {
+                    LazyVStack(spacing: DesignSystem.Spacing.sm) {
                         ForEach($rows) { $row in
                             KeyValueRowView(
                                 row: $row,
@@ -321,7 +321,7 @@ private struct KeyValueEditor: View {
                         .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                 }
                 .buttonStyle(.plain)
-                .padding(.top, DesignSystem.Metrics.scaled(4))
+                .padding(.top, DesignSystem.Spacing.xs)
             }
         }
     }
@@ -336,7 +336,7 @@ private struct KeyValueRowView: View {
     let onRemove: (UUID) -> Void
 
     var body: some View {
-        HStack(alignment: useMultilineValue ? .top : .center, spacing: DesignSystem.Metrics.scaled(10)) {
+        HStack(alignment: useMultilineValue ? .top : .center, spacing: DesignSystem.Spacing.sm) {
             TextField(keyPlaceholder, text: $row.key)
                 .textFieldStyle(ProxyTextFieldStyle(palette: colors, size: .compact))
                 .frame(width: DesignSystem.Metrics.scaled(180))
@@ -346,21 +346,21 @@ private struct KeyValueRowView: View {
                     if row.value.isEmpty {
                         Text(valuePlaceholder)
                             .foregroundStyle(colors.textSecondary.opacity(0.7))
-                            .padding(.horizontal, DesignSystem.Metrics.scaled(6))
-                            .padding(.vertical, DesignSystem.Metrics.scaled(8))
+                            .padding(.horizontal, DesignSystem.Spacing.sm)
+                            .padding(.vertical, DesignSystem.Spacing.sm)
                     }
                     TextEditor(text: $row.value)
                         .font(DesignSystem.Fonts.mono(12))
                         .frame(minHeight: DesignSystem.Metrics.scaled(48), maxHeight: DesignSystem.Metrics.scaled(140))
-                        .padding(DesignSystem.Metrics.scaled(4))
+                        .padding(DesignSystem.Spacing.xs)
                         .background(Color.clear)
                 }
                 .frame(maxWidth: .infinity)
                 .background(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                         .fill(colors.surfaceElevated)
                         .overlay(
-                            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
+                            RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                                 .stroke(colors.border, lineWidth: 1)
                         )
                 )
@@ -376,13 +376,14 @@ private struct KeyValueRowView: View {
                     .foregroundStyle(colors.danger)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Remove")
         }
-        .padding(DesignSystem.Metrics.scaled(10))
+        .padding(DesignSystem.Spacing.sm)
         .background(
-            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                 .fill(colors.surfaceElevated)
                 .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                         .stroke(colors.border, lineWidth: 1)
                 )
         )
@@ -401,9 +402,9 @@ private struct RequestMetaEditor: View {
     let colors: DesignSystem.ColorPalette
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(10)) {
-            HStack(alignment: .center, spacing: DesignSystem.Metrics.scaled(16)) {
-                VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(4)) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            HStack(alignment: .center, spacing: DesignSystem.Spacing.lg) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                     Text("Method")
                         .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                         .foregroundStyle(colors.textSecondary)
@@ -412,7 +413,7 @@ private struct RequestMetaEditor: View {
                         .frame(width: DesignSystem.Metrics.scaled(120))
                 }
 
-                VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(4)) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                     Text("URL")
                         .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                         .foregroundStyle(colors.textSecondary)

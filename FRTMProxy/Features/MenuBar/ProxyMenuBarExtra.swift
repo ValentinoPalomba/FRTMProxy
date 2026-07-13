@@ -3,9 +3,14 @@ import SwiftUI
 
 struct ProxyMenuBarExtra: View {
     @ObservedObject var proxyViewModel: ProxyViewModel
+    @ObservedObject var settings: SettingsStore
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
+        Text(statusText)
+
+        Divider()
+
         Button {
             showMainWindow()
         } label: {
@@ -32,10 +37,19 @@ struct ProxyMenuBarExtra: View {
 
         Divider()
 
+        Toggle("Route this Mac's traffic", isOn: $settings.overrideMacOSProxy)
+
+        Divider()
+
         Button("Quit", systemImage: "power") {
             NSApplication.shared.terminate(nil)
         }
         .keyboardShortcut("q", modifiers: .command)
+    }
+
+    private var statusText: String {
+        guard proxyViewModel.isRunning else { return "Proxy stopped" }
+        return "Running · port \(proxyViewModel.activePort) · \(proxyViewModel.flows.count) flows"
     }
 
     private func showMainWindow() {

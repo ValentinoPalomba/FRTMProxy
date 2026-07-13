@@ -26,6 +26,8 @@ struct FRTMProxyApp: App {
     @StateObject private var onboardingManager = OnboardingManager()
     @State private var deviceAlert: DeviceAlert?
     @State private var isInstallingSimulatorCertificate = false
+    @State private var isInstallingMacCertificate = false
+    @State private var isInstallingAndroidCertificate = false
     private let certificateInstaller = SimulatorCertificateInstaller()
     @Environment(\.openWindow) private var openWindow
     private let updaterController: SPUStandardUpdaterController
@@ -56,6 +58,7 @@ struct FRTMProxyApp: App {
         .windowResizability(.contentSize)
         
         .commands {
+            InspectorCommandsMenu()
             CommandGroup(after: .appTermination) {
                             CheckForUpdatesView(updater: updaterController.updater)
                         }
@@ -80,13 +83,38 @@ struct FRTMProxyApp: App {
                     }
                 }
                 .disabled(isInstallingSimulatorCertificate)
+
+                Button(action: installMitmproxyCertificateOnAndroid) {
+                    Label {
+                        Text(isInstallingAndroidCertificate ? "Installing Certificate…" : "Install mitmproxy Certificate on Android Emulators")
+                    } icon: {
+                        Image(systemName: isInstallingAndroidCertificate ? "hourglass" : "cpu")
+                    }
+                }
+                .disabled(isInstallingAndroidCertificate)
+
+                Button(action: installMitmproxyCertificateOnMac) {
+                    Label {
+                        Text(isInstallingMacCertificate ? "Trusting Certificate…" : "Trust mitmproxy Certificate on this Mac")
+                    } icon: {
+                        Image(systemName: isInstallingMacCertificate ? "hourglass" : "checkmark.seal")
+                    }
+                }
+                .disabled(isInstallingMacCertificate)
+
+                Divider()
+
+                Button("Copy CLI Proxy Environment Variables") {
+                    copyProxyEnvironmentVariables()
+                }
+
                 Divider()
                 Toggle("Override macOS proxy", isOn: $settingsStore.overrideMacOSProxy)
             }
         }
         
         MenuBarExtra {
-            ProxyMenuBarExtra(proxyViewModel: proxyViewModel)
+            ProxyMenuBarExtra(proxyViewModel: proxyViewModel, settings: settingsStore)
         } label: {
             ProxyMenuBarLabel(isRunning: proxyViewModel.isRunning)
         }
@@ -137,6 +165,65 @@ struct FRTMProxyApp: App {
                 }
             }
         }
+    }
+
+    private func installMitmproxyCertificateOnMac() {
+        guard !isInstallingMacCertificate else { return }
+        isInstallingMacCertificate = true
+        DispatchQueue.global(qos: .userInitiated).async {
+            let result: Result<String, Error>
+            do {
+                result = .success(try MacCertificateInstaller().install())
+            } catch {
+                result = .failure(error)
+            }
+            DispatchQueue.main.async {
+                self.isInstallingMacCertificate = false
+                switch result {
+                case .success(let message):
+                    self.deviceAlert = DeviceAlert(title: "macOS certificate trusted", message: message)
+                case .failure(let error):
+                    self.deviceAlert = DeviceAlert(title: "Trust failed", message: error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    private func installMitmproxyCertificateOnAndroid() {
+        guard !isInstallingAndroidCertificate else { return }
+        isInstallingAndroidCertificate = true
+        DispatchQueue.global(qos: .userInitiated).async {
+            let result: Result<String, Error>
+            do {
+                result = .success(try AndroidCertificateInstaller().installOnEmulators())
+            } catch {
+                result = .failure(error)
+            }
+            DispatchQueue.main.async {
+                self.isInstallingAndroidCertificate = false
+                switch result {
+                case .success(let message):
+                    self.deviceAlert = DeviceAlert(title: "Android emulators", message: message)
+                case .failure(let error):
+                    self.deviceAlert = DeviceAlert(title: "Installation failed", message: error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    private func copyProxyEnvironmentVariables() {
+        let port = proxyViewModel.activePort
+        let text = """
+        export HTTP_PROXY=http://127.0.0.1:\(port)
+        export HTTPS_PROXY=http://127.0.0.1:\(port)
+        export SSL_CERT_FILE=$HOME/.mitmproxy/mitmproxy-ca-cert.pem
+        export NODE_EXTRA_CA_CERTS=$HOME/.mitmproxy/mitmproxy-ca-cert.pem
+        """
+        ClipboardHelper.copy(text)
+        deviceAlert = DeviceAlert(
+            title: "Copied",
+            message: "Proxy environment variables copied. Paste them into the terminal session whose CLI traffic you want to capture, then run your command."
+        )
     }
 }
 

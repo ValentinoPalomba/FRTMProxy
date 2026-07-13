@@ -17,10 +17,10 @@ struct QRCodeView: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(colors.surfaceElevated)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                         .stroke(colors.border.opacity(0.9), lineWidth: 1)
                 )
                 .shadow(color: Color.black.opacity(0.12), radius: 16, y: 8)
@@ -30,12 +30,12 @@ struct QRCodeView: View {
                     .interpolation(.none)
                     .resizable()
                     .scaledToFit()
-                    .padding(24)
+                    .padding(DesignSystem.Spacing.xl)
             } else {
-                VStack(spacing: 6) {
+                VStack(spacing: DesignSystem.Spacing.sm) {
                     Image(systemName: "qrcode")
                         .font(.system(size: 36, weight: .regular))
-                    Text("QR non disponibile")
+                    Text("QR code unavailable")
                         .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                 }
                 .foregroundStyle(colors.textSecondary)

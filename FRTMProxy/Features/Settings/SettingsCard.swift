@@ -19,8 +19,8 @@ struct SettingsCard<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(14)) {
-            VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(6)) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                 Text(title)
                     .font(DesignSystem.Fonts.mono(16, weight: .bold))
                     .foregroundStyle(colors.textPrimary)
@@ -34,7 +34,7 @@ struct SettingsCard<Content: View>: View {
 
             content
         }
-        .padding(DesignSystem.Metrics.scaled(20))
+        .padding(DesignSystem.Spacing.lg)
         .surfaceCard(fill: colors.surface, stroke: colors.border.opacity(0.9), shadowOpacity: 0.10)
     }
 }

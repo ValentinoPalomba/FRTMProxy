@@ -35,7 +35,7 @@ struct InspectorHeaderBar: View {
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: DesignSystem.Metrics.scaled(14)) {
+        HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
             FlowFiltersView(
                 filter: $filter,
                 colors: colors,
@@ -49,7 +49,7 @@ struct InspectorHeaderBar: View {
             )
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            HStack(spacing: DesignSystem.Metrics.scaled(8)) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 ManageMenuButton(
                     colors: colors,
                     trafficProfiles: trafficProfiles,
@@ -74,7 +74,7 @@ struct InspectorHeaderBar: View {
             }
             .layoutPriority(1)
         }
-        .padding(.horizontal, DesignSystem.Metrics.scaled(10))
+        .padding(.horizontal, DesignSystem.Spacing.sm)
     }
 }
 
@@ -97,20 +97,20 @@ private struct ManageMenuButton: View {
         } label: {
             Label("Manage", systemImage: "ellipsis")
                 .font(DesignSystem.Fonts.mono(13, weight: .semibold))
-                .padding(.horizontal, DesignSystem.Metrics.scaled(14))
-                .padding(.vertical, DesignSystem.Metrics.scaled(9))
+                .padding(.horizontal, DesignSystem.Spacing.md)
+                .padding(.vertical, DesignSystem.Spacing.sm)
                 .frame(minHeight: DesignSystem.Metrics.scaled(34))
                 .background(colors.surface)
                 .foregroundStyle(colors.textPrimary)
                 .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                         .stroke(colors.border.opacity(0.9), lineWidth: 1)
                 )
-                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10)))
+                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.md))
         }
         .buttonStyle(.plain)
         .popover(isPresented: $isPresented, arrowEdge: .bottom) {
-            VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(4)) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 sectionHeader("Settings")
                 menuButton(title: "Rules", icon: "slider.horizontal.3", action: {
                     isPresented = false; onShowRules()
@@ -126,7 +126,7 @@ private struct ManageMenuButton: View {
                 })
 
                 sectionHeader("Tools")
-                    .padding(.top, DesignSystem.Metrics.scaled(6))
+                    .padding(.top, DesignSystem.Spacing.sm)
                 menuButton(title: "Compose", icon: "paperplane.fill", action: {
                     isPresented = false; onShowComposer()
                 })
@@ -135,7 +135,7 @@ private struct ManageMenuButton: View {
                 })
 
                 Divider()
-                    .padding(.vertical, DesignSystem.Metrics.scaled(4))
+                    .padding(.vertical, DesignSystem.Spacing.xs)
 
                 TrafficProfileSection(
                     colors: colors,
@@ -147,10 +147,10 @@ private struct ManageMenuButton: View {
                     }
                 )
             }
-            .padding(DesignSystem.Metrics.scaled(16))
+            .padding(DesignSystem.Spacing.lg)
             .frame(width: DesignSystem.Metrics.scaled(280))
             .background(
-                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(16))
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.lg)
                     .fill(colors.surface)
                     .shadow(color: Color.black.opacity(0.18), radius: 18, y: 8)
             )
@@ -166,14 +166,14 @@ private struct ManageMenuButton: View {
 
     private func menuButton(title: String, icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: DesignSystem.Metrics.scaled(10)) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 Image(systemName: icon)
                 Text(title)
                     .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                 Spacer()
             }
             .foregroundStyle(colors.textPrimary)
-            .padding(.vertical, DesignSystem.Metrics.scaled(6))
+            .padding(.vertical, DesignSystem.Spacing.sm)
         }
         .buttonStyle(.plain)
     }
@@ -186,8 +186,8 @@ private struct TrafficProfileSection: View {
     let onSelect: (TrafficProfile) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(12)) {
-            VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(2)) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
                 Text("Traffic profiles")
                     .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                     .foregroundStyle(colors.textSecondary)
@@ -196,7 +196,7 @@ private struct TrafficProfileSection: View {
                     .foregroundStyle(colors.textSecondary.opacity(0.8))
             }
 
-            VStack(spacing: DesignSystem.Metrics.scaled(8)) {
+            VStack(spacing: DesignSystem.Spacing.sm) {
                 ForEach(profiles) { profile in
                     profileButton(profile)
                 }
@@ -210,11 +210,11 @@ private struct TrafficProfileSection: View {
         Button {
             onSelect(profile)
         } label: {
-            HStack(alignment: .center, spacing: DesignSystem.Metrics.scaled(12)) {
+            HStack(alignment: .center, spacing: DesignSystem.Spacing.md) {
                 Image(systemName: profile.systemImageName)
                     .foregroundStyle(isActive ? colors.accent : colors.textSecondary)
                     .font(.title3)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
                     Text(profile.name)
                         .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                         .foregroundStyle(colors.textPrimary)
@@ -228,15 +228,15 @@ private struct TrafficProfileSection: View {
                         .foregroundStyle(colors.accent)
                 }
             }
-            .padding(.horizontal, DesignSystem.Metrics.scaled(12))
-            .padding(.vertical, DesignSystem.Metrics.scaled(10))
+            .padding(.horizontal, DesignSystem.Spacing.md)
+            .padding(.vertical, DesignSystem.Spacing.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(12))
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.lg)
                     .fill(isActive ? colors.accent.opacity(0.12) : colors.surfaceElevated)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(12))
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.lg)
                     .stroke(isActive ? colors.accent.opacity(0.6) : colors.border.opacity(0.8), lineWidth: 1)
             )
         }

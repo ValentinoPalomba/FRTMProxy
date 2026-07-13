@@ -6,7 +6,7 @@ struct SettingsTabHeader: View {
     let colors: DesignSystem.ColorPalette
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(8)) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             Text(title)
                 .font(DesignSystem.Fonts.mono(22, weight: .bold))
                 .foregroundStyle(colors.textPrimary)

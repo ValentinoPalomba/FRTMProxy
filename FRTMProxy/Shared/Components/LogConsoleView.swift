@@ -7,14 +7,14 @@ struct LogConsoleView: View {
     private let bottomAnchorID = "log-bottom-anchor"
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             HStack {
                 Label("Log", systemImage: "terminal")
                     .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
                 Spacer()
             }
-            .padding(.horizontal, 8)
+            .padding(.horizontal, DesignSystem.Spacing.sm)
             
             ScrollViewReader { proxy in
                 ScrollView {
@@ -22,12 +22,12 @@ struct LogConsoleView: View {
                         .font(DesignSystem.Fonts.mono(11))
                         .foregroundStyle(colors.accent)
                         .frame(maxWidth: .infinity, alignment: .topLeading)
-                        .padding(12)
+                        .padding(DesignSystem.Spacing.md)
                         .background(
-                            RoundedRectangle(cornerRadius: 10)
+                            RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                                 .fill(colors.surface)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
+                                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                                         .stroke(colors.border.opacity(0.7), lineWidth: 1)
                                 )
                         )
@@ -45,7 +45,7 @@ struct LogConsoleView: View {
                 }
             }
         }
-        .padding(12)
+        .padding(DesignSystem.Spacing.md)
         .surfaceCard(fill: colors.surfaceElevated, stroke: colors.border)
     }
 }

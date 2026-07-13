@@ -157,14 +157,14 @@ struct DeviceConnectView: View {
     }
 
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: DesignSystem.Spacing.lg) {
             header
             tabPicker
             Divider()
                 .overlay(colors.border)
 
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
                     if selectedTab == .device {
                         pairingSection
                     } else {
@@ -172,7 +172,7 @@ struct DeviceConnectView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.bottom, 10)
+                .padding(.bottom, DesignSystem.Spacing.sm)
             }
         }
         .frame(width: 760)
@@ -191,9 +191,9 @@ struct DeviceConnectView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                     Text("Pair devices over your Wi‑Fi")
                         .font(DesignSystem.Fonts.mono(19, weight: .bold))
                         .foregroundStyle(colors.textPrimary)
@@ -202,7 +202,7 @@ struct DeviceConnectView: View {
                         .foregroundStyle(colors.textSecondary)
                 }
                 Spacer()
-                VStack(alignment: .trailing, spacing: 10) {
+                VStack(alignment: .trailing, spacing: DesignSystem.Spacing.sm) {
                     StatusPill(isRunning: model.isRunning, colors: colors)
                     ControlButton(title: "Close", systemImage: "xmark", style: .ghost(colors)) {
                         dismiss()
@@ -210,22 +210,22 @@ struct DeviceConnectView: View {
                 }
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 20)
+        .padding(.horizontal, DesignSystem.Spacing.lg)
+        .padding(.top, DesignSystem.Spacing.lg)
     }
 
     private var tabPicker: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: DesignSystem.Spacing.md) {
             ForEach(ConnectTab.allCases) { tab in
                 tabButton(for: tab)
             }
             Spacer()
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, DesignSystem.Spacing.lg)
     }
 
     private var pairingSection: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
             Text("Device setup")
                 .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)
@@ -235,23 +235,23 @@ struct DeviceConnectView: View {
             serverControlsSection
             warningsSection
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, DesignSystem.Spacing.lg)
     }
 
     private var simulatorTab: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             Text("Simulator setup")
                 .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)
             SimulatorSetupView()
                 .environmentObject(settings)
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, DesignSystem.Spacing.lg)
     }
 
     private var deviceSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text("Physical device profile")
                     .font(DesignSystem.Fonts.mono(16, weight: .bold))
                     .foregroundStyle(colors.textPrimary)
@@ -260,11 +260,27 @@ struct DeviceConnectView: View {
                     .foregroundStyle(colors.textSecondary)
             }
 
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                 instructionRow(index: 1, text: "Scan the QR code with Camera/Safari and download the configuration profile.")
                 instructionRow(index: 2, text: "Go to Settings → Profile Downloaded, install it and confirm with the device passcode.")
                 instructionRow(index: 3, text: "Trust the mitmproxy CA under Settings → General → About → Certificate Trust Settings.")
             }
+
+            Label {
+                Text("HTTPS is intercepted only after step 3. Installing the profile without enabling trust is not enough.")
+                    .font(DesignSystem.Fonts.caption)
+                    .foregroundStyle(colors.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } icon: {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(colors.warning)
+            }
+            .padding(DesignSystem.Spacing.sm)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
+                    .fill(colors.warning.opacity(0.14))
+            )
 
             QRCodeView(text: model.connectionURL?.absoluteString ?? "", size: 240)
                 .environmentObject(settings)
@@ -280,10 +296,10 @@ struct DeviceConnectView: View {
                     Image(systemName: "link")
                         .foregroundStyle(colors.accent)
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
+                .padding(.horizontal, DesignSystem.Spacing.sm)
+                .padding(.vertical, DesignSystem.Spacing.sm)
                 .background(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                         .fill(colors.surfaceElevated)
                 )
             } else {
@@ -299,7 +315,7 @@ struct DeviceConnectView: View {
                 .foregroundStyle(colors.textSecondary)
 
             if needsSSIDOverride {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                     Text("SSID not detected — set it manually")
                         .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                         .foregroundStyle(colors.warning)
@@ -314,8 +330,8 @@ struct DeviceConnectView: View {
     }
 
     private var serverControlsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 ControlButton(
                     title: model.isRunning ? "Restart server" : "Start server",
                     systemImage: "bolt.fill",
@@ -336,7 +352,7 @@ struct DeviceConnectView: View {
                 }
             }
 
-            HStack(spacing: 10) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 ControlButton(
                     title: "Refresh Wi‑Fi SSID",
                     systemImage: "wifi",
@@ -358,7 +374,7 @@ struct DeviceConnectView: View {
     }
 
     private var warningsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             if !locationPermission.locationServicesEnabled || !locationPermission.hasWiFiSSIDAccess {
                 callout(
                     "Location permission is required on macOS 15.3+ to read the Wi‑Fi SSID. Enable FRTMProxy under System Settings → Privacy & Security → Location Services.",
@@ -386,7 +402,7 @@ struct DeviceConnectView: View {
     }
 
     private func instructionRow(index: Int, text: String) -> some View {
-        HStack(alignment: .top, spacing: 8) {
+        HStack(alignment: .top, spacing: DesignSystem.Spacing.sm) {
             Text("\(index).")
                 .font(DesignSystem.Fonts.mono(12, weight: .bold))
                 .foregroundStyle(colors.accent)
@@ -399,19 +415,19 @@ struct DeviceConnectView: View {
     }
 
     private func callout(_ text: String, icon: String, tint: Color) -> some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .top, spacing: DesignSystem.Spacing.sm) {
             Image(systemName: icon)
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(tint)
-                .padding(8)
-                .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .padding(DesignSystem.Spacing.sm)
+                .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous))
             Text(text)
                 .font(DesignSystem.Fonts.sans(12, weight: .medium))
                 .foregroundStyle(colors.textPrimary)
         }
-        .padding(10)
+        .padding(DesignSystem.Spacing.sm)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(tint.opacity(0.08))
         )
     }
@@ -425,12 +441,12 @@ struct DeviceConnectView: View {
         return Button {
             selectedTab = tab
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: DesignSystem.Spacing.md) {
                 Image(systemName: tab.iconName)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(isSelected ? colors.accent : colors.textSecondary)
                     .frame(width: 24)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
                     Text(tab.title)
                         .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                         .foregroundStyle(isSelected ? colors.textPrimary : colors.textSecondary)
@@ -442,14 +458,14 @@ struct DeviceConnectView: View {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .foregroundStyle(isSelected ? colors.accent : colors.border)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .padding(.horizontal, DesignSystem.Spacing.md)
+            .padding(.vertical, DesignSystem.Spacing.sm)
             .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                     .fill(isSelected ? colors.surface : colors.surfaceElevated)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                     .stroke(isSelected ? colors.accent.opacity(0.6) : colors.border.opacity(0.7), lineWidth: 1)
             )
         }

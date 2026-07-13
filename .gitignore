@@ -6,3 +6,9 @@ DerivedData/
 
 # Stato UI per-utente di Xcode (non va condiviso)
 **/xcuserdata/
+
+# Artefatti di tool/esperimenti esterni al progetto
+.playwright-mcp/
+/*.png
+/*.mp
+/*.mp4

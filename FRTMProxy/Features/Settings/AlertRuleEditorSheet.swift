@@ -30,13 +30,13 @@ struct AlertRuleEditorSheet: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
             Text("Edit Alert Rule")
                 .font(DesignSystem.Fonts.mono(20, weight: .bold))
                 .foregroundStyle(colors.textPrimary)
 
             SettingsCard(title: "Rule", colors: colors) {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                     TextField("Name", text: $name)
                         .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "tag"))
                     TextField("Query", text: $query)
@@ -53,7 +53,7 @@ struct AlertRuleEditorSheet: View {
                 }
             }
 
-            HStack(spacing: 10) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 ControlButton(title: "Cancel", systemImage: "xmark", style: .ghost(colors)) {
                     onCancel()
                     dismiss()
@@ -81,7 +81,7 @@ struct AlertRuleEditorSheet: View {
                 .keyboardShortcut(.defaultAction)
             }
         }
-        .padding(24)
+        .padding(DesignSystem.Spacing.xl)
         .frame(minWidth: 560, minHeight: 380)
         .background(colors.background)
     }

@@ -60,8 +60,8 @@ struct CommandPaletteView: View {
                     isPresented = false
                 }
 
-            VStack(spacing: 12) {
-                HStack(spacing: 10) {
+            VStack(spacing: DesignSystem.Spacing.md) {
+                HStack(spacing: DesignSystem.Spacing.sm) {
                     Image(systemName: "command")
                         .foregroundStyle(colors.textSecondary)
                     TextField("Type a command…", text: $query)
@@ -74,19 +74,19 @@ struct CommandPaletteView: View {
                     .overlay(colors.border.opacity(0.7))
 
                 if filteredActions.isEmpty {
-                    VStack(spacing: 6) {
-                        Text("No matching commands")
-                            .font(DesignSystem.Fonts.sans(13, weight: .semibold))
-                            .foregroundStyle(colors.textSecondary)
-                        Text("Try different keywords.")
-                            .font(DesignSystem.Fonts.sans(11))
-                            .foregroundStyle(colors.textSecondary.opacity(0.8))
-                    }
+                    StateView(
+                        kind: .empty(
+                            title: "No matching commands",
+                            message: "Try different keywords.",
+                            systemImage: "magnifyingglass"
+                        ),
+                        palette: colors
+                    )
                     .frame(maxWidth: .infinity, minHeight: 160)
                 } else {
                     ScrollViewReader { proxy in
                         ScrollView {
-                            LazyVStack(spacing: 6) {
+                            LazyVStack(spacing: DesignSystem.Spacing.sm) {
                                 ForEach(Array(filteredActions.enumerated()), id: \.element.id) { index, action in
                                     CommandPaletteRow(
                                         action: action,
@@ -100,7 +100,7 @@ struct CommandPaletteView: View {
                                     }
                                 }
                             }
-                            .padding(.vertical, 4)
+                            .padding(.vertical, DesignSystem.Spacing.xs)
                         }
                         .frame(maxHeight: 320)
                         .onChange(of: selectedIndex) { _, _ in
@@ -120,15 +120,15 @@ struct CommandPaletteView: View {
                     }
                 }
             }
-            .padding(16)
+            .padding(DesignSystem.Spacing.lg)
             .frame(width: 520)
             .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                     .fill(colors.surface)
                     .shadow(color: Color.black.opacity(0.25), radius: 18, y: 10)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                     .stroke(colors.border, lineWidth: 1)
             )
             .onAppear {
@@ -213,14 +213,14 @@ private struct CommandPaletteRow: View {
     let colors: DesignSystem.ColorPalette
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: DesignSystem.Spacing.md) {
             if let icon = action.systemImage {
                 Image(systemName: icon)
                     .foregroundStyle(iconColor)
                     .frame(width: 18)
             }
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
                 Text(action.title)
                     .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                     .foregroundStyle(textColor)
@@ -237,22 +237,22 @@ private struct CommandPaletteRow: View {
                 Text(shortcut)
                     .font(DesignSystem.Fonts.mono(11, weight: .semibold))
                     .foregroundStyle(colors.textSecondary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
+                    .padding(.horizontal, DesignSystem.Spacing.sm)
+                    .padding(.vertical, DesignSystem.Spacing.xs)
                     .background(
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        RoundedRectangle(cornerRadius: DesignSystem.Radius.sm, style: .continuous)
                             .fill(colors.surfaceElevated)
                     )
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, DesignSystem.Spacing.md)
+        .padding(.vertical, DesignSystem.Spacing.sm)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                 .fill(isSelected ? colors.accent.opacity(0.18) : Color.clear)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                 .stroke(isSelected ? colors.accent.opacity(0.7) : Color.clear, lineWidth: 1)
         )
         .opacity(action.isEnabled ? 1 : 0.5)
@@ -267,49 +267,3 @@ private struct CommandPaletteRow: View {
     }
 }
 
-private struct KeyEventMonitorView: NSViewRepresentable {
-    let onKeyDown: (NSEvent) -> Bool
-
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        context.coordinator.installMonitor(onKeyDown: onKeyDown)
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        context.coordinator.onKeyDown = onKeyDown
-    }
-
-    static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
-        coordinator.removeMonitor()
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onKeyDown: onKeyDown)
-    }
-
-    final class Coordinator {
-        var onKeyDown: (NSEvent) -> Bool
-        private var monitor: Any?
-
-        init(onKeyDown: @escaping (NSEvent) -> Bool) {
-            self.onKeyDown = onKeyDown
-        }
-
-        func installMonitor(onKeyDown: @escaping (NSEvent) -> Bool) {
-            self.onKeyDown = onKeyDown
-            guard monitor == nil else { return }
-            monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-                guard let self else { return event }
-                return self.onKeyDown(event) ? nil : event
-            }
-        }
-
-        func removeMonitor() {
-            if let monitor {
-                NSEvent.removeMonitor(monitor)
-                self.monitor = nil
-            }
-        }
-    }
-}

@@ -38,12 +38,12 @@ struct GitPublishCollectionSheet: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
             header
             form
             footer
         }
-        .padding(20)
+        .padding(DesignSystem.Spacing.lg)
         .frame(minWidth: 760, minHeight: 520)
         .background(colors.background)
         .alert(
@@ -60,8 +60,8 @@ struct GitPublishCollectionSheet: View {
     }
 
     private var header: some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
+        HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                 Text(collection.origin?.git == nil ? "Publish Collection" : "Push Collection")
                     .font(DesignSystem.Fonts.mono(22, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
@@ -77,24 +77,24 @@ struct GitPublishCollectionSheet: View {
                 dismiss()
             }
         }
-        .padding(16)
+        .padding(DesignSystem.Spacing.lg)
         .surfaceCard(fill: colors.surface, stroke: colors.border.opacity(0.9), shadowOpacity: 0.08)
     }
 
     private var form: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             repositorySection
             branchSection
             pathSection
             commitSection
             tagSection
         }
-        .padding(16)
+        .padding(DesignSystem.Spacing.lg)
         .surfaceCard(fill: colors.surface, stroke: colors.border.opacity(0.9), shadowOpacity: 0.08)
     }
 
     private var repositorySection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             Text("Repository")
                 .font(DesignSystem.Fonts.sans(14, weight: .semibold))
                 .foregroundStyle(colors.textPrimary)
@@ -124,7 +124,7 @@ struct GitPublishCollectionSheet: View {
     }
 
     private var branchSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             Text("Branch")
                 .font(DesignSystem.Fonts.sans(14, weight: .semibold))
                 .foregroundStyle(colors.textPrimary)
@@ -134,7 +134,7 @@ struct GitPublishCollectionSheet: View {
     }
 
     private var pathSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             Text("File Path")
                 .font(DesignSystem.Fonts.sans(14, weight: .semibold))
                 .foregroundStyle(colors.textPrimary)
@@ -156,7 +156,7 @@ struct GitPublishCollectionSheet: View {
     }
 
     private var commitSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             Text("Commit Message")
                 .font(DesignSystem.Fonts.sans(14, weight: .semibold))
                 .foregroundStyle(colors.textPrimary)
@@ -166,7 +166,7 @@ struct GitPublishCollectionSheet: View {
     }
 
     private var tagSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             Text("Tag (optional)")
                 .font(DesignSystem.Fonts.sans(14, weight: .semibold))
                 .foregroundStyle(colors.textPrimary)
@@ -179,7 +179,7 @@ struct GitPublishCollectionSheet: View {
     }
 
     private var footer: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: DesignSystem.Spacing.sm) {
             ControlButton(
                 title: collection.origin?.git == nil ? "Publish" : "Push",
                 systemImage: "arrow.up.circle",
@@ -196,7 +196,7 @@ struct GitPublishCollectionSheet: View {
 
             Spacer()
         }
-        .padding(.horizontal, 4)
+        .padding(.horizontal, DesignSystem.Spacing.xs)
     }
 
     private var lockedSource: GitCollectionSource? {

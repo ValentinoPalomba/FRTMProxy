@@ -13,7 +13,7 @@ struct FlowDiffView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            HStack(spacing: DesignSystem.Metrics.scaled(12)) {
+            HStack(spacing: DesignSystem.Spacing.md) {
                 Image(systemName: "square.on.square")
                     .font(.system(size: DesignSystem.Metrics.scaled(16), weight: .semibold))
                     .foregroundStyle(colors.accent)
@@ -23,7 +23,7 @@ struct FlowDiffView: View {
                 Spacer()
                 ControlButton(title: "Close", systemImage: "xmark", style: .ghost(colors)) { onClose() }
             }
-            .padding(DesignSystem.Metrics.scaled(16))
+            .padding(DesignSystem.Spacing.lg)
             .background(colors.surfaceElevated)
             .overlay(
                 Rectangle()
@@ -34,7 +34,7 @@ struct FlowDiffView: View {
 
             // Section picker — wrapped in horizontal scroll so it doesn't clip at narrow widths
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: DesignSystem.Metrics.scaled(8)) {
+                HStack(spacing: DesignSystem.Spacing.sm) {
                     ForEach(DiffSection.allCases, id: \.self) { section in
                         Button {
                             selectedSection = section
@@ -42,14 +42,14 @@ struct FlowDiffView: View {
                             Text(section.label)
                                 .font(DesignSystem.Fonts.sans(12, weight: selectedSection == section ? .semibold : .medium))
                                 .foregroundStyle(selectedSection == section ? colors.textPrimary : colors.textSecondary)
-                                .padding(.horizontal, DesignSystem.Metrics.scaled(12))
-                                .padding(.vertical, DesignSystem.Metrics.scaled(6))
+                                .padding(.horizontal, DesignSystem.Spacing.md)
+                                .padding(.vertical, DesignSystem.Spacing.sm)
                                 .background(
-                                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
+                                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                                         .fill(selectedSection == section ? colors.surfaceElevated : colors.surface.opacity(0.4))
                                 )
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
+                                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                                         .stroke(
                                             selectedSection == section ? colors.border.opacity(0.9) : colors.border.opacity(0.4),
                                             lineWidth: 1
@@ -59,8 +59,8 @@ struct FlowDiffView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, DesignSystem.Metrics.scaled(16))
-                .padding(.vertical, DesignSystem.Metrics.scaled(10))
+                .padding(.horizontal, DesignSystem.Spacing.lg)
+                .padding(.vertical, DesignSystem.Spacing.sm)
             }
             .fixedSize(horizontal: false, vertical: true)
             .background(colors.surface)
@@ -105,11 +105,11 @@ private struct DiffColumn: View {
     }
 
     private var columnHeader: some View {
-        HStack(spacing: DesignSystem.Metrics.scaled(8)) {
+        HStack(spacing: DesignSystem.Spacing.sm) {
             Text(side == .a ? "A" : "B")
                 .font(DesignSystem.Fonts.mono(11, weight: .bold))
-                .padding(.horizontal, DesignSystem.Metrics.scaled(6))
-                .padding(.vertical, DesignSystem.Metrics.scaled(2))
+                .padding(.horizontal, DesignSystem.Spacing.sm)
+                .padding(.vertical, DesignSystem.Spacing.xxs)
                 .background(Capsule().fill(colors.accent.opacity(0.15)))
                 .foregroundStyle(colors.accent)
             if let method = flow.request?.method {
@@ -123,8 +123,8 @@ private struct DiffColumn: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
         }
-        .padding(.horizontal, DesignSystem.Metrics.scaled(12))
-        .padding(.vertical, DesignSystem.Metrics.scaled(8))
+        .padding(.horizontal, DesignSystem.Spacing.md)
+        .padding(.vertical, DesignSystem.Spacing.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(colors.surfaceElevated)
         .overlay(
@@ -236,7 +236,7 @@ private struct DiffColumnContent: View {
                             .font(DesignSystem.Fonts.mono(10))
                             .foregroundStyle(colors.textSecondary.opacity(0.45))
                             .frame(width: DesignSystem.Metrics.scaled(32), alignment: .trailing)
-                            .padding(.trailing, DesignSystem.Metrics.scaled(4))
+                            .padding(.trailing, DesignSystem.Spacing.xs)
                         Text(item.prefix)
                             .font(DesignSystem.Fonts.mono(11, weight: .semibold))
                             .foregroundStyle(
@@ -250,7 +250,7 @@ private struct DiffColumnContent: View {
                             .foregroundStyle(colors.textPrimary)
                             .textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, DesignSystem.Metrics.scaled(6))
+                            .padding(.horizontal, DesignSystem.Spacing.sm)
                     }
                     .padding(.vertical, DesignSystem.Metrics.scaled(1))
                     .background(item.background)
@@ -260,27 +260,7 @@ private struct DiffColumnContent: View {
     }
 
     private func computeDiff(_ a: [String], _ b: [String]) -> [DiffChange] {
-        let m = a.count, n = b.count
-        var dp = Array(repeating: Array(repeating: 0, count: n + 1), count: m + 1)
-        for i in 1...max(1, m) {
-            for j in 1...max(1, n) {
-                if i <= m, j <= n {
-                    dp[i][j] = a[i-1] == b[j-1] ? dp[i-1][j-1]+1 : max(dp[i-1][j], dp[i][j-1])
-                }
-            }
-        }
-        var result: [DiffChange] = []
-        var i = m, j = n
-        while i > 0 || j > 0 {
-            if i > 0, j > 0, a[i-1] == b[j-1] {
-                result.append(.equal(a[i-1])); i -= 1; j -= 1
-            } else if j > 0, (i == 0 || dp[i][j-1] >= dp[i-1][j]) {
-                result.append(.added(b[j-1])); j -= 1
-            } else if i > 0 {
-                result.append(.removed(a[i-1])); i -= 1
-            } else { break }
-        }
-        return result.reversed()
+        LineDiff.compute(a, b)
     }
 }
 
@@ -346,7 +326,7 @@ struct DiffLinesView: View {
                 .font(DesignSystem.Fonts.mono(10))
                 .foregroundStyle(colors.textSecondary.opacity(0.45))
                 .frame(width: DesignSystem.Metrics.scaled(32), alignment: .trailing)
-                .padding(.trailing, DesignSystem.Metrics.scaled(4))
+                .padding(.trailing, DesignSystem.Spacing.xs)
             // +/- indicator
             Text(prefix)
                 .font(DesignSystem.Fonts.mono(11, weight: .semibold))
@@ -362,7 +342,7 @@ struct DiffLinesView: View {
                 .foregroundStyle(colors.textPrimary)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, DesignSystem.Metrics.scaled(6))
+                .padding(.horizontal, DesignSystem.Spacing.sm)
         }
         .padding(.vertical, DesignSystem.Metrics.scaled(1))
         .background(background)
@@ -388,34 +368,7 @@ struct DiffLinesView: View {
     }
 
     private func computeDiff(_ a: [String], _ b: [String]) -> [DiffChange] {
-        // LCS-based diff
-        let m = a.count, n = b.count
-        var dp = Array(repeating: Array(repeating: 0, count: n + 1), count: m + 1)
-        for i in 1...max(1, m) {
-            for j in 1...max(1, n) {
-                if i <= m, j <= n {
-                    dp[i][j] = a[i - 1] == b[j - 1] ? dp[i - 1][j - 1] + 1 : max(dp[i - 1][j], dp[i][j - 1])
-                }
-            }
-        }
-
-        var result: [DiffChange] = []
-        var i = m, j = n
-        while i > 0 || j > 0 {
-            if i > 0, j > 0, a[i - 1] == b[j - 1] {
-                result.append(.equal(a[i - 1]))
-                i -= 1; j -= 1
-            } else if j > 0, (i == 0 || dp[i][j - 1] >= dp[i - 1][j]) {
-                result.append(.added(b[j - 1]))
-                j -= 1
-            } else if i > 0 {
-                result.append(.removed(a[i - 1]))
-                i -= 1
-            } else {
-                break
-            }
-        }
-        return result.reversed()
+        LineDiff.compute(a, b)
     }
 }
 
@@ -436,8 +389,3 @@ enum DiffSection: CaseIterable {
     }
 }
 
-enum DiffChange {
-    case equal(String)
-    case added(String)
-    case removed(String)
-}

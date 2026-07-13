@@ -3,7 +3,9 @@ import SwiftUI
 struct AppRootView: View {
     private var viewModel: ProxyViewModel
     @StateObject private var rulesViewModel: MapRuleViewModel
+    @StateObject private var toastCenter = ToastCenter()
     @EnvironmentObject var onboardingManager: OnboardingManager
+    @Environment(\.colorScheme) private var colorScheme
 
     init(
         viewModel: ProxyViewModel,
@@ -11,6 +13,10 @@ struct AppRootView: View {
     ) {
         self.viewModel = viewModel
         _rulesViewModel = StateObject(wrappedValue: rulesViewModel)
+    }
+
+    private var palette: DesignSystem.ColorPalette {
+        DesignSystem.Colors.palette(colorScheme)
     }
 
     var body: some View {
@@ -21,5 +27,11 @@ struct AppRootView: View {
             }
         }
         .environmentObject(onboardingManager)
+        .toastLayer(toastCenter, palette: palette)
+        .onAppear {
+            viewModel.onToast = { text, style in
+                toastCenter.show(text, style: style)
+            }
+        }
     }
 }

@@ -11,7 +11,7 @@ struct SettingsGitTab: View {
             colors: colors
         ) {
             SettingsCard(title: "Commit Identity", colors: colors) {
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                     TextField("Commit author name", text: $settings.gitAuthorName)
                         .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "person"))
                     TextField("Commit author email", text: $settings.gitAuthorEmail)

@@ -22,7 +22,7 @@ struct RulesManagerView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: DesignSystem.Spacing.lg) {
             header
             Divider()
             if viewModel.rules.isEmpty {
@@ -31,7 +31,7 @@ struct RulesManagerView: View {
                 rulesList
             }
         }
-        .padding(20)
+        .padding(DesignSystem.Spacing.lg)
         .frame(minWidth: 960, minHeight: 620)
         .background(colors.background)
         .sheet(item: $editingRule, onDismiss: { editingRule = nil }) { rule in
@@ -58,8 +58,8 @@ struct RulesManagerView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: DesignSystem.Spacing.md) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text("Map Local Rules")
                     .font(DesignSystem.Fonts.mono(20, weight: .semibold))
                 Text("Manage saved mock responses and quickly enable/disable rules.")
@@ -94,7 +94,7 @@ struct RulesManagerView: View {
 
     private var rulesList: some View {
         ScrollView {
-            LazyVStack(spacing: 8) {
+            LazyVStack(spacing: DesignSystem.Spacing.sm) {
                 ForEach(viewModel.rules) { rule in
                     RuleRow(
                         rule: rule,
@@ -123,30 +123,27 @@ struct RulesManagerView: View {
                     }
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, DesignSystem.Spacing.xs)
         }
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(colors.surface)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                         .stroke(colors.border.opacity(0.6), lineWidth: 1)
                 )
         )
     }
 
     private var emptyPlaceholder: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "folder.badge.questionmark")
-                .font(.system(size: 48))
-                .foregroundStyle(colors.textSecondary)
-            Text("No rules saved")
-                .font(DesignSystem.Fonts.sans(16, weight: .semibold))
-                .foregroundStyle(colors.textSecondary)
-            Text("Create a new rule or use Map Local on a flow to populate this list.")
-                .font(DesignSystem.Fonts.sans(13))
-                .foregroundStyle(colors.textSecondary)
-        }
+        StateView(
+            kind: .empty(
+                title: "No rules saved",
+                message: "Create a new rule or use Map Local on a flow to populate this list.",
+                systemImage: "folder.badge.questionmark"
+            ),
+            palette: colors
+        )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -192,8 +189,8 @@ private struct RuleRow: View {
     let onDelete: () -> Void
 
     var body: some View {
-        HStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: DesignSystem.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text(rule.host)
                     .font(DesignSystem.Fonts.sans(15, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
@@ -216,17 +213,18 @@ private struct RuleRow: View {
                     .foregroundStyle(colors.danger)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Delete rule")
         }
-        .padding(14)
+        .padding(DesignSystem.Spacing.md)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(isSelected ? colors.accent.opacity(0.12) : colors.surface)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                         .stroke(isSelected ? colors.accent.opacity(0.4) : colors.border.opacity(0.5), lineWidth: 1)
                 )
         )
-        .contentShape(RoundedRectangle(cornerRadius: 12))
+        .contentShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous))
         .gesture(
             TapGesture(count: 2)
                 .onEnded { onDoubleClick() }
@@ -235,15 +233,15 @@ private struct RuleRow: View {
             TapGesture(count: 1)
                 .onEnded { onSelect() }
         )
-        .padding(8)
+        .padding(DesignSystem.Spacing.sm)
 
     }
 
     private var statusBadge: some View {
         Text("\(rule.status)")
             .font(DesignSystem.Fonts.mono(12, weight: .semibold))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
+            .padding(.horizontal, DesignSystem.Spacing.sm)
+            .padding(.vertical, DesignSystem.Spacing.xs)
             .background(
                 Capsule()
                     .fill(colors.surfaceElevated)
@@ -252,6 +250,7 @@ private struct RuleRow: View {
                 Capsule()
                     .stroke(colors.border.opacity(0.7), lineWidth: 1)
             )
+            .accessibilityLabel("Status \(rule.status)")
     }
 }
 
@@ -264,14 +263,14 @@ private struct NewRuleSheet: View {
     @State private var isApplyingURLSplit = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
             Text("New Map Local Rule")
                 .font(DesignSystem.Fonts.sans(18, weight: .semibold))
             Text("Specify the host and path of the request to intercept. You can edit body and headers after creating the rule.")
                 .font(DesignSystem.Fonts.sans(13))
                 .foregroundStyle(colors.textSecondary)
 
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                 TextField("Host (e.g. api.example.com)", text: $host)
                     .textFieldStyle(ProxyTextFieldStyle(palette: colors))
                     .onChange(of: host) { oldValue, newValue in
@@ -301,7 +300,7 @@ private struct NewRuleSheet: View {
                 .disabled(host.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
-        .padding(24)
+        .padding(DesignSystem.Spacing.xl)
         .frame(minWidth: 420)
     }
 

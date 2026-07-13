@@ -113,17 +113,17 @@ struct OnboardingOverlay: View {
     }
 
     private func tooltipView(maxWidth: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .center, spacing: 12) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+            HStack(alignment: .center, spacing: DesignSystem.Spacing.md) {
                 Image(systemName: stepIcon)
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(colors.accent)
-                    .padding(8)
+                    .padding(DesignSystem.Spacing.sm)
                     .background(
                         Circle().fill(colors.accent.opacity(0.14))
                     )
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
                     Text(step.title)
                         .font(DesignSystem.Fonts.sans(15, weight: .semibold))
                         .foregroundStyle(colors.textPrimary)
@@ -140,8 +140,8 @@ struct OnboardingOverlay: View {
                 .foregroundStyle(colors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            HStack(spacing: 12) {
-                secondaryButton(title: "Salta") {
+            HStack(spacing: DesignSystem.Spacing.md) {
+                secondaryButton(title: "Skip") {
                     manager.skipOnboarding()
                 }
 
@@ -150,23 +150,23 @@ struct OnboardingOverlay: View {
                 progressDots
 
                 if isLastStep {
-                    primaryButton(title: "Inizia", color: colors.success) {
+                    primaryButton(title: "Get started", color: colors.success) {
                         manager.completeOnboarding()
                     }
                 } else {
-                    primaryButton(title: "Avanti", color: colors.accent) {
+                    primaryButton(title: "Next", color: colors.accent) {
                         manager.nextStep()
                     }
                 }
             }
         }
-        .padding(18)
+        .padding(DesignSystem.Spacing.lg)
         .frame(maxWidth: maxWidth, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(colors.surface)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                         .stroke(colors.border.opacity(0.9), lineWidth: 1)
                 )
                 .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.18), radius: 20, y: 10)
@@ -174,7 +174,7 @@ struct OnboardingOverlay: View {
     }
 
     private var progressDots: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: DesignSystem.Spacing.sm) {
             ForEach(0..<OnboardingStep.allCases.count, id: \.self) { index in
                 Circle()
                     .fill(index <= currentStepIndex ? colors.accent : colors.border.opacity(0.8))
@@ -188,15 +188,15 @@ struct OnboardingOverlay: View {
             Text(title)
                 .font(DesignSystem.Fonts.mono(12, weight: .semibold))
                 .foregroundStyle(Color.black.opacity(0.9))
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .padding(.horizontal, DesignSystem.Spacing.lg)
+                .padding(.vertical, DesignSystem.Spacing.sm)
                 .frame(minHeight: 32)
                 .background(color)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                         .stroke(color.opacity(0.85), lineWidth: 1)
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -206,15 +206,15 @@ struct OnboardingOverlay: View {
             Text(title)
                 .font(DesignSystem.Fonts.mono(12, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .padding(.horizontal, DesignSystem.Spacing.md)
+                .padding(.vertical, DesignSystem.Spacing.sm)
                 .frame(minHeight: 32)
                 .background(colors.surfaceElevated)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                         .stroke(colors.border.opacity(0.9), lineWidth: 1)
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous))
         }
         .buttonStyle(.plain)
     }

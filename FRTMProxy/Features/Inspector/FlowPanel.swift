@@ -56,7 +56,7 @@ struct FlowPanel: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(12)) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             FlowPanelHeader(
                 title: title,
                 method: method,
@@ -85,12 +85,12 @@ struct FlowPanel: View {
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
-        .padding(DesignSystem.Metrics.scaled(12))
+        .padding(DesignSystem.Spacing.md)
         .background(
-            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(14), style: .continuous)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(colors.surface)
                 .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(14))
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.lg)
                         .stroke(colors.border.opacity(0.65), lineWidth: 1)
                 )
         )
@@ -121,9 +121,9 @@ private struct FlowPanelHeader: View {
     @Binding var selection: DetailTab
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(6)) {
-            HStack(alignment: .center, spacing: DesignSystem.Metrics.scaled(10)) {
-                HStack(spacing: DesignSystem.Metrics.scaled(8)) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            HStack(alignment: .center, spacing: DesignSystem.Spacing.sm) {
+                HStack(spacing: DesignSystem.Spacing.sm) {
                     Text(title)
                         .font(DesignSystem.Fonts.sans(15, weight: .semibold))
                         .foregroundStyle(colors.textPrimary)
@@ -139,8 +139,8 @@ private struct FlowPanelHeader: View {
                     if isMapped {
                         Label("Mapped", systemImage: "pencil.and.outline")
                             .font(DesignSystem.Fonts.sans(12, weight: .semibold))
-                            .padding(.horizontal, DesignSystem.Metrics.scaled(8))
-                            .padding(.vertical, DesignSystem.Metrics.scaled(4))
+                            .padding(.horizontal, DesignSystem.Spacing.sm)
+                            .padding(.vertical, DesignSystem.Spacing.xs)
                             .background(colors.accent.opacity(0.12))
                             .foregroundStyle(colors.accent)
                             .clipShape(Capsule())
@@ -174,7 +174,7 @@ private struct FlowPanelInlineTabs: View {
     let colors: DesignSystem.ColorPalette
 
     var body: some View {
-        HStack(spacing: DesignSystem.Metrics.scaled(6)) {
+        HStack(spacing: DesignSystem.Spacing.sm) {
             ForEach(tabs, id: \.self) { tab in
                 Button {
                     selection = tab
@@ -182,14 +182,14 @@ private struct FlowPanelInlineTabs: View {
                     Text(tab.rawValue)
                         .font(DesignSystem.Fonts.sans(12, weight: selection == tab ? .semibold : .medium))
                         .foregroundStyle(selection == tab ? colors.textPrimary : colors.textSecondary)
-                        .padding(.horizontal, DesignSystem.Metrics.scaled(8))
-                        .padding(.vertical, DesignSystem.Metrics.scaled(4))
+                        .padding(.horizontal, DesignSystem.Spacing.sm)
+                        .padding(.vertical, DesignSystem.Spacing.xs)
                         .background(
-                            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8), style: .continuous)
+                            RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                                 .fill(selection == tab ? colors.surfaceElevated : colors.surface.opacity(0.4))
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
+                            RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                                 .stroke(selection == tab ? colors.border.opacity(0.9) : colors.border.opacity(0.4), lineWidth: 1)
                         )
                 }
@@ -211,7 +211,7 @@ private struct HeadersList: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         } else {
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(10)) {
+                LazyVStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                     ForEach(headers.sorted(by: { $0.key.lowercased() < $1.key.lowercased() }), id: \.key) { key, value in
                         HeaderRow(key: key, value: value, colors: colors)
                     }
@@ -228,7 +228,7 @@ private struct HeaderRow: View {
     let colors: DesignSystem.ColorPalette
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(4)) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
             Text(key)
                 .font(DesignSystem.Fonts.sans(11, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)
@@ -237,12 +237,12 @@ private struct HeaderRow: View {
                 .textSelection(.enabled)
                 .foregroundStyle(colors.textPrimary)
         }
-        .padding(DesignSystem.Metrics.scaled(10))
+        .padding(DesignSystem.Spacing.sm)
         .background(
-            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                 .fill(colors.surfaceElevated)
                 .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                         .stroke(colors.border, lineWidth: 1)
                 )
         )
@@ -262,7 +262,7 @@ private struct QueryParametersList: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         } else {
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(10)) {
+                LazyVStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                     ForEach(Array(parameters.enumerated()), id: \.offset) { entry in
                         let item = entry.element
                         HeaderRow(key: item.0, value: item.1, colors: colors)
@@ -320,7 +320,7 @@ private struct BodyInspector: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(12)) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             BodyModePicker(mode: $mode, modes: availableModes, colors: colors)
 
             if renderedText.isEmpty && renderedImage == nil {
@@ -334,21 +334,21 @@ private struct BodyInspector: View {
                             .resizable()
                             .scaledToFit()
                             .frame(maxWidth: .infinity, minHeight: imagePreviewHeight, maxHeight: imagePreviewHeight, alignment: .center)
-                            .padding(DesignSystem.Metrics.scaled(10))
+                            .padding(DesignSystem.Spacing.sm)
                     } else {
                         CodeEditorView(
                             text: $renderedText,
                             isEditable: false
                         )
                         .frame(minHeight: 0, maxHeight: .infinity, alignment: .top)
-                        .padding(DesignSystem.Metrics.scaled(10))
+                        .padding(DesignSystem.Spacing.sm)
                     }
                 }
                 .background(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                         .fill(colors.surfaceElevated)
                         .overlay(
-                            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+                            RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                                 .stroke(colors.border, lineWidth: 1)
                         )
                 )
@@ -416,7 +416,7 @@ private struct BodyModePicker: View {
     let colors: DesignSystem.ColorPalette
 
     var body: some View {
-        HStack(spacing: DesignSystem.Metrics.scaled(8)) {
+        HStack(spacing: DesignSystem.Spacing.sm) {
             ForEach(modes, id: \.self) { option in
                 Button {
                     mode = option
@@ -424,14 +424,14 @@ private struct BodyModePicker: View {
                     Text(option.label)
                         .font(DesignSystem.Fonts.sans(12, weight: mode == option ? .semibold : .medium))
                         .foregroundStyle(mode == option ? colors.textPrimary : colors.textSecondary)
-                        .padding(.horizontal, DesignSystem.Metrics.scaled(10))
-                        .padding(.vertical, DesignSystem.Metrics.scaled(5))
+                        .padding(.horizontal, DesignSystem.Spacing.sm)
+                        .padding(.vertical, DesignSystem.Spacing.xs)
                         .background(
-                            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+                            RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                                 .fill(mode == option ? colors.surfaceElevated : colors.surface.opacity(0.4))
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+                            RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                                 .stroke(mode == option ? colors.border.opacity(0.9) : colors.border.opacity(0.4), lineWidth: 1)
                         )
                 }
@@ -598,9 +598,9 @@ private struct TimingView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(10)) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                 if let duration = timingData.duration {
-                    VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(6)) {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                         Text("Total Duration")
                             .font(DesignSystem.Fonts.sans(11, weight: .semibold))
                             .foregroundStyle(colors.textSecondary)
@@ -620,13 +620,13 @@ private struct TimingView: View {
                         }
                         .frame(height: DesignSystem.Metrics.scaled(6))
                     }
-                    .padding(DesignSystem.Metrics.scaled(12))
+                    .padding(DesignSystem.Spacing.md)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
-                        RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+                        RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                             .fill(colors.surfaceElevated)
                             .overlay(
-                                RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+                                RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                                     .stroke(colors.border, lineWidth: 1)
                             )
                     )
@@ -656,12 +656,12 @@ private struct TimingStatRow: View {
     let colors: DesignSystem.ColorPalette
 
     var body: some View {
-        HStack(spacing: DesignSystem.Metrics.scaled(10)) {
+        HStack(spacing: DesignSystem.Spacing.sm) {
             Image(systemName: icon)
                 .font(.system(size: DesignSystem.Metrics.scaled(16)))
                 .foregroundStyle(colors.accent)
                 .frame(width: DesignSystem.Metrics.scaled(20))
-            VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(2)) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
                 Text(label)
                     .font(DesignSystem.Fonts.sans(11, weight: .semibold))
                     .foregroundStyle(colors.textSecondary)
@@ -671,12 +671,12 @@ private struct TimingStatRow: View {
             }
             Spacer()
         }
-        .padding(DesignSystem.Metrics.scaled(10))
+        .padding(DesignSystem.Spacing.sm)
         .background(
-            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                 .fill(colors.surfaceElevated)
                 .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                         .stroke(colors.border, lineWidth: 1)
                 )
         )
@@ -691,7 +691,7 @@ private struct WebSocketMessagesPanel: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(6)) {
+            LazyVStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                 ForEach(messages) { message in
                     WebSocketMessageRow(message: message, colors: colors)
                 }
@@ -720,15 +720,15 @@ private struct WebSocketMessageRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(6)) {
-            HStack(spacing: DesignSystem.Metrics.scaled(8)) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 Image(systemName: directionIcon)
                     .font(.system(size: DesignSystem.Metrics.scaled(12), weight: .semibold))
                     .foregroundStyle(directionColor)
                 Text(message.type == .text ? "TEXT" : "BIN")
                     .font(DesignSystem.Fonts.mono(10, weight: .bold))
-                    .padding(.horizontal, DesignSystem.Metrics.scaled(6))
-                    .padding(.vertical, DesignSystem.Metrics.scaled(2))
+                    .padding(.horizontal, DesignSystem.Spacing.sm)
+                    .padding(.vertical, DesignSystem.Spacing.xxs)
                     .background(Capsule().fill(directionColor.opacity(0.12)))
                     .foregroundStyle(directionColor)
                 Spacer()
@@ -747,12 +747,12 @@ private struct WebSocketMessageRow: View {
                     .buttonStyle(.plain)
             }
         }
-        .padding(DesignSystem.Metrics.scaled(10))
+        .padding(DesignSystem.Spacing.sm)
         .background(
-            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                 .fill(colors.surfaceElevated)
                 .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
                         .stroke(colors.border, lineWidth: 1)
                 )
         )

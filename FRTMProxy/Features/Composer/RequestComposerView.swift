@@ -50,7 +50,7 @@ struct RequestComposerView: View {
             Divider().overlay(colors.border.opacity(0.7))
 
             // Tab switcher
-            HStack(spacing: DesignSystem.Metrics.scaled(6)) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 ComposerTabPill(label: "Request", isSelected: narrowTab == .request, colors: colors) {
                     narrowTab = .request
                 }
@@ -59,8 +59,8 @@ struct RequestComposerView: View {
                 }
                 Spacer()
             }
-            .padding(.horizontal, DesignSystem.Metrics.scaled(16))
-            .padding(.vertical, DesignSystem.Metrics.scaled(8))
+            .padding(.horizontal, DesignSystem.Spacing.lg)
+            .padding(.vertical, DesignSystem.Spacing.sm)
             .background(colors.surfaceElevated)
             .overlay(alignment: .bottom) {
                 Rectangle().fill(colors.border.opacity(0.5)).frame(height: 1)
@@ -82,21 +82,21 @@ struct RequestComposerView: View {
     // MARK: - Header
 
     private var composerHeader: some View {
-        HStack(spacing: DesignSystem.Metrics.scaled(12)) {
+        HStack(spacing: DesignSystem.Spacing.md) {
             Text("Compose Request")
                 .font(DesignSystem.Fonts.sans(15, weight: .semibold))
                 .foregroundStyle(colors.textPrimary)
             Spacer()
             ControlButton(title: "Close", systemImage: "xmark", style: .ghost(colors)) { onClose() }
         }
-        .padding(DesignSystem.Metrics.scaled(16))
+        .padding(DesignSystem.Spacing.lg)
         .background(colors.surfaceElevated)
     }
 
     // MARK: - URL Bar
 
     private var urlBar: some View {
-        VStack(spacing: DesignSystem.Metrics.scaled(8)) {
+        VStack(spacing: DesignSystem.Spacing.sm) {
             methodPicker
             TextField("https://example.com/api/endpoint", text: $viewModel.urlString)
                 .textFieldStyle(ProxyTextFieldStyle(palette: colors))
@@ -106,7 +106,7 @@ struct RequestComposerView: View {
     }
 
     private var methodPicker: some View {
-        HStack(spacing: DesignSystem.Metrics.scaled(4)) {
+        HStack(spacing: DesignSystem.Spacing.xs) {
             ForEach(RequestComposerViewModel.httpMethods, id: \.self) { method in
                 let isSelected = viewModel.method == method
                 let tint = DesignSystem.Colors.methodColor(method, palette: colors)
@@ -114,14 +114,14 @@ struct RequestComposerView: View {
                     Text(method)
                         .font(DesignSystem.Fonts.mono(11, weight: .bold))
                         .foregroundStyle(isSelected ? tint : colors.textSecondary)
-                        .padding(.horizontal, DesignSystem.Metrics.scaled(8))
-                        .padding(.vertical, DesignSystem.Metrics.scaled(5))
+                        .padding(.horizontal, DesignSystem.Spacing.sm)
+                        .padding(.vertical, DesignSystem.Spacing.xs)
                         .background(
-                            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(7))
+                            RoundedRectangle(cornerRadius: DesignSystem.Radius.sm, style: .continuous)
                                 .fill(isSelected ? tint.opacity(0.12) : colors.surfaceElevated.opacity(0.5))
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(7))
+                            RoundedRectangle(cornerRadius: DesignSystem.Radius.sm, style: .continuous)
                                 .stroke(isSelected ? tint.opacity(0.5) : colors.border.opacity(0.4), lineWidth: 1)
                         )
                 }
@@ -135,7 +135,7 @@ struct RequestComposerView: View {
 
     private var requestCard: some View {
         ComposerCard(title: "Request", colors: colors) {
-            VStack(spacing: DesignSystem.Metrics.scaled(12)) {
+            VStack(spacing: DesignSystem.Spacing.md) {
                 urlBar
                 ComposerRequestBody(viewModel: viewModel, colors: colors)
             }
@@ -148,37 +148,23 @@ struct RequestComposerView: View {
         ComposerCard(title: "Response", colors: colors) {
             Group {
                 if viewModel.isLoading {
-                    VStack(spacing: DesignSystem.Metrics.scaled(12)) {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                        Text("Sending request...")
-                            .font(DesignSystem.Fonts.sans(12, weight: .medium))
-                            .foregroundStyle(colors.textSecondary)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    StateView(kind: .loading(message: "Sending request..."), palette: colors)
                 } else if let error = viewModel.errorMessage {
-                    VStack(spacing: DesignSystem.Metrics.scaled(8)) {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.system(size: 24))
-                            .foregroundStyle(colors.danger)
-                        Text(error)
-                            .font(DesignSystem.Fonts.sans(12, weight: .medium))
-                            .foregroundStyle(colors.textSecondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    StateView(
+                        kind: .failed(title: "Request failed", message: error, retry: nil),
+                        palette: colors
+                    )
                 } else if viewModel.responseStatus != nil {
                     ComposerResponseBody(viewModel: viewModel, colors: colors)
                 } else {
-                    VStack(spacing: DesignSystem.Metrics.scaled(8)) {
-                        Image(systemName: "arrow.up.circle")
-                            .font(.system(size: 32))
-                            .foregroundStyle(colors.textSecondary.opacity(0.5))
-                        Text("Send a request to see the response")
-                            .font(DesignSystem.Fonts.sans(12, weight: .medium))
-                            .foregroundStyle(colors.textSecondary)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    StateView(
+                        kind: .empty(
+                            title: "No response yet",
+                            message: "Send a request to see the response",
+                            systemImage: "arrow.up.circle"
+                        ),
+                        palette: colors
+                    )
                 }
             }
         }
@@ -192,7 +178,7 @@ struct RequestComposerView: View {
             if viewModel.isLoading {
                 ProgressView()
                     .scaleEffect(0.7)
-                    .padding(.trailing, DesignSystem.Metrics.scaled(4))
+                    .padding(.trailing, DesignSystem.Spacing.xs)
             }
             ControlButton(
                 title: "Send",
@@ -203,8 +189,8 @@ struct RequestComposerView: View {
                 sendRequest()
             }
         }
-        .padding(.horizontal, DesignSystem.Metrics.scaled(16))
-        .padding(.vertical, DesignSystem.Metrics.scaled(10))
+        .padding(.horizontal, DesignSystem.Spacing.lg)
+        .padding(.vertical, DesignSystem.Spacing.sm)
         .background(
             Rectangle()
                 .fill(colors.surface.opacity(0.97))
@@ -231,17 +217,17 @@ private struct ComposerCard<Content: View>: View {
     @ViewBuilder var content: () -> Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(12)) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             Text(title)
                 .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)
-                .padding(.horizontal, DesignSystem.Metrics.scaled(16))
-                .padding(.top, DesignSystem.Metrics.scaled(14))
+                .padding(.horizontal, DesignSystem.Spacing.lg)
+                .padding(.top, DesignSystem.Spacing.md)
 
             content()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(.horizontal, DesignSystem.Metrics.scaled(16))
-                .padding(.bottom, DesignSystem.Metrics.scaled(14))
+                .padding(.horizontal, DesignSystem.Spacing.lg)
+                .padding(.bottom, DesignSystem.Spacing.md)
         }
         .background(colors.surface)
     }
@@ -260,14 +246,14 @@ struct ComposerTabPill: View {
             Text(label)
                 .font(DesignSystem.Fonts.sans(12, weight: isSelected ? .semibold : .medium))
                 .foregroundStyle(isSelected ? colors.textPrimary : colors.textSecondary)
-                .padding(.horizontal, DesignSystem.Metrics.scaled(10))
-                .padding(.vertical, DesignSystem.Metrics.scaled(4))
+                .padding(.horizontal, DesignSystem.Spacing.sm)
+                .padding(.vertical, DesignSystem.Spacing.xs)
                 .background(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                         .fill(isSelected ? colors.surfaceElevated : colors.surface.opacity(0.4))
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                         .stroke(isSelected ? colors.border.opacity(0.9) : colors.border.opacity(0.4), lineWidth: 1)
                 )
         }
@@ -283,9 +269,9 @@ private struct ComposerRequestBody: View {
     @State private var tab: ComposerRequestTab = .body
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(8)) {
-            HStack(spacing: DesignSystem.Metrics.scaled(6)) {
-                ComposerTabPill(label: tab == .body ? "Body" : "Body", isSelected: tab == .body, colors: colors) { tab = .body }
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
+                ComposerTabPill(label: "Body", isSelected: tab == .body, colors: colors) { tab = .body }
                 ComposerTabPill(label: "Headers", isSelected: tab == .headers, colors: colors) { tab = .headers }
                 Spacer()
             }
@@ -300,10 +286,10 @@ private struct ComposerRequestBody: View {
                     .background(colors.surfaceElevated)
                     .foregroundStyle(colors.textPrimary)
                     .overlay(
-                        RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8))
+                        RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                             .stroke(colors.border.opacity(0.7), lineWidth: 1)
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(8)))
+                    .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             case .headers:
@@ -320,11 +306,11 @@ private struct ComposerHeadersEditor: View {
     let colors: DesignSystem.ColorPalette
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(8)) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             ScrollView {
-                LazyVStack(spacing: DesignSystem.Metrics.scaled(6)) {
+                LazyVStack(spacing: DesignSystem.Spacing.sm) {
                     ForEach($viewModel.requestHeaders) { $row in
-                        HStack(spacing: DesignSystem.Metrics.scaled(6)) {
+                        HStack(spacing: DesignSystem.Spacing.sm) {
                             TextField("Key", text: $row.key)
                                 .textFieldStyle(ProxyTextFieldStyle(palette: colors))
                                 .font(DesignSystem.Fonts.mono(11))
@@ -340,6 +326,7 @@ private struct ComposerHeadersEditor: View {
                                     .foregroundStyle(colors.danger)
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel("Remove header")
                         }
                     }
                 }
@@ -361,8 +348,8 @@ private struct ComposerResponseBody: View {
     @State private var tab: ComposerResponseTab = .body
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(8)) {
-            HStack(spacing: DesignSystem.Metrics.scaled(8)) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
                 if let status = viewModel.responseStatus {
                     ComposerStatusBadge(status: status, colors: colors)
                 }
@@ -391,12 +378,12 @@ private struct ComposerResponseBody: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 } else {
                     ScrollView {
-                        LazyVStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(8)) {
+                        LazyVStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                             ForEach(
                                 viewModel.responseHeaders.sorted { $0.key.lowercased() < $1.key.lowercased() },
                                 id: \.key
                             ) { key, value in
-                                VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(3)) {
+                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
                                     Text(key)
                                         .font(DesignSystem.Fonts.sans(11, weight: .semibold))
                                         .foregroundStyle(colors.textSecondary)
@@ -405,13 +392,13 @@ private struct ComposerResponseBody: View {
                                         .foregroundStyle(colors.textPrimary)
                                         .textSelection(.enabled)
                                 }
-                                .padding(DesignSystem.Metrics.scaled(10))
+                                .padding(DesignSystem.Spacing.sm)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .background(
-                                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+                                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                                         .fill(colors.surfaceElevated)
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10))
+                                            RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                                                 .stroke(colors.border, lineWidth: 1)
                                         )
                                 )
@@ -454,10 +441,11 @@ private struct ComposerStatusBadge: View {
         Text(String(status))
             .font(DesignSystem.Fonts.mono(12, weight: .bold))
             .foregroundStyle(tint)
-            .padding(.horizontal, DesignSystem.Metrics.scaled(8))
-            .padding(.vertical, DesignSystem.Metrics.scaled(4))
+            .padding(.horizontal, DesignSystem.Spacing.sm)
+            .padding(.vertical, DesignSystem.Spacing.xs)
             .background(Capsule().fill(tint.opacity(0.12)))
             .overlay(Capsule().stroke(tint.opacity(0.4), lineWidth: 1))
+            .accessibilityLabel("Response status \(status)")
     }
 }
 

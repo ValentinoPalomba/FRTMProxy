@@ -56,8 +56,8 @@ private struct InterfaceScaleSection: View {
             subtitle: "Choose the global UI density. M matches the current default.",
             colors: colors
         ) {
-            VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(10)) {
-                HStack(spacing: DesignSystem.Metrics.scaled(8)) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                HStack(spacing: DesignSystem.Spacing.sm) {
                     ForEach(DesignSystem.InterfaceScale.allCases) { option in
                         scaleButton(option)
                     }
@@ -80,13 +80,13 @@ private struct InterfaceScaleSection: View {
                 .font(DesignSystem.Fonts.mono(12, weight: .bold))
                 .foregroundStyle(isSelected ? colors.accent : colors.textPrimary)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, DesignSystem.Metrics.scaled(8))
+                .padding(.vertical, DesignSystem.Spacing.sm)
                 .background(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10), style: .continuous)
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                         .fill(isSelected ? colors.accent.opacity(0.12) : colors.surfaceElevated)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10), style: .continuous)
+                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                         .stroke(isSelected ? colors.accent.opacity(0.7) : colors.border.opacity(0.8), lineWidth: 1)
                 )
         }

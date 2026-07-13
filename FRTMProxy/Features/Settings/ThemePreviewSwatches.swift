@@ -12,13 +12,13 @@ struct ThemePreviewSwatches: View {
                     .frame(width: 16, height: 28)
             }
         }
-        .padding(6)
+        .padding(DesignSystem.Spacing.sm)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                 .fill(colors.surface)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                 .stroke(colors.border.opacity(0.6), lineWidth: 1)
         )
     }

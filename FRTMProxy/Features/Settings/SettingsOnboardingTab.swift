@@ -10,7 +10,7 @@ struct SettingsOnboardingTab: View {
             colors: colors
         ) {
             SettingsCard(title: "Guided Tour", colors: colors) {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                     ControlButton(
                         title: "Restart guided tour",
                         systemImage: "arrow.counterclockwise",

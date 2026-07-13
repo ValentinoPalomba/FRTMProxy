@@ -25,7 +25,7 @@ struct ProxyTextFieldStyle: TextFieldStyle {
     var size: Size = .regular
 
     func _body(configuration: TextField<_Label>) -> some View {
-        HStack(spacing: DesignSystem.Metrics.scaled(8)) {
+        HStack(spacing: DesignSystem.Spacing.sm) {
             if let leadingIcon {
                 Image(systemName: leadingIcon)
                     .foregroundStyle(palette.textSecondary)
@@ -38,11 +38,11 @@ struct ProxyTextFieldStyle: TextFieldStyle {
         .padding(.vertical, size.verticalPadding)
         .padding(.horizontal, size.horizontalPadding)
         .background(
-            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10), style: .continuous)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                 .fill(palette.surfaceElevated)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: DesignSystem.Metrics.cornerRadius(10), style: .continuous)
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                 .stroke(palette.border.opacity(0.85), lineWidth: 1)
         )
     }

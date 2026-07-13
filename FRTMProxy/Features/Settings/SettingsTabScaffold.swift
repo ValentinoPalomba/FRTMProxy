@@ -20,12 +20,12 @@ struct SettingsTabScaffold<Content: View>: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: DesignSystem.Metrics.scaled(24)) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xl) {
                 SettingsTabHeader(title: title, subtitle: subtitle, colors: colors)
                 content
                 Spacer(minLength: 0)
             }
-            .padding(DesignSystem.Metrics.scaled(24))
+            .padding(DesignSystem.Spacing.xl)
         }
         .background(colors.background)
     }

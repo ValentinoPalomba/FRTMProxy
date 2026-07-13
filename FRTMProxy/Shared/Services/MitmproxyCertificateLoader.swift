@@ -27,6 +27,32 @@ struct MitmproxyCertificateLoader {
         return try Data(contentsOf: resolved.url)
     }
 
+    func pemURL() throws -> URL {
+        let fileManager = FileManager.default
+        let baseURL = fileManager.homeDirectoryForCurrentUser.appendingPathComponent(".mitmproxy")
+        var isDirectory: ObjCBool = false
+        guard fileManager.fileExists(atPath: baseURL.path, isDirectory: &isDirectory), isDirectory.boolValue else {
+            throw LoaderError.certificateMissing(basePath: baseURL.path)
+        }
+        let pemURL = baseURL.appendingPathComponent("mitmproxy-ca-cert.pem")
+        guard fileManager.fileExists(atPath: pemURL.path) else {
+            throw LoaderError.certificateMissing(basePath: baseURL.path)
+        }
+        return pemURL
+    }
+
+    func subjectHashOld() throws -> String {
+        let pem = try pemURL()
+        let result = ShellCommand.run(
+            "/usr/bin/openssl",
+            ["x509", "-inform", "PEM", "-subject_hash_old", "-noout", "-in", pem.path]
+        )
+        guard result.succeeded, !result.output.isEmpty else {
+            throw LoaderError.commandFailed(result.error.isEmpty ? "subject_hash_old failed" : result.error)
+        }
+        return result.output.components(separatedBy: .newlines).first ?? result.output
+    }
+
     private func resolvedCertificateURL() throws -> (url: URL, cleanup: (() -> Void)?) {
         let fileManager = FileManager.default
         let baseURL = fileManager.homeDirectoryForCurrentUser.appendingPathComponent(".mitmproxy")

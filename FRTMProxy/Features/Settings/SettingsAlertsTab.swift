@@ -15,7 +15,7 @@ struct SettingsAlertsTab: View {
             colors: colors
         ) {
             SettingsCard(title: "Notifications", colors: colors) {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                     Toggle(isOn: $settings.alertsEnabled) {
                         Text("Enable alerts")
                             .font(DesignSystem.Fonts.sans(13, weight: .medium))
@@ -27,7 +27,7 @@ struct SettingsAlertsTab: View {
                         .font(DesignSystem.Fonts.mono(11))
                         .foregroundStyle(colors.textSecondary)
 
-                    HStack(spacing: 10) {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
                         ControlButton(
                             title: "Request permission",
                             systemImage: "bell.badge",
@@ -64,7 +64,7 @@ struct SettingsAlertsTab: View {
                 subtitle: "Use the same query syntax as flow search (e.g. `host:api.example.com status:>=400`, `method:POST`, `type:json`, `-type:image`).",
                 colors: colors
             ) {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                     HStack {
                         Text("\(settings.alertRules.count) configured")
                             .font(DesignSystem.Fonts.mono(12, weight: .semibold))
@@ -80,7 +80,7 @@ struct SettingsAlertsTab: View {
                             .font(DesignSystem.Fonts.mono(11))
                             .foregroundStyle(colors.textSecondary)
                     } else {
-                        VStack(spacing: 10) {
+                        VStack(spacing: DesignSystem.Spacing.sm) {
                             ForEach(settings.alertRules) { rule in
                                 AlertRuleRow(
                                     rule: rule,

@@ -501,6 +501,9 @@ final class DevicePairingHTTPServer {
                   </div>
                 </li>
               </ol>
+              <p class="note" style="margin-top:16px; padding:12px 14px; border-radius:12px; background:rgba(240,180,75,0.16); border:1px solid rgba(240,180,75,0.42);">
+                <strong>Don't skip step 3.</strong> HTTPS traffic is intercepted only after the CA is trusted. Installing the profile alone is not enough.
+              </p>
             </section>
           </div>
         </body>
