@@ -66,15 +66,15 @@ enum MapRuleKeyBuilder {
     }
 
     private static func canonicalQuery(fromURL urlString: String?) -> String {
-        guard let urlString, let components = URLComponents(string: urlString) else { return "" }
-        let items = (components.queryItems ?? [])
-            .map { (name: $0.name.replacingOccurrences(of: "+", with: " "), value: ($0.value ?? "").replacingOccurrences(of: "+", with: " ")) }
-            .sorted { lhs, rhs in
-                if lhs.name == rhs.name { return lhs.value < rhs.value }
-                return lhs.name < rhs.name
-            }
-        if items.isEmpty { return "" }
-        return items.map { "\($0.name)=\($0.value)" }.joined(separator: "&")
+        // Deve combaciare con `canonical_query` di bridge.py, che usa
+        // `parse_qsl(keep_blank_values=True)`: `+`→spazio *prima* del percent-decoding.
+        // Si usa `percentEncodedQuery` (query grezza) e la stessa logica del body
+        // form-urlencoded, altrimenti `URLComponents.queryItems` decodificherebbe
+        // `%2B` in `+` e lo convertirebbe erroneamente in spazio.
+        guard let urlString,
+              let rawQuery = URLComponents(string: urlString)?.percentEncodedQuery,
+              !rawQuery.isEmpty else { return "" }
+        return canonicalURLEncoded(rawQuery)
     }
 
     private static func contentType(from headers: [String: String]) -> String {
@@ -98,7 +98,7 @@ enum MapRuleKeyBuilder {
         }
 
         if lower.contains("application/x-www-form-urlencoded") {
-            return normalizedFormURLEncoded(body)
+            return canonicalURLEncoded(body)
         }
 
         return body
@@ -111,8 +111,12 @@ enum MapRuleKeyBuilder {
         return String(data: normalizedData, encoding: .utf8)
     }
 
-    private static func normalizedFormURLEncoded(_ body: String) -> String {
-        let pairs = body.split(separator: "&").map(String.init).compactMap { part -> (String, String)? in
+    /// Canonicalizza una stringa `application/x-www-form-urlencoded` (query o body)
+    /// replicando `parse_qsl(keep_blank_values=True)` di Python: coppie ordinate,
+    /// `+`→spazio prima del percent-decoding. Usata sia per la query dell'URL sia per
+    /// il body form-urlencoded, così i due lati restano identici a bridge.py.
+    private static func canonicalURLEncoded(_ raw: String) -> String {
+        let pairs = raw.split(separator: "&").map(String.init).compactMap { part -> (String, String)? in
             if part.isEmpty { return nil }
             let pieces = part.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
             let rawName = pieces.first ?? ""
