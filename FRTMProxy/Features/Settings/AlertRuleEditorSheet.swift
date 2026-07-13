@@ -32,7 +32,7 @@ struct AlertRuleEditorSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
             Text("Edit Alert Rule")
-                .font(DesignSystem.Fonts.mono(20, weight: .bold))
+                .font(DesignSystem.Fonts.titleLarge)
                 .foregroundStyle(colors.textPrimary)
 
             SettingsCard(title: "Rule", colors: colors) {
@@ -48,7 +48,7 @@ struct AlertRuleEditorSheet: View {
                     }
                         .toggleStyle(SwitchToggleStyle())
                     Text("Examples: `status:>=400`, `host:api.example.com method:POST`, `type:json -status:2xx`.")
-                        .font(DesignSystem.Fonts.mono(11))
+                        .font(DesignSystem.Fonts.caption)
                         .foregroundStyle(colors.textSecondary)
                 }
             }

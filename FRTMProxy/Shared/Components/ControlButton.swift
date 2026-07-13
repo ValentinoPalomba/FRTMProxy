@@ -7,7 +7,7 @@ enum ControlButtonStyle {
 }
 
 struct ControlButton: View {
-    let title: String
+    let title: LocalizedStringKey
     let systemImage: String
     let style: ControlButtonStyle
     let disabled: Bool
@@ -16,7 +16,7 @@ struct ControlButton: View {
     @State private var isHovering = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(title: String, systemImage: String, style: ControlButtonStyle, disabled: Bool = false, action: @escaping () -> Void) {
+    init(title: LocalizedStringKey, systemImage: String, style: ControlButtonStyle, disabled: Bool = false, action: @escaping () -> Void) {
         self.title = title
         self.systemImage = systemImage
         self.style = style

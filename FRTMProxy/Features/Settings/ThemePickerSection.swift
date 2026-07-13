@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct ThemePickerSection: View {
-    let title: String
-    let subtitle: String
+    let title: LocalizedStringKey
+    let subtitle: LocalizedStringKey
     let themes: [AppTheme]
     @Binding var selection: String
     let colors: DesignSystem.ColorPalette

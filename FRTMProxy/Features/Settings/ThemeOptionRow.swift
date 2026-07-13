@@ -19,7 +19,7 @@ struct ThemeOptionRow: View {
                         .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                         .foregroundStyle(colors.textPrimary)
                     Text(theme.description)
-                        .font(DesignSystem.Fonts.mono(11))
+                        .font(DesignSystem.Fonts.caption)
                         .foregroundStyle(colors.textSecondary)
                         .lineLimit(2)
                 }
@@ -27,19 +27,17 @@ struct ThemeOptionRow: View {
                 Spacer()
 
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(DesignSystem.Fonts.sans(18, weight: .semibold))
                     .foregroundStyle(isSelected ? colors.accent : colors.textSecondary)
             }
             .padding(DesignSystem.Spacing.md)
-            .background(
-                RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
-                    .fill(isSelected ? colors.accent.opacity(0.12) : colors.surfaceElevated)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
-                    .stroke(isSelected ? colors.accent.opacity(0.6) : colors.border.opacity(0.6), lineWidth: 1)
+            .hoverHighlight(colors, cornerRadius: DesignSystem.Radius.lg)
+            .surfaceCard(
+                fill: isSelected ? colors.accent.opacity(0.12) : colors.surfaceElevated,
+                stroke: isSelected ? colors.accent.opacity(0.6) : colors.border,
+                shadowOpacity: 0
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
     }
 }

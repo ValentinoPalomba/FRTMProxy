@@ -174,6 +174,7 @@ enum DesignSystem {
             .system(size: Metrics.font(size), weight: weight, design: .default)
         }
 
+        static var titleLarge: Font { sans(22, weight: .bold) }
         static var title: Font { sans(17, weight: .semibold) }
         static var heading: Font { sans(15, weight: .semibold) }
         static var body: Font { sans(13) }

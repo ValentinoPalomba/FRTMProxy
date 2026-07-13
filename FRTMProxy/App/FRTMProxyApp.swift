@@ -229,6 +229,6 @@ struct FRTMProxyApp: App {
 
 private struct DeviceAlert: Identifiable {
     let id = UUID()
-    let title: String
+    let title: LocalizedStringKey
     let message: String
 }

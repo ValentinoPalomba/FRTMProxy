@@ -200,7 +200,7 @@ private struct ScriptEditorSheet: View {
                     // Name
                     formField(label: "Name") {
                         TextField("My script", text: $script.name)
-                            .textFieldStyle(ProxyTextFieldStyle(palette: colors))
+                            .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "textformat"))
                             .font(DesignSystem.Fonts.sans(13))
                     }
 
@@ -208,12 +208,12 @@ private struct ScriptEditorSheet: View {
                     HStack(spacing: DesignSystem.Spacing.md) {
                         formField(label: "Host") {
                             TextField("api.example.com", text: $script.host)
-                                .textFieldStyle(ProxyTextFieldStyle(palette: colors))
+                                .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "network"))
                                 .font(DesignSystem.Fonts.mono(12))
                         }
                         formField(label: "Path (prefix)") {
                             TextField("/v1/users", text: $script.path)
-                                .textFieldStyle(ProxyTextFieldStyle(palette: colors))
+                                .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "arrow.turn.down.right"))
                                 .font(DesignSystem.Fonts.mono(12))
                         }
                     }

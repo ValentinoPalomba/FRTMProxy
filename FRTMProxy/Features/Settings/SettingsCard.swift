@@ -1,14 +1,14 @@
 import SwiftUI
 
 struct SettingsCard<Content: View>: View {
-    let title: String
-    let subtitle: String?
+    let title: LocalizedStringKey
+    let subtitle: LocalizedStringKey?
     let colors: DesignSystem.ColorPalette
     let content: Content
 
     init(
-        title: String,
-        subtitle: String? = nil,
+        title: LocalizedStringKey,
+        subtitle: LocalizedStringKey? = nil,
         colors: DesignSystem.ColorPalette,
         @ViewBuilder content: () -> Content
     ) {
@@ -22,12 +22,12 @@ struct SettingsCard<Content: View>: View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                 Text(title)
-                    .font(DesignSystem.Fonts.mono(16, weight: .bold))
+                    .font(DesignSystem.Fonts.heading)
                     .foregroundStyle(colors.textPrimary)
 
                 if let subtitle {
                     Text(subtitle)
-                        .font(DesignSystem.Fonts.sans(12, weight: .medium))
+                        .font(DesignSystem.Fonts.caption)
                         .foregroundStyle(colors.textSecondary)
                 }
             }

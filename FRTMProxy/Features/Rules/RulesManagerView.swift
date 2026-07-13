@@ -272,12 +272,12 @@ private struct NewRuleSheet: View {
 
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                 TextField("Host (e.g. api.example.com)", text: $host)
-                    .textFieldStyle(ProxyTextFieldStyle(palette: colors))
+                    .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "network"))
                     .onChange(of: host) { oldValue, newValue in
                         applyURLSplitIfNeeded(changedField: .host, previousValue: oldValue, newValue: newValue)
                     }
                 TextField("Path (e.g. /v1/resource)", text: $path)
-                    .textFieldStyle(ProxyTextFieldStyle(palette: colors))
+                    .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "arrow.turn.down.right"))
                     .onChange(of: path) { oldValue, newValue in
                         applyURLSplitIfNeeded(changedField: .path, previousValue: oldValue, newValue: newValue)
                     }

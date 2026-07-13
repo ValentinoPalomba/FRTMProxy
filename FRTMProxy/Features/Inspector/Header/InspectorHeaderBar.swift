@@ -22,7 +22,7 @@ struct InspectorHeaderBar: View {
     let onSelectTrafficProfile: (TrafficProfile) -> Void
     let onToggleProxy: () -> Void
 
-    private var toggleTitle: String {
+    private var toggleTitle: LocalizedStringKey {
         isRunning ? "Stop" : "Start"
     }
 

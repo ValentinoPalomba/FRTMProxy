@@ -54,13 +54,13 @@ struct SettingsProxyTab: View {
                     }
 
                     Text("Port used when starting the embedded mitmproxy. Range 1024–65535.")
-                        .font(DesignSystem.Fonts.mono(11))
+                        .font(DesignSystem.Fonts.caption)
                         .foregroundStyle(colors.textSecondary)
                     Text("When enabled, macOS routes HTTP and HTTPS traffic to localhost on the selected port.")
-                        .font(DesignSystem.Fonts.mono(11))
+                        .font(DesignSystem.Fonts.caption)
                         .foregroundStyle(colors.textSecondary)
                     Text("When enabled, mitmproxy only MITMs active pinned hosts; all other HTTPS traffic is tunneled. Restart the proxy to apply changes.")
-                        .font(DesignSystem.Fonts.mono(11))
+                        .font(DesignSystem.Fonts.caption)
                         .foregroundStyle(colors.textSecondary)
                 }
             }

@@ -739,7 +739,7 @@ private struct CollectionNameSheet: View {
                 .foregroundStyle(colors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             TextField("Collection name", text: $name)
-                .textFieldStyle(ProxyTextFieldStyle(palette: colors))
+                .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "folder"))
             HStack {
                 Spacer()
                 Button("Cancel") { onCancel() }

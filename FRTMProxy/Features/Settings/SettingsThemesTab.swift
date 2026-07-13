@@ -64,7 +64,7 @@ private struct InterfaceScaleSection: View {
                 }
 
                 Text(selectedScale.summary)
-                    .font(DesignSystem.Fonts.sans(11, weight: .medium))
+                    .font(DesignSystem.Fonts.caption)
                     .foregroundStyle(colors.textSecondary)
             }
         }
@@ -77,19 +77,17 @@ private struct InterfaceScaleSection: View {
             selection = option.id
         } label: {
             Text(option.label)
-                .font(DesignSystem.Fonts.mono(12, weight: .bold))
+                .font(DesignSystem.Fonts.sans(13, weight: .bold))
                 .foregroundStyle(isSelected ? colors.accent : colors.textPrimary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, DesignSystem.Spacing.sm)
-                .background(
-                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
-                        .fill(isSelected ? colors.accent.opacity(0.12) : colors.surfaceElevated)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
-                        .stroke(isSelected ? colors.accent.opacity(0.7) : colors.border.opacity(0.8), lineWidth: 1)
+                .surfaceCard(
+                    radius: DesignSystem.Radius.md,
+                    fill: isSelected ? colors.accent.opacity(0.12) : colors.surfaceElevated,
+                    stroke: isSelected ? colors.accent.opacity(0.7) : colors.border,
+                    shadowOpacity: 0
                 )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
     }
 }

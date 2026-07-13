@@ -35,6 +35,7 @@
 		35A67E3BD8DEDFCC967AC7B2 /* ProxyViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38FA935B0CB95D5854C0C7CD /* ProxyViewModel.swift */; };
 		39B87ACC1440530F6C13C292 /* ScriptsManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B614D3B36ABE1F88D75F9024 /* ScriptsManagerView.swift */; };
 		39EAE67D3E90847578C8F0C0 /* ProxyViewModel+Scripts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66D51B6B4A2F98389279DFEC /* ProxyViewModel+Scripts.swift */; };
+		3B0A5ABEF8728D5C748BD27D /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 0401238A621123355EB8BB42 /* Localizable.xcstrings */; };
 		3FE0F3342BC20AF5A6B7F8D5 /* AndroidCertificateInstallerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92F34A224F39513982E093E2 /* AndroidCertificateInstallerTests.swift */; };
 		40AE7AEEEDCBCFA6A45B6C70 /* MapRuleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5266A3E6CBD13D24BCEDA481 /* MapRuleViewModel.swift */; };
 		421E4C7EB46A7911998863A0 /* CommandPaletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 086DCFBB8B83BA277F46EC9A /* CommandPaletteView.swift */; };
@@ -161,6 +162,7 @@
 		0225E4B1DC5588C15B06EBD4 /* CodeMirrorShortcutCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeMirrorShortcutCenter.swift; sourceTree = "<group>"; };
 		025964A5D5DC20A2F0800E34 /* ProxyViewModel+Breakpoints.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProxyViewModel+Breakpoints.swift"; sourceTree = "<group>"; };
 		03CC84DA54EDD09866FA05FA /* ProxyViewModel+Collections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProxyViewModel+Collections.swift"; sourceTree = "<group>"; };
+		0401238A621123355EB8BB42 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		08607DD376AC6DEE3E03EE2B /* HARModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HARModels.swift; sourceTree = "<group>"; };
 		086DCFBB8B83BA277F46EC9A /* CommandPaletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandPaletteView.swift; sourceTree = "<group>"; };
 		0D12B7F5ABD19CE90DC8D76F /* InspectorScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorScreen.swift; sourceTree = "<group>"; };
@@ -493,6 +495,7 @@
 				7C263EDEA172A1D013553DE4 /* Shared */,
 				A4BA8BB0EF8F3EAEBC59176D /* Assets.xcassets */,
 				663656505A364CDD93C08B94 /* bridge.py */,
+				0401238A621123355EB8BB42 /* Localizable.xcstrings */,
 			);
 			path = FRTMProxy;
 			sourceTree = "<group>";
@@ -816,7 +819,14 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
+				de,
 				en,
+				es,
+				fr,
+				it,
+				ja,
+				"pt-BR",
+				"zh-Hans",
 			);
 			mainGroup = 3DC03C46181618FB32B90C2F;
 			minimizedProjectReferenceProxies = 1;
@@ -841,6 +851,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FEBAED508F38966217B7476B /* Assets.xcassets in Resources */,
+				3B0A5ABEF8728D5C748BD27D /* Localizable.xcstrings in Resources */,
 				136300E1DB34036F4A618737 /* Preview Assets.xcassets in Resources */,
 				6115AFAEED0174A5E85ED8A9 /* bridge.py in Resources */,
 				D0CE1E50654A0500C70A3D86 /* mitmdump in Resources */,

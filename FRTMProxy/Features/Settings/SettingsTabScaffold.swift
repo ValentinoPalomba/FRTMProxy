@@ -1,14 +1,14 @@
 import SwiftUI
 
 struct SettingsTabScaffold<Content: View>: View {
-    let title: String
-    let subtitle: String?
+    let title: LocalizedStringKey
+    let subtitle: LocalizedStringKey?
     let colors: DesignSystem.ColorPalette
     let content: Content
 
     init(
-        title: String,
-        subtitle: String? = nil,
+        title: LocalizedStringKey,
+        subtitle: LocalizedStringKey? = nil,
         colors: DesignSystem.ColorPalette,
         @ViewBuilder content: () -> Content
     ) {

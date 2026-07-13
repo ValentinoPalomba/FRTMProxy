@@ -1,18 +1,18 @@
 import SwiftUI
 
 struct MapEditorActions {
-    let saveLabel: String
+    let saveLabel: LocalizedStringKey
     let saveIcon: String
     let onSave: (() -> Void)?
-    let closeLabel: String
+    let closeLabel: LocalizedStringKey
     let closeIcon: String
     let onClose: (() -> Void)?
 
     init(
-        saveLabel: String = "Save",
+        saveLabel: LocalizedStringKey = "Save",
         saveIcon: String = "square.and.arrow.down",
         onSave: (() -> Void)? = nil,
-        closeLabel: String = "Close",
+        closeLabel: LocalizedStringKey = "Close",
         closeIcon: String = "xmark",
         onClose: (() -> Void)? = nil
     ) {
@@ -346,24 +346,12 @@ private struct KeyValueRowView: View {
                     if row.value.isEmpty {
                         Text(valuePlaceholder)
                             .foregroundStyle(colors.textSecondary.opacity(0.7))
-                            .padding(.horizontal, DesignSystem.Spacing.sm)
-                            .padding(.vertical, DesignSystem.Spacing.sm)
                     }
                     TextEditor(text: $row.value)
-                        .font(DesignSystem.Fonts.mono(12))
                         .frame(minHeight: DesignSystem.Metrics.scaled(48), maxHeight: DesignSystem.Metrics.scaled(140))
-                        .padding(DesignSystem.Spacing.xs)
-                        .background(Color.clear)
                 }
                 .frame(maxWidth: .infinity)
-                .background(
-                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
-                        .fill(colors.surfaceElevated)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
-                                .stroke(colors.border, lineWidth: 1)
-                        )
-                )
+                .proxyTextEditor(palette: colors)
             } else {
                 TextField(valuePlaceholder, text: $row.value)
                     .textFieldStyle(ProxyTextFieldStyle(palette: colors, size: .compact))

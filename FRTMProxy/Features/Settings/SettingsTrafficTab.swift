@@ -26,7 +26,7 @@ struct SettingsTrafficTab: View {
                     }
 
                     Text(settings.activeTrafficProfile.summary)
-                        .font(DesignSystem.Fonts.mono(11))
+                        .font(DesignSystem.Fonts.caption)
                         .foregroundStyle(colors.textSecondary)
 
                     if settings.selectedTrafficProfileID == TrafficProfileLibrary.manualID {
@@ -34,7 +34,7 @@ struct SettingsTrafficTab: View {
                     }
 
                     Text("Switching profile while the proxy runs takes effect immediately.")
-                        .font(DesignSystem.Fonts.mono(11))
+                        .font(DesignSystem.Fonts.caption)
                         .foregroundStyle(colors.textSecondary)
                 }
             }
@@ -63,7 +63,7 @@ struct SettingsTrafficTab: View {
             }
 
             Text("Example: set Response delay to 3000 to add 3 seconds to every response.")
-                .font(DesignSystem.Fonts.mono(11))
+                .font(DesignSystem.Fonts.caption)
                 .foregroundStyle(colors.textSecondary)
         }
     }

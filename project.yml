@@ -7,6 +7,8 @@ options:
   createIntermediateGroups: true
   groupSortPosition: top
   generateEmptyDirectories: true
+  developmentLanguage: en
+  knownRegions: [en, it, es, fr, de, pt-BR, ja, zh-Hans, Base]
 
 settings:
   base:

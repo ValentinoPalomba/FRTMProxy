@@ -26,21 +26,12 @@ struct AlertRuleRow: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: DesignSystem.Spacing.sm) {
-                Button("Edit", systemImage: "pencil", action: onEdit)
-                    .buttonStyle(.borderless)
-
-                Button("Delete", systemImage: "trash", role: .destructive, action: onDelete)
-                    .buttonStyle(.borderless)
+                ControlButton(title: "Edit", systemImage: "pencil", style: .ghost(colors), action: onEdit)
+                ControlButton(title: "Delete", systemImage: "trash", style: .destructive(colors), action: onDelete)
             }
         }
         .padding(DesignSystem.Spacing.md)
-        .background(
-            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
-                .fill(colors.surfaceElevated)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
-                .stroke(colors.border.opacity(0.6), lineWidth: 1)
-        )
+        .hoverHighlight(colors, cornerRadius: DesignSystem.Radius.lg)
+        .surfaceCard(palette: colors, shadowOpacity: 0)
     }
 }

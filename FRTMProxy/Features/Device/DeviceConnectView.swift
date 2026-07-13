@@ -320,7 +320,7 @@ struct DeviceConnectView: View {
                         .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                         .foregroundStyle(colors.warning)
                     TextField("Enter SSID", text: $model.ssidOverride)
-                        .textFieldStyle(ProxyTextFieldStyle(palette: colors))
+                        .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "wifi"))
                         .onChange(of: model.ssidOverride) { _, newValue in
                             model.setSSIDOverride(newValue)
                         }

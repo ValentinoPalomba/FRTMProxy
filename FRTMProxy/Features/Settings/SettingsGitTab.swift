@@ -17,7 +17,7 @@ struct SettingsGitTab: View {
                     TextField("Commit author email", text: $settings.gitAuthorEmail)
                         .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "envelope"))
                     Text("Used when FRTMProxy creates commits while publishing collections to a Git repository.")
-                        .font(DesignSystem.Fonts.mono(11))
+                        .font(DesignSystem.Fonts.caption)
                         .foregroundStyle(colors.textSecondary)
                 }
             }

@@ -281,15 +281,7 @@ private struct ComposerRequestBody: View {
             switch tab {
             case .body:
                 TextEditor(text: $viewModel.requestBody)
-                    .font(DesignSystem.Fonts.mono(12))
-                    .scrollContentBackground(.hidden)
-                    .background(colors.surfaceElevated)
-                    .foregroundStyle(colors.textPrimary)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
-                            .stroke(colors.border.opacity(0.7), lineWidth: 1)
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous))
+                    .proxyTextEditor(palette: colors)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             case .headers:

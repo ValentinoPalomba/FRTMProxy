@@ -71,12 +71,12 @@ struct BreakpointsManagerView: View {
 
             HStack(spacing: DesignSystem.Spacing.md) {
                 TextField("Host (e.g. api.example.com)", text: $newHost)
-                    .textFieldStyle(ProxyTextFieldStyle(palette: colors))
+                    .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "network"))
                     .onChange(of: newHost) { oldValue, newValue in
                         applyURLSplitIfNeeded(changedField: .host, previousValue: oldValue, newValue: newValue)
                     }
                 TextField("Path (e.g. /v1/users)", text: $newPath)
-                    .textFieldStyle(ProxyTextFieldStyle(palette: colors))
+                    .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "arrow.turn.down.right"))
                     .onChange(of: newPath) { oldValue, newValue in
                         applyURLSplitIfNeeded(changedField: .path, previousValue: oldValue, newValue: newValue)
                     }

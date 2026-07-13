@@ -5,21 +5,19 @@ struct ThemePreviewSwatches: View {
     let colors: DesignSystem.ColorPalette
 
     var body: some View {
-        HStack(spacing: 3) {
+        HStack(spacing: DesignSystem.Spacing.xxs) {
             ForEach(swatches.indices, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                RoundedRectangle(cornerRadius: DesignSystem.Metrics.scaled(4), style: .continuous)
                     .fill(swatches[index])
-                    .frame(width: 16, height: 28)
+                    .frame(width: DesignSystem.Metrics.scaled(16), height: DesignSystem.Metrics.scaled(28))
             }
         }
         .padding(DesignSystem.Spacing.sm)
-        .background(
-            RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
-                .fill(colors.surface)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
-                .stroke(colors.border.opacity(0.6), lineWidth: 1)
+        .surfaceCard(
+            radius: DesignSystem.Radius.md,
+            fill: colors.surface,
+            stroke: colors.border,
+            shadowOpacity: 0
         )
     }
 }

@@ -24,7 +24,7 @@ struct SettingsAlertsTab: View {
                         .toggleStyle(SwitchToggleStyle())
 
                     Text("Notification permission: \(authorizationLabel(authorizationStatus))")
-                        .font(DesignSystem.Fonts.mono(11))
+                        .font(DesignSystem.Fonts.caption)
                         .foregroundStyle(colors.textSecondary)
 
                     HStack(spacing: DesignSystem.Spacing.sm) {
@@ -67,7 +67,7 @@ struct SettingsAlertsTab: View {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                     HStack {
                         Text("\(settings.alertRules.count) configured")
-                            .font(DesignSystem.Fonts.mono(12, weight: .semibold))
+                            .font(DesignSystem.Fonts.label)
                             .foregroundStyle(colors.textSecondary)
                         Spacer()
                         ControlButton(title: "Add Rule", systemImage: "plus", style: .filled(colors)) {
@@ -77,7 +77,7 @@ struct SettingsAlertsTab: View {
 
                     if settings.alertRules.isEmpty {
                         Text("No alert rules configured.")
-                            .font(DesignSystem.Fonts.mono(11))
+                            .font(DesignSystem.Fonts.caption)
                             .foregroundStyle(colors.textSecondary)
                     } else {
                         VStack(spacing: DesignSystem.Spacing.sm) {

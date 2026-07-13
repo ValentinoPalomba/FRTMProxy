@@ -20,7 +20,7 @@ struct SettingsOnboardingTab: View {
                     }
 
                     Text("Show the interactive tour of the app's main features again.")
-                        .font(DesignSystem.Fonts.mono(11))
+                        .font(DesignSystem.Fonts.caption)
                         .foregroundStyle(colors.textSecondary)
                 }
             }

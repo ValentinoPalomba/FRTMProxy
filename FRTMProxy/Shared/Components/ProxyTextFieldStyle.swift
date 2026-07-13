@@ -47,3 +47,32 @@ struct ProxyTextFieldStyle: TextFieldStyle {
         )
     }
 }
+
+private struct ProxyTextEditorStyle: ViewModifier {
+    let palette: DesignSystem.ColorPalette
+    var minHeight: CGFloat?
+
+    func body(content: Content) -> some View {
+        content
+            .font(DesignSystem.Fonts.monoBody)
+            .foregroundStyle(palette.textPrimary)
+            .scrollContentBackground(.hidden)
+            .padding(.vertical, DesignSystem.Spacing.xs)
+            .padding(.horizontal, DesignSystem.Spacing.sm)
+            .frame(minHeight: minHeight, alignment: .topLeading)
+            .background(
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
+                    .fill(palette.surfaceElevated)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
+                    .stroke(palette.border.opacity(0.85), lineWidth: 1)
+            )
+    }
+}
+
+extension View {
+    func proxyTextEditor(palette: DesignSystem.ColorPalette, minHeight: CGFloat? = nil) -> some View {
+        modifier(ProxyTextEditorStyle(palette: palette, minHeight: minHeight))
+    }
+}
