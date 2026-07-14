@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect x="56" y="56" width="912" height="912" rx="208" fill="#0B0D10"/>
+
+  <!-- One bidirectional connection: request above, response below. -->
+  <path d="M184 410h624" fill="none" stroke="#E7EAEF" stroke-width="48" stroke-linecap="round"/>
+  <path d="M216 614h624" fill="none" stroke="#9AA3AF" stroke-width="48" stroke-linecap="round"/>
+  <path d="M792 370l72 40-72 40z" fill="#E7EAEF"/>
+  <path d="M232 574l-72 40 72 40z" fill="#9AA3AF"/>
+
+  <!-- A pair of vertical jaws marks the controllable MITM boundary. -->
+  <rect x="352" y="312" width="48" height="400" rx="24" fill="#E7EAEF"/>
+  <rect x="624" y="312" width="48" height="400" rx="24" fill="#E7EAEF"/>
+
+  <!-- The intercepted HTTP frame, held between the clamps for inspection/editing. -->
+  <rect x="424" y="372" width="176" height="280" rx="32" fill="#5E6AD2"/>
+  <path d="M424 464h176" fill="none" stroke="#0B0D10" stroke-width="24"/>
+  <rect x="464" y="516" width="96" height="24" rx="12" fill="#E7EAEF" opacity="0.9"/>
+  <rect x="464" y="560" width="68" height="24" rx="12" fill="#E7EAEF" opacity="0.55"/>
+</svg>
