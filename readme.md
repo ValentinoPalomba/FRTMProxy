@@ -97,17 +97,17 @@ code to install the certificate on a physical device.
 | --- | --- |
 | ![Inspector (Light)](.media/Inspector.png) | ![Inspector (Dark)](.media/Inspector_dark.png) |
 
-### Rules
+### Mock with Map Local
 
-![Rules](.media/Rules.png)
+![Map Local editor](.media/MapLocal.png)
 
-### Collections
+### Traffic profiles & tools
 
-![Collections](.media/Collections.png)
+![Manage menu and traffic profiles](.media/TrafficProfiles.png)
 
-### Breakpoints
+### Device setup
 
-![Breakpoints](.media/Breakpoints.png)
+![Device pairing and certificate install](.media/Device.png)
 
 ---
 
