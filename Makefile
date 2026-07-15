@@ -8,7 +8,7 @@ DERIVED     ?= .build
 
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap gen build test run clean
+.PHONY: help bootstrap gen build test run clean screenshots
 
 help: ## Mostra questo aiuto
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -34,3 +34,6 @@ run: ## Builda e avvia l'app
 clean: ## Pulisce gli artefatti di build
 	xcodebuild -scheme $(SCHEME) clean || true
 	rm -rf $(DERIVED)
+
+screenshots: ## Cattura gli screenshot 1.7.0 via XCUITest (richiede sessione GUI)
+	./scripts/capture_screenshots.sh

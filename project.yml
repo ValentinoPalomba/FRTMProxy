@@ -89,6 +89,24 @@ targets:
         DEVELOPMENT_TEAM: 8JS222QZL3
         MACOSX_DEPLOYMENT_TARGET: "14.1"
 
+  FRTMProxyUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - FRTMProxyUITests
+    dependencies:
+      - target: FRTMProxy
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.valentinopalomba.frtmproxy.uitests
+        TEST_TARGET_NAME: FRTMProxy
+        SWIFT_VERSION: "5.0"
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 8JS222QZL3
+        MACOSX_DEPLOYMENT_TARGET: "14.1"
+        ENABLE_HARDENED_RUNTIME: NO
+
 schemes:
   FRTMProxy:
     build:
@@ -120,3 +138,12 @@ schemes:
       config: Debug
     archive:
       config: Release
+  FRTMProxyScreenshots:
+    build:
+      targets:
+        FRTMProxy: all
+        FRTMProxyUITests: [test]
+    test:
+      config: Debug
+      targets:
+        - FRTMProxyUITests

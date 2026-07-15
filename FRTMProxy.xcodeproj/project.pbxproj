@@ -23,6 +23,7 @@
 		1A66D7956A1FD2355DCCDFE8 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E557CE188C136BCFF2E93181 /* OnboardingView.swift */; };
 		1AF2677E49BBB9A843FE2D43 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5358CF6125352210289057E /* AppTheme.swift */; };
 		1F95661A865A684DFF9961BA /* FormattingUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF162AB4A60887E0038F85FE /* FormattingUtils.swift */; };
+		221A646427950ADE20A3D4A4 /* ScreenshotUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A458532ADCAC7E3E560C0A14 /* ScreenshotUITests.swift */; };
 		2240615FABDA0FDDB0D62783 /* MapRuleKeyBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89312831AE26EB6295D0273C /* MapRuleKeyBuilder.swift */; };
 		237E617EB9BE500E28E52142 /* ProxyViewModel+Breakpoints.swift in Sources */ = {isa = PBXBuildFile; fileRef = 025964A5D5DC20A2F0800E34 /* ProxyViewModel+Breakpoints.swift */; };
 		26FC2D53113C83ABCE099875 /* FlowContextMenuContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6A69DBC193F09C893B80ED8 /* FlowContextMenuContent.swift */; };
@@ -153,6 +154,13 @@
 			remoteGlobalIDString = EC360D21D75B84BA5A6B25D2;
 			remoteInfo = FRTMProxy;
 		};
+		FB614D527BE21D57630B0E1C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7BFE88FD66FE56A5F405F8CC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EC360D21D75B84BA5A6B25D2;
+			remoteInfo = FRTMProxy;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
@@ -173,6 +181,7 @@
 		158CCB6C7AE7B85B45CB9A13 /* FormattingUtilsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormattingUtilsTests.swift; sourceTree = "<group>"; };
 		1FA77812488E35FB32301859 /* RequestComposerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RequestComposerViewModel.swift; sourceTree = "<group>"; };
 		215D43FE942718E3D3F4ACA9 /* GitCollectionSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitCollectionSource.swift; sourceTree = "<group>"; };
+		21662704C6831E7403DD8943 /* FRTMProxyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FRTMProxyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		21E186EA3794ECFAF48AB91F /* SurfaceCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurfaceCard.swift; sourceTree = "<group>"; };
 		25EA500CD2B4338A12EEAD6E /* FlowClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowClientApp.swift; sourceTree = "<group>"; };
 		273B60959D5A76A1A9D6E7F5 /* GitCollectionsPublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitCollectionsPublisher.swift; sourceTree = "<group>"; };
@@ -244,6 +253,7 @@
 		A0C9EDE83988000410CD00B0 /* TrafficProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrafficProfile.swift; sourceTree = "<group>"; };
 		A2067654A09846E4BA041312 /* ProxyViewModel+Persistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProxyViewModel+Persistence.swift"; sourceTree = "<group>"; };
 		A2D59F29F91253D16732FB64 /* MapRuleStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapRuleStore.swift; sourceTree = "<group>"; };
+		A458532ADCAC7E3E560C0A14 /* ScreenshotUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotUITests.swift; sourceTree = "<group>"; };
 		A4BA8BB0EF8F3EAEBC59176D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A6E31F54CAA796D34FF22F29 /* SharePresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharePresenter.swift; sourceTree = "<group>"; };
 		A8078BE8819243151A324B34 /* LogConsoleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogConsoleView.swift; sourceTree = "<group>"; };
@@ -387,6 +397,7 @@
 			children = (
 				78255042778289A0CB7C31AE /* FRTMProxy */,
 				BC0BDBED08B7E02687043603 /* FRTMProxyTests */,
+				4FB4E6D33B4F958BD2F95824 /* FRTMProxyUITests */,
 				67061BD04F93BA7C4F710945 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -432,6 +443,14 @@
 				F1853DBC60EFB8F424CC07D5 /* Toast.swift */,
 			);
 			path = Components;
+			sourceTree = "<group>";
+		};
+		4FB4E6D33B4F958BD2F95824 /* FRTMProxyUITests */ = {
+			isa = PBXGroup;
+			children = (
+				A458532ADCAC7E3E560C0A14 /* ScreenshotUITests.swift */,
+			);
+			path = FRTMProxyUITests;
 			sourceTree = "<group>";
 		};
 		57DA78C9E161C715BEDC5235 /* Services */ = {
@@ -481,6 +500,7 @@
 			children = (
 				98070A0C293B1BF0B0D72D0B /* FRTMProxy.app */,
 				30EC9883C1BB7CDA3D4A896B /* FRTMProxyTests.xctest */,
+				21662704C6831E7403DD8943 /* FRTMProxyUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -774,6 +794,24 @@
 			productReference = 30EC9883C1BB7CDA3D4A896B /* FRTMProxyTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		AA23737C09E90072068D793A /* FRTMProxyUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A02C09250F112651D013BA64 /* Build configuration list for PBXNativeTarget "FRTMProxyUITests" */;
+			buildPhases = (
+				BE93FE5D8AC023730A13830E /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F29BE1457AFA45BCA5E1B844 /* PBXTargetDependency */,
+			);
+			name = FRTMProxyUITests;
+			packageProductDependencies = (
+			);
+			productName = FRTMProxyUITests;
+			productReference = 21662704C6831E7403DD8943 /* FRTMProxyUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		EC360D21D75B84BA5A6B25D2 /* FRTMProxy */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8BCCB036454454B9B3529335 /* Build configuration list for PBXNativeTarget "FRTMProxy" */;
@@ -808,6 +846,11 @@
 						DevelopmentTeam = 8JS222QZL3;
 						ProvisioningStyle = Automatic;
 					};
+					AA23737C09E90072068D793A = {
+						DevelopmentTeam = 8JS222QZL3;
+						ProvisioningStyle = Automatic;
+						TestTargetID = EC360D21D75B84BA5A6B25D2;
+					};
 					EC360D21D75B84BA5A6B25D2 = {
 						DevelopmentTeam = 8JS222QZL3;
 						ProvisioningStyle = Automatic;
@@ -841,6 +884,7 @@
 			targets = (
 				EC360D21D75B84BA5A6B25D2 /* FRTMProxy */,
 				6C45472105E49A5878887AB0 /* FRTMProxyTests */,
+				AA23737C09E90072068D793A /* FRTMProxyUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -1004,6 +1048,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BE93FE5D8AC023730A13830E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				221A646427950ADE20A3D4A4 /* ScreenshotUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -1011,6 +1063,11 @@
 			isa = PBXTargetDependency;
 			target = EC360D21D75B84BA5A6B25D2 /* FRTMProxy */;
 			targetProxy = A55B65AB138F609B48E01916 /* PBXContainerItemProxy */;
+		};
+		F29BE1457AFA45BCA5E1B844 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = EC360D21D75B84BA5A6B25D2 /* FRTMProxy */;
+			targetProxy = FB614D527BE21D57630B0E1C /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1075,6 +1132,28 @@
 			};
 			name = Release;
 		};
+		2D496F81150703671682099E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 8JS222QZL3;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.valentinopalomba.frtmproxy.uitests;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = FRTMProxy;
+			};
+			name = Debug;
+		};
 		4A08A71A637E538334120AD4 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1125,6 +1204,28 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FRTMProxy.app/Contents/MacOS/FRTMProxy";
 			};
 			name = Debug;
+		};
+		AA9C02203C4B62B11439217D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 8JS222QZL3;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.valentinopalomba.frtmproxy.uitests;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = FRTMProxy;
+			};
+			name = Release;
 		};
 		AC58393EFAF57DD342E37B47 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -1252,6 +1353,15 @@
 			buildConfigurations = (
 				4A08A71A637E538334120AD4 /* Debug */,
 				CDFFDA1639F86846D52C1BFA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A02C09250F112651D013BA64 /* Build configuration list for PBXNativeTarget "FRTMProxyUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2D496F81150703671682099E /* Debug */,
+				AA9C02203C4B62B11439217D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
