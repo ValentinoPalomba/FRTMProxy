@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions & discussion
+    url: https://github.com/ValentinoPalomba/FRTMProxy/discussions
+    about: Ask a question or share how you use FRTMProxy.

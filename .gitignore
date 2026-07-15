@@ -12,3 +12,10 @@ DerivedData/
 /*.png
 /*.mp
 /*.mp4
+
+# File specifici della macchina / editor (rigenerabili, non vanno condivisi)
+.vscode/
+buildServer.json
+
+# Launch playbook: strategia marketing interna, non va nel repo pubblico
+docs/LAUNCH.md
