@@ -45,6 +45,6 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 - New EdDSA signing key for Sparkle updates and appcast publishing fixes.
 
 [Unreleased]: https://github.com/ValentinoPalomba/FRTMProxy/compare/v.1.7.0...HEAD
-[1.7.0]: https://github.com/ValentinoPalomba/FRTMProxy/releases
-[1.6.0]: https://github.com/ValentinoPalomba/FRTMProxy/releases
-[1.5.1]: https://github.com/ValentinoPalomba/FRTMProxy/releases
+[1.7.0]: https://github.com/ValentinoPalomba/FRTMProxy/releases/tag/v.1.7.0
+[1.6.0]: https://github.com/ValentinoPalomba/FRTMProxy/releases/tag/v.1.6.0
+[1.5.1]: https://github.com/ValentinoPalomba/FRTMProxy/releases/tag/v1.5.1
