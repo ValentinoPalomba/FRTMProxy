@@ -1,9 +1,50 @@
+<div align="center">
+
+<img src=".media/icon.png" alt="FRTMProxy" width="128" height="128" />
+
 # FRTMProxy
 
-FRTMProxy is a macOS app to observe, understand, and shape HTTP/S traffic in real time. It’s built for daily debugging, with tools that organize requests, make mocking easy, and help you replay real-world scenarios in a few clicks.
+**A fast, native macOS app to inspect, mock, and reshape HTTP/S traffic in real time.**
+Free forever. Public domain.
 
-FRTMProxy is free for every developer, and it will remain free.
+[![Latest release](https://img.shields.io/github/v/release/ValentinoPalomba/FRTMProxy?color=5E6AD2&label=release)](https://github.com/ValentinoPalomba/FRTMProxy/releases)
+[![Downloads](https://img.shields.io/github/downloads/ValentinoPalomba/FRTMProxy/total?color=5E6AD2)](https://github.com/ValentinoPalomba/FRTMProxy/releases)
+[![Platform](https://img.shields.io/badge/macOS-26%2B-black)](https://www.apple.com/macos/)
+[![License: Unlicense](https://img.shields.io/badge/license-Unlicense-5E6AD2)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/ValentinoPalomba/FRTMProxy?style=flat&color=5E6AD2)](https://github.com/ValentinoPalomba/FRTMProxy/stargazers)
 
+[**Website**](https://valentinopalomba.github.io/FRTMProxy/) · [Download](https://github.com/ValentinoPalomba/FRTMProxy/releases) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
+
+<img src=".media/Inspector_dark.png" alt="FRTMProxy inspector" width="820" />
+
+</div>
+
+---
+
+## Why FRTMProxy
+
+Debugging network traffic on macOS shouldn't cost $89. FRTMProxy gives you the full toolkit —
+breakpoints, Map Local, scripting, diffing, WebSocket inspection, device setup — **for free, with no
+limits**. It's a native SwiftUI app built on top of the battle-tested [mitmproxy](https://mitmproxy.org)
+engine, so TLS interception just works.
+
+### FRTMProxy vs Proxyman
+
+| | **FRTMProxy** | **Proxyman — Free** | **Proxyman — Paid** |
+|---|:---:|:---:|:---:|
+| **Price** | **Free forever** | Free | from **$89** |
+| Debugging / rewrite rules | ✅ Unlimited | ⚠️ 1 rule | ✅ |
+| Breakpoints | ✅ | ❌ | ✅ |
+| Map Local | ✅ | ❌ | ✅ |
+| Scripting | ✅ | ❌ | ✅ |
+| Request/response Diff | ✅ | ❌ | ✅ |
+| WebSocket inspection | ✅ | ❌ | ✅ |
+| iOS & Android setup | ✅ | ❌ | ✅ (Personal, $99) |
+| HAR import / export | ✅ | ❌ | ✅ |
+| Native macOS (SwiftUI) | ✅ | ✅ | ✅ |
+| Open / public domain | ✅ | ❌ | ❌ |
+
+<sub>Proxyman feature availability and pricing per [proxyman.com/pricing](https://proxyman.com/pricing), as of July 2026. Proxyman is a great, more mature tool — this table is about what you get for free.</sub>
 
 ---
 
@@ -18,39 +59,37 @@ brew install --cask frtmproxy
 
 ### Direct download
 
-You can also download the latest `.zip` from the [GitHub Releases](https://github.com/ValentinoPalomba/FRTMProxy/releases) page.
+Grab the latest `.zip` from the [Releases](https://github.com/ValentinoPalomba/FRTMProxy/releases)
+page. The app is signed with a Developer ID, notarized, and auto-updates via
+[Sparkle](https://sparkle-project.org).
 
 ---
 
 ## What you can do
 
 - **Inspect** requests and responses with a fast, readable inspector.
-- **Mock** local responses in a controlled way (no code required).
-- **Record sessions** and reuse them for replay and testing.
-- **Pause traffic** with breakpoints to inspect or edit on the fly.
-- **Connect iOS devices** with guided certificate setup.
+- **Mock** local responses with no code — perfect for edge cases and isolating from backends.
+- **Record & replay** sessions: capture traffic, export to **HAR**, replay recorded responses as mocks.
+- **Break** on requests/responses to inspect or edit them on the fly.
+- **Connect devices**: guided certificate setup for iOS simulators, physical devices (via QR), and Android.
+- **Capture this Mac's traffic** with a one-toggle system proxy override.
+- **Shape traffic**: simulate latency, jitter, bandwidth limits, and packet loss.
+
+### Key tools
+
+**Rules** — answer specific requests locally. Fast mocks, edge cases, dependency isolation.
+
+**Collections** — record a session, keep it local or push it to a Git repo. Export to HAR, edit,
+reuse. Enable a collection to enter **Replay** mode: matching calls are served from recorded mocks.
+
+**Breakpoints** — pause requests/responses to inspect or modify them before they continue.
+
+**Device setup** — a dedicated section to connect iOS/Android: guided simulator install and a QR
+code to install the certificate on a physical device.
 
 ---
 
-## Key tools
-
-### Rules
-Define rules to answer specific requests locally. Perfect for fast mocks, edge cases, or isolating the app from external dependencies.
-
-### Collections
-Record a session, keep it locally or push it to a Git repo. You can export to **HAR**, edit it, and reuse it. When a collection is enabled, you enter **Replay** mode: when the app makes the same calls, FRTMProxy responds with the previously recorded mock services.
-
-### Breakpoints
-Pause requests/responses to inspect or modify them before letting them continue.
-
-### Device (iOS)
-A dedicated section to connect iOS devices:
-- **Simulator**: guided certificate installation.
-- **Physical device**: QR code to download the certificate directly on the phone.
-
----
-
-## UI Preview
+## Screenshots
 
 ### Inspector
 
@@ -70,51 +109,23 @@ A dedicated section to connect iOS devices:
 
 ![Breakpoints](.media/Breakpoints.png)
 
-### Actions
+---
 
-![Actions](.media/Actions.png)
+## Contributing
+
+FRTMProxy is public domain and contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) to
+get started (`make bootstrap`, `make build`, `make test`). Maintainer release notes live in
+[docs/RELEASING.md](docs/RELEASING.md).
+
+## Support
+
+FRTMProxy is free and will stay free. If it saves you time, a ⭐ on the repo genuinely helps it reach
+more developers — and if you'd like to say thanks, you can buy me a coffee.
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-fratm-FFDD00?logo=buymeacoffee&logoColor=black)](https://www.buymeacoffee.com/fratm)
+
+## License
+
+Released into the **public domain** under the [Unlicense](LICENSE). Do whatever you want with it.
 
 Happy debugging! 🚀
-
----
-
-## Sparkle Release Automation
-
-Use the helper script to build a Release app, zip it, regenerate `appcast.xml`, and publish artifacts to `gh-pages`:
-
-```bash
-./scripts/publish_sparkle_release.sh
-```
-
-Useful variants:
-
-```bash
-# Generate zip + appcast locally only (no push)
-./scripts/publish_sparkle_release.sh --no-publish
-
-# Reuse existing Release build output
-./scripts/publish_sparkle_release.sh --skip-build
-```
-
----
-
-## Homebrew Cask Update (manual release flow)
-
-After publishing a GitHub Release manually, update only the Homebrew cask metadata (`version`, `sha256`, `url`) with:
-
-```bash
-./scripts/update_homebrew_cask.sh \
-  --version 1.6.0 \
-  --tag v.1.6.0 \
-  --tap-dir ~/Repositories/homebrew-frtmtools
-```
-
-Optional automation for the tap repository:
-
-```bash
-# commit in tap repo
-./scripts/update_homebrew_cask.sh --version 1.6.0 --tag v.1.6.0 --tap-dir ~/Repositories/homebrew-frtmtools --commit
-
-# commit + push in tap repo
-./scripts/update_homebrew_cask.sh --version 1.6.0 --tag v.1.6.0 --tap-dir ~/Repositories/homebrew-frtmtools --push
-```
