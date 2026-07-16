@@ -34,12 +34,12 @@ engine, so TLS interception just works.
 |---|:---:|:---:|:---:|
 | **Price** | **Free forever** | Free | from **$89** |
 | Debugging / rewrite rules | ✅ Unlimited | ⚠️ 1 rule | ✅ |
-| Breakpoints | ✅ | ❌ | ✅ |
-| Map Local | ✅ | ❌ | ✅ |
-| Scripting | ✅ | ❌ | ✅ |
-| Request/response Diff | ✅ | ❌ | ✅ |
+| Breakpoints | ✅ | ⚠️ 1 rule | ✅ |
+| Map Local | ✅ | ⚠️ 1 rule | ✅ |
+| Scripting | ✅ | ⚠️ 1 rule | ✅ |
+| Request/response Diff | ✅ | ✅ | ✅ |
 | WebSocket inspection | ✅ | ❌ | ✅ |
-| iOS & Android setup | ✅ | ❌ | ✅ (Personal, $99) |
+| iOS & Android setup | ✅ | ✅ | ✅ |
 | HAR import / export | ✅ | ❌ | ✅ |
 | Native macOS (SwiftUI) | ✅ | ✅ | ✅ |
 | Open / public domain | ✅ | ❌ | ❌ |
