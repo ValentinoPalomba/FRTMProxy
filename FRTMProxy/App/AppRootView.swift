@@ -5,6 +5,7 @@ struct AppRootView: View {
     @StateObject private var rulesViewModel: MapRuleViewModel
     @StateObject private var toastCenter = ToastCenter()
     @EnvironmentObject var onboardingManager: OnboardingManager
+    @EnvironmentObject private var settings: SettingsStore
     @Environment(\.colorScheme) private var colorScheme
 
     init(
@@ -16,7 +17,7 @@ struct AppRootView: View {
     }
 
     private var palette: DesignSystem.ColorPalette {
-        DesignSystem.Colors.palette(colorScheme)
+        DesignSystem.Colors.palette(for: settings.activeTheme, interfaceStyle: colorScheme)
     }
 
     var body: some View {

@@ -19,6 +19,7 @@ struct CollectionsManagerView: View {
     @State private var alertMessage: String?
     @State private var showGitSheet = false
     @State private var publishContext: GitPublishContext?
+    @State private var pendingDeletion: CollectionDeletion?
 
     private var colors: DesignSystem.ColorPalette {
         DesignSystem.Colors.palette(for: settings.activeTheme, interfaceStyle: colorScheme)
@@ -111,6 +112,19 @@ struct CollectionsManagerView: View {
                 viewModel.stopCollectionRecording(save: false)
             }
             Button("Cancel", role: .cancel) { }
+        }
+        .confirmationDialog(
+            deletionTitle,
+            isPresented: Binding(
+                get: { pendingDeletion != nil },
+                set: { if !$0 { pendingDeletion = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) { performPendingDeletion() }
+            Button("Cancel", role: .cancel) { pendingDeletion = nil }
+        } message: {
+            Text(deletionMessage)
         }
         .onAppear {
             if selectedCollectionID == nil {
@@ -226,13 +240,13 @@ struct CollectionsManagerView: View {
                             renameTarget = collection
                         },
                         onDelete: {
-                            viewModel.deleteCollection(collection.id)
+                            pendingDeletion = .collection(collection)
                         },
                         onEditRule: { rule in
                             openEditor(for: rule, collectionID: collection.id)
                         },
                         onDeleteRule: { rule in
-                            viewModel.deleteRule(inCollection: collection.id, ruleKey: rule.key)
+                            pendingDeletion = .rule(collectionID: collection.id, rule: rule)
                         }
                     )
                 } else {
@@ -263,7 +277,7 @@ struct CollectionsManagerView: View {
                                 renameTarget = collection
                             },
                             onDelete: {
-                                viewModel.deleteCollection(collection.id)
+                                pendingDeletion = .collection(collection)
                             }
                         )
                     }
@@ -356,6 +370,37 @@ struct CollectionsManagerView: View {
         editorViewModel.load(rule: rule)
     }
 
+    private var deletionTitle: String {
+        switch pendingDeletion {
+        case .collection: "Delete collection?"
+        case .rule: "Delete collection rule?"
+        case nil: "Delete?"
+        }
+    }
+
+    private var deletionMessage: String {
+        switch pendingDeletion {
+        case .collection(let collection):
+            "\(collection.name) and its \(collection.rules.count) rules will be removed."
+        case .rule(_, let rule):
+            "\(rule.host)\(rule.path) will be removed from this collection."
+        case nil:
+            ""
+        }
+    }
+
+    private func performPendingDeletion() {
+        switch pendingDeletion {
+        case .collection(let collection):
+            viewModel.deleteCollection(collection.id)
+        case .rule(let collectionID, let rule):
+            viewModel.deleteRule(inCollection: collectionID, ruleKey: rule.key)
+        case nil:
+            break
+        }
+        pendingDeletion = nil
+    }
+
     private func exportSelectedCollection() {
         guard let collection = selectedCollection else { return }
         let panel = NSSavePanel()
@@ -388,6 +433,11 @@ struct CollectionsManagerView: View {
             }
         }
     }
+}
+
+private enum CollectionDeletion {
+    case collection(MapCollection)
+    case rule(collectionID: UUID, rule: MapRule)
 }
 
 private struct CollectionCard: View {

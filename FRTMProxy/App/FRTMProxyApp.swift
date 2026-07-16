@@ -63,8 +63,8 @@ struct FRTMProxyApp: App {
                             CheckForUpdatesView(updater: updaterController.updater)
                         }
             CommandGroup(replacing: .appInfo) {
-                Button("About FRTMTools") {
-                    openWindow(id: "about-ftrmtools")
+                Button("About FRTMProxy") {
+                    openWindow(id: "about-frtmproxy")
                 }
                 .presentedWindowStyle(.hiddenTitleBar)
             }
@@ -127,8 +127,8 @@ struct FRTMProxyApp: App {
                 .frame(minWidth: 480, maxWidth: 1280, minHeight: 480, maxHeight: 720)
         }
         
-        Window("About FRTMTools", id: "about-ftrmtools") {
-            AboutFRTMToolsView()
+        Window("About FRTMProxy", id: "about-frtmproxy") {
+            AboutFRTMProxyView()
                 .environmentObject(settingsStore)
         }
         .windowStyle(.titleBar)

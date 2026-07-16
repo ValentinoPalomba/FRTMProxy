@@ -31,6 +31,7 @@
 		2CBE43FABA72906D5F1C2943 /* FlowInspectorPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E537416AC3E0D991AEA2F73 /* FlowInspectorPanel.swift */; };
 		2E856B9A7C3F36799AE5E97D /* CodeMirror in Frameworks */ = {isa = PBXBuildFile; productRef = EACF1C2193CD4514CE1A88DC /* CodeMirror */; };
 		2F36A8F60E4333963FF67F4E /* LocalNetworkInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BE940303E2F2502C749D4C0 /* LocalNetworkInfo.swift */; };
+		31A6E160B3DF5DCCB164DCBB /* AboutFRTMProxyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E01A393B18F10E7A19572D7 /* AboutFRTMProxyView.swift */; };
 		31E2E75085EC47814A22BCBD /* HARModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08607DD376AC6DEE3E03EE2B /* HARModels.swift */; };
 		344504F053A75217973B26DA /* FlowFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF37716B74140F7CE00FDC87 /* FlowFilter.swift */; };
 		35A67E3BD8DEDFCC967AC7B2 /* ProxyViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38FA935B0CB95D5854C0C7CD /* ProxyViewModel.swift */; };
@@ -143,7 +144,6 @@
 		FC344FB6E77D3A89F9F69F7B /* GitPublishCollectionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF21B7698C245E62D0FAF91F /* GitPublishCollectionSheet.swift */; };
 		FCADC9776E750B64A8FEAB59 /* ModelNormalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 922F8F7EF61434216CFC4482 /* ModelNormalizationTests.swift */; };
 		FEBAED508F38966217B7476B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A4BA8BB0EF8F3EAEBC59176D /* Assets.xcassets */; };
-		FF3DD07E656431B9F86651AD /* AboutFRTMToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BF7093F181FCECAE8CC16B3 /* AboutFRTMToolsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -207,7 +207,6 @@
 		47403A437279BF27BDDBEA5E /* ZipUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZipUtility.swift; sourceTree = "<group>"; };
 		4952215B14CCA6D103638187 /* DateFormatter+Cached.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DateFormatter+Cached.swift"; sourceTree = "<group>"; };
 		4957644BEE507371333F44B3 /* MapEditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapEditorViewModel.swift; sourceTree = "<group>"; };
-		4BF7093F181FCECAE8CC16B3 /* AboutFRTMToolsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutFRTMToolsView.swift; sourceTree = "<group>"; };
 		4C2572EC94C1ED635B505F9F /* SettingsTabHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTabHeader.swift; sourceTree = "<group>"; };
 		5266A3E6CBD13D24BCEDA481 /* MapRuleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapRuleViewModel.swift; sourceTree = "<group>"; };
 		52F1165CFBB49241B52F0293 /* SimulatorSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulatorSetupView.swift; sourceTree = "<group>"; };
@@ -217,6 +216,7 @@
 		59A91405DE514F430966B8FD /* BreakpointStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakpointStore.swift; sourceTree = "<group>"; };
 		5AEF699AC6E56B7383C57584 /* AppBadgeIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBadgeIconView.swift; sourceTree = "<group>"; };
 		5BE940303E2F2502C749D4C0 /* LocalNetworkInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalNetworkInfo.swift; sourceTree = "<group>"; };
+		5E01A393B18F10E7A19572D7 /* AboutFRTMProxyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutFRTMProxyView.swift; sourceTree = "<group>"; };
 		5E9A326AB31457D128CC6668 /* ProxyViewModel+Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProxyViewModel+Settings.swift"; sourceTree = "<group>"; };
 		600DB14DF1B64C06D062E0CD /* RulesManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RulesManagerView.swift; sourceTree = "<group>"; };
 		626F8BC0598A2A0A92E1F1E6 /* CollectionRecorderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionRecorderTests.swift; sourceTree = "<group>"; };
@@ -707,7 +707,7 @@
 			isa = PBXGroup;
 			children = (
 				F772101124969C5408581F82 /* Updates */,
-				4BF7093F181FCECAE8CC16B3 /* AboutFRTMToolsView.swift */,
+				5E01A393B18F10E7A19572D7 /* AboutFRTMProxyView.swift */,
 				C188E4896F210E6B682A4F1F /* AppRootView.swift */,
 				F98C2FBF957E492AAEB3C604 /* FRTMProxyApp.swift */,
 			);
@@ -925,7 +925,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FF3DD07E656431B9F86651AD /* AboutFRTMToolsView.swift in Sources */,
+				31A6E160B3DF5DCCB164DCBB /* AboutFRTMProxyView.swift in Sources */,
 				A7FD73A17497D686C315941C /* AlertNotificationService.swift in Sources */,
 				43E1B0C58AB7FA2F642E176C /* AlertRule.swift in Sources */,
 				9A3AD4FFC5A69A220400F816 /* AlertRuleEditorSheet.swift in Sources */,

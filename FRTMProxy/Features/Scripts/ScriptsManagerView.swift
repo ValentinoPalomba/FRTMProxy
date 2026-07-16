@@ -12,6 +12,7 @@ struct ScriptsManagerView: View {
 
     @State private var editingScript: ScriptRule?
     @State private var showNewScriptSheet = false
+    @State private var pendingDeletion: ScriptRule?
 
     private var colors: DesignSystem.ColorPalette {
         DesignSystem.Colors.palette(for: settings.activeTheme, interfaceStyle: colorScheme)
@@ -56,6 +57,24 @@ struct ScriptsManagerView: View {
                 onClose: { showNewScriptSheet = false }
             )
         }
+        .confirmationDialog(
+            "Delete script rule?",
+            isPresented: Binding(
+                get: { pendingDeletion != nil },
+                set: { if !$0 { pendingDeletion = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete Script", role: .destructive) {
+                guard let script = pendingDeletion else { return }
+                scripts.removeAll { $0.id == script.id }
+                onSave(scripts)
+                pendingDeletion = nil
+            }
+            Button("Cancel", role: .cancel) { pendingDeletion = nil }
+        } message: {
+            Text(pendingDeletion.map { "\($0.name.isEmpty ? "Untitled script" : $0.name) will be removed." } ?? "")
+        }
     }
 
     // MARK: - Header
@@ -64,10 +83,10 @@ struct ScriptsManagerView: View {
         HStack(spacing: DesignSystem.Spacing.md) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text("Script Rules")
-                    .font(DesignSystem.Fonts.sans(20, weight: .semibold))
+                    .font(DesignSystem.Fonts.mono(20, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
                 Text("Transform responses dynamically using JavaScript.")
-                    .font(DesignSystem.Fonts.sans(13))
+                    .font(DesignSystem.Fonts.mono(13))
                     .foregroundStyle(colors.textSecondary)
             }
             Spacer()
@@ -91,8 +110,7 @@ struct ScriptsManagerView: View {
                         colors: colors,
                         onEdit: { editingScript = script },
                         onDelete: {
-                            scripts.removeAll { $0.id == script.id }
-                            onSave(scripts)
+                            pendingDeletion = script
                         }
                     )
                 }

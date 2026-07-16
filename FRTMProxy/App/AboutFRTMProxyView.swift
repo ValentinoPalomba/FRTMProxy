@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct AboutFRTMToolsView: View {
+struct AboutFRTMProxyView: View {
     @EnvironmentObject private var settings: SettingsStore
     @Environment(\.colorScheme) private var colorScheme
     @State private var wifiSSID: String = "—"
@@ -37,7 +37,7 @@ struct AboutFRTMToolsView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("About FRTMTools")
+            Text("About FRTMProxy")
                 .font(DesignSystem.Fonts.mono(22, weight: .bold))
                 .foregroundStyle(colors.textPrimary)
             Text("All-in-one toolkit for debugging HTTPS traffic with mitmproxy, SwiftUI and plenty of quality-of-life utilities.")

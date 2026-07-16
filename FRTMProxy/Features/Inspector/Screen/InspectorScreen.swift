@@ -25,6 +25,7 @@ struct InspectorScreen: View {
     @State private var availableClientIPs: [String] = []
     @State private var filterUpdateTask: Task<Void, Never>?
     @State private var lastSearchText: String = ""
+    @State private var confirmClearTraffic = false
 
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var settings: SettingsStore
@@ -144,7 +145,7 @@ struct InspectorScreen: View {
                 activeCollectionsCount: activeCollectionsCount,
                 activeBreakpointsCount: activeBreakpointsCount,
                 compareFlowID: compareFlowID,
-                onClear: viewModel.clear,
+                onClear: requestClearTraffic,
                 onOpenCommandPalette: { showCommandPalette = true },
                 onMapLocalTap: { showRulesSheet = true },
                 onCollectionsTap: { showCollectionsSheet = true },
@@ -187,7 +188,7 @@ struct InspectorScreen: View {
                 isRunning: viewModel.isRunning,
                 hasSelection: selectedFlow != nil,
                 toggleProxy: toggleProxy,
-                clear: viewModel.clear,
+                clear: requestClearTraffic,
                 openCommandPalette: { showCommandPalette = true },
                 mapLocal: openMapEditor,
                 retry: {
@@ -234,6 +235,18 @@ struct InspectorScreen: View {
             }
 
         return withSheets2
+        .confirmationDialog(
+            "Clear all captured traffic?",
+            isPresented: $confirmClearTraffic,
+            titleVisibility: .visible
+        ) {
+            Button("Clear Traffic", role: .destructive) {
+                viewModel.clear()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This removes every flow from the current session and cannot be undone.")
+        }
         .onChange(of: viewModel.rules) { _, _ in
             rulesViewModel.load(sortedRules())
         }
@@ -305,6 +318,11 @@ struct InspectorScreen: View {
         }
     }
 
+    private func requestClearTraffic() {
+        guard !viewModel.flows.isEmpty else { return }
+        confirmClearTraffic = true
+    }
+
     private var commandPaletteActions: [CommandPaletteAction] {
         let hasSelection = selectedFlow != nil
         return [
@@ -335,9 +353,10 @@ struct InspectorScreen: View {
                 subtitle: "Remove all captured traffic",
                 systemImage: "trash",
                 shortcut: "⌘⌥K",
-                keywords: ["clear", "reset", "flows"]
+                keywords: ["clear", "reset", "flows"],
+                isEnabled: !viewModel.flows.isEmpty
             ) {
-                viewModel.clear()
+                requestClearTraffic()
             },
             CommandPaletteAction(
                 title: "Open Rules",

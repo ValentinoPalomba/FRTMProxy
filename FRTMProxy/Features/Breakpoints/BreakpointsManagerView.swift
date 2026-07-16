@@ -11,6 +11,7 @@ struct BreakpointsManagerView: View {
     @State private var includeRequest: Bool = true
     @State private var includeResponse: Bool = true
     @State private var isApplyingURLSplit = false
+    @State private var pendingDeletion: FlowBreakpointRule?
 
     private var colors: DesignSystem.ColorPalette {
         DesignSystem.Colors.palette(for: settings.activeTheme, interfaceStyle: colorScheme)
@@ -34,6 +35,23 @@ struct BreakpointsManagerView: View {
         .padding(DesignSystem.Spacing.lg)
         .frame(minWidth: 900, minHeight: 600)
         .background(colors.background)
+        .confirmationDialog(
+            "Delete breakpoint?",
+            isPresented: Binding(
+                get: { pendingDeletion != nil },
+                set: { if !$0 { pendingDeletion = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete Breakpoint", role: .destructive) {
+                guard let rule = pendingDeletion else { return }
+                viewModel.deleteBreakpoint(key: rule.key)
+                pendingDeletion = nil
+            }
+            Button("Cancel", role: .cancel) { pendingDeletion = nil }
+        } message: {
+            Text(pendingDeletion.map { "\($0.host)\($0.path) will no longer pause traffic." } ?? "")
+        }
     }
 
     private var header: some View {
@@ -137,7 +155,7 @@ struct BreakpointsManagerView: View {
                             viewModel.setBreakpointEnabled(rule.key, enabled: enabled)
                         },
                         onDelete: {
-                            viewModel.deleteBreakpoint(key: rule.key)
+                            pendingDeletion = rule
                         }
                     )
                 }

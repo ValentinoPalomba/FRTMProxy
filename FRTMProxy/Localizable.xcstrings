@@ -238,48 +238,48 @@
     "/v1/users": {},
     "200": {},
     "A": {},
-    "About FRTMTools": {
+    "About FRTMProxy": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Informazioni su FRTMTools"
+            "value": "Informazioni su FRTMProxy"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Acerca de FRTMTools"
+            "value": "Acerca de FRTMProxy"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "À propos de FRTMTools"
+            "value": "À propos de FRTMProxy"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Über FRTMTools"
+            "value": "Über FRTMProxy"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sobre o FRTMTools"
+            "value": "Sobre o FRTMProxy"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "FRTMTools について"
+            "value": "FRTMProxy について"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "关于 FRTMTools"
+            "value": "关于 FRTMProxy"
           }
         }
       }

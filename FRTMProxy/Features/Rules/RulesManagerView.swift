@@ -16,6 +16,7 @@ struct RulesManagerView: View {
     @State private var showingNewRuleSheet = false
     @State private var newRuleHost: String = ""
     @State private var newRulePath: String = "/"
+    @State private var pendingDeletion: MapRule?
 
     private var colors: DesignSystem.ColorPalette {
         DesignSystem.Colors.palette(for: settings.activeTheme, interfaceStyle: colorScheme)
@@ -54,6 +55,23 @@ struct RulesManagerView: View {
                 colors: colors,
                 onCreate: createRule
             )
+        }
+        .confirmationDialog(
+            "Delete Map Local rule?",
+            isPresented: Binding(
+                get: { pendingDeletion != nil },
+                set: { if !$0 { pendingDeletion = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete Rule", role: .destructive) {
+                guard let rule = pendingDeletion else { return }
+                delete(rule)
+                pendingDeletion = nil
+            }
+            Button("Cancel", role: .cancel) { pendingDeletion = nil }
+        } message: {
+            Text(pendingDeletion.map { "\($0.host)\($0.path) will be removed." } ?? "")
         }
     }
 
@@ -106,8 +124,7 @@ struct RulesManagerView: View {
                             toggle(rule: rule, enabled: enabled)
                         },
                         onDelete: {
-                            onDelete(rule.key)
-                            viewModel.removeRule(key: rule.key)
+                            pendingDeletion = rule
                         }
                     )
                     .contextMenu {
@@ -117,8 +134,7 @@ struct RulesManagerView: View {
                         }
                         Divider()
                         Button("Delete", role: .destructive) {
-                            onDelete(rule.key)
-                            viewModel.removeRule(key: rule.key)
+                            pendingDeletion = rule
                         }
                     }
                 }
@@ -162,8 +178,12 @@ struct RulesManagerView: View {
 
     private func deleteSelectedRule() {
         guard let selected = viewModel.selection else { return }
-        onDelete(selected.key)
-        viewModel.removeRule(key: selected.key)
+        pendingDeletion = selected
+    }
+
+    private func delete(_ rule: MapRule) {
+        onDelete(rule.key)
+        viewModel.removeRule(key: rule.key)
     }
 
     private func createRule() {
