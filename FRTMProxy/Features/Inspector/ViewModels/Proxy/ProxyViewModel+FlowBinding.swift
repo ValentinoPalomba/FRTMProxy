@@ -34,6 +34,32 @@ extension ProxyViewModel {
             }
             .store(in: &cancellables)
 
+        service.flowEventsPublisher
+            .sink { [weak self] flow in
+                guard let self,
+                      let store = self.sessionStore,
+                      let sessionID = self.activeCaptureSessionID else { return }
+                let flowID = flow.id
+                Task {
+                    do {
+                        try await store.upsert(flow: flow, in: sessionID)
+                        let updatedSession = try await store.session(id: sessionID)
+                        await MainActor.run {
+                            guard let updatedSession,
+                                  let index = self.captureSessions.firstIndex(where: { $0.id == sessionID }) else {
+                                return
+                            }
+                            self.captureSessions[index] = updatedSession
+                        }
+                    } catch {
+                        await MainActor.run {
+                            self.appendLog("[SESSION] unable to persist flow \(flowID): \(error.localizedDescription)\n")
+                        }
+                    }
+                }
+            }
+            .store(in: &cancellables)
+
         service.isRunningPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] running in

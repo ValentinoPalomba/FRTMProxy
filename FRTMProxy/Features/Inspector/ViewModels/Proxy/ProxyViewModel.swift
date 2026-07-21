@@ -17,6 +17,9 @@ final class ProxyViewModel: ObservableObject {
     @Published var breakpointRules: [String: FlowBreakpointRule] = [:]
     @Published var activeBreakpointHit: FlowBreakpointHit?
     @Published var activeTrafficProfile: TrafficProfile = TrafficProfileLibrary.disabled
+    @Published var captureSessions: [CaptureSession] = []
+    @Published var activeCaptureSessionID: UUID?
+    @Published var trafficRuleDocument = TrafficRuleDocument(rules: [])
 
     @Published var scripts: [ScriptRule] = []
 
@@ -25,6 +28,8 @@ final class ProxyViewModel: ObservableObject {
     let collectionStore: MapCollectionStoreProtocol
     let breakpointStore: BreakpointStoreProtocol
     let scriptStore: ScriptStore
+    let sessionStore: (any SessionStoreProtocol)?
+    let trafficRuleStore: TrafficRuleStoreProtocol
     let collectionRecorder = CollectionRecorder()
     var cancellables: Set<AnyCancellable> = []
     var settingsCancellables: Set<AnyCancellable> = []
@@ -60,6 +65,8 @@ final class ProxyViewModel: ObservableObject {
         collectionStore: MapCollectionStoreProtocol = MapCollectionStore(),
         breakpointStore: BreakpointStoreProtocol = FlowBreakpointStore(),
         scriptStore: ScriptStore = ScriptStore(),
+        sessionStore: (any SessionStoreProtocol)? = nil,
+        trafficRuleStore: TrafficRuleStoreProtocol = TrafficRuleStore(),
         defaultPort: Int = 8080
     ) {
         self.service = service
@@ -67,6 +74,8 @@ final class ProxyViewModel: ObservableObject {
         self.collectionStore = collectionStore
         self.breakpointStore = breakpointStore
         self.scriptStore = scriptStore
+        self.sessionStore = sessionStore ?? Self.makeDefaultSessionStore()
+        self.trafficRuleStore = trafficRuleStore
         self.defaultPort = defaultPort
         self.activePort = defaultPort
         bind()
@@ -75,8 +84,18 @@ final class ProxyViewModel: ObservableObject {
         loadPersistedGitSources()
         loadPersistedBreakpoints()
         loadPersistedScripts()
+        loadUnifiedTrafficRules()
         syncAppliedRules()
         syncBreakpointRules()
+        loadCaptureSessions()
+    }
+
+    private static func makeDefaultSessionStore() -> (any SessionStoreProtocol)? {
+        let databaseURL = URL.applicationSupportDirectory
+            .appending(path: "FRTMProxy", directoryHint: .isDirectory)
+            .appending(path: "Sessions", directoryHint: .isDirectory)
+            .appending(path: "sessions.sqlite")
+        return try? SQLiteSessionStore(databaseURL: databaseURL)
     }
 
     deinit {
@@ -101,6 +120,7 @@ final class ProxyViewModel: ObservableObject {
         }
         let selectedPort = port ?? defaultPort
         do {
+            await ensureCaptureSession()
             try await service.startProxy(
                 port: selectedPort,
                 restrictToHosts: restrictInterceptionToHosts,
@@ -118,6 +138,7 @@ final class ProxyViewModel: ObservableObject {
 
     func stopProxy() {
         service.stopProxy()
+        closeActiveCaptureSession()
     }
 
     func clear() {

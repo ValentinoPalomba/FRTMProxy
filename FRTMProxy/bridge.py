@@ -9,7 +9,8 @@ import random
 import asyncio
 import hashlib
 import fnmatch
-from urllib.parse import urlsplit, parse_qsl
+import re
+from urllib.parse import urlsplit, urlunsplit, parse_qsl
 from mitmproxy import http, ctx
 
 # Event loop di mitmproxy, catturato in running(). Lo stdin_reader (thread
@@ -35,6 +36,10 @@ FLOW_BY_ID = {}
 FLOW_BY_KEY = {}
 FLOW_BY_MAP_LOCAL_KEY = {}
 BREAKPOINT_RULES = {}
+# Unified, versioned rule snapshots supplied atomically by the Swift app.
+# Legacy Map Local/Breakpoint registries remain active for one compatibility release.
+TRAFFIC_RULES = []
+TRAFFIC_RULES_REVISION = 0
 TRAFFIC_PROFILE_DEFAULT = {
     "id": "traffic.off",
     "name": "No profile",
@@ -122,6 +127,141 @@ def canonical_body(body: str, content_type: str) -> str:
         except Exception:
             return body
     return body
+
+def _pattern_matches(pattern, candidate: str) -> bool:
+    if not isinstance(pattern, dict):
+        return True
+    value = str(pattern.get("value", ""))
+    mode = pattern.get("mode", "exact")
+    case_sensitive = bool(pattern.get("isCaseSensitive", True))
+    subject = str(candidate or "")
+    if not case_sensitive:
+        value = value.lower()
+        subject = subject.lower()
+    if mode == "wildcard":
+        return fnmatch.fnmatchcase(subject, value)
+    if mode == "regularExpression":
+        try:
+            return re.search(value, subject) is not None
+        except re.error:
+            return False
+    return subject == value
+
+def _rule_matches(rule, flow: http.HTTPFlow) -> bool:
+    matcher = rule.get("matcher") or {}
+    request = flow.request
+    path = request.path.split("?", 1)[0] or "/"
+    values = {
+        "scheme": request.scheme or "",
+        "host": request.host or "",
+        "path": path,
+        "method": (request.method or "GET").strip().upper(),
+        "query": canonical_query(request.pretty_url or ""),
+        "body": canonical_body(request.get_text() or "", _content_type(request.headers)),
+    }
+    for key in ("scheme", "host", "path", "method", "query", "body"):
+        if matcher.get(key) is not None and not _pattern_matches(matcher.get(key), values[key]):
+            return False
+    actual_headers = {str(k).lower(): str(v) for k, v in request.headers.items()}
+    for expected in matcher.get("headers") or []:
+        name = str(expected.get("name", "")).lower()
+        if name not in actual_headers or not _pattern_matches(expected.get("value"), actual_headers[name]):
+            return False
+    return True
+
+def _sorted_matching_rules(flow: http.HTTPFlow):
+    matched = [rule for rule in TRAFFIC_RULES if rule.get("isEnabled", True) and _rule_matches(rule, flow)]
+    return sorted(matched, key=lambda rule: (int(rule.get("priority", 0)), str(rule.get("id", ""))))
+
+def _overlay_headers(target, headers):
+    for key, value in (headers or {}).items():
+        target[str(key)] = str(value)
+
+def _apply_map_remote(flow: http.HTTPFlow, configuration):
+    destination = urlsplit(str(configuration.get("destinationURL", "")))
+    if not destination.scheme or not destination.netloc:
+        return
+    original = urlsplit(flow.request.pretty_url or "")
+    path = original.path if configuration.get("preservePath", True) else destination.path
+    query = original.query if configuration.get("preserveQuery", True) else destination.query
+    flow.request.url = urlunsplit((destination.scheme, destination.netloc, path or "/", query, destination.fragment))
+
+def _apply_unified_response_action(flow: http.HTTPFlow, action) -> bool:
+    action_type = action.get("type")
+    configuration = action.get("configuration") or {}
+    if action_type == "rewriteResponse" and flow.response:
+        if configuration.get("status") is not None:
+            flow.response.status_code = int(configuration["status"])
+        _overlay_headers(flow.response.headers, configuration.get("headers"))
+        if configuration.get("body") is not None:
+            flow.response.set_text(str(configuration.get("body") or ""))
+    return False
+
+async def apply_unified_request_rules(flow: http.HTTPFlow) -> bool:
+    """Apply request-phase actions. Returns whether a unified breakpoint should pause."""
+    should_intercept = False
+    terminal = False
+    original_key = flow_key(flow)
+    original_map_key = map_local_key(flow)
+    for rule in _sorted_matching_rules(flow):
+        for action in rule.get("actions") or []:
+            action_type = action.get("type")
+            configuration = action.get("configuration") or {}
+            if action_type == "mapRemote":
+                _apply_map_remote(flow, configuration)
+            elif action_type == "rewriteRequest":
+                if configuration.get("method"):
+                    flow.request.method = str(configuration["method"]).upper()
+                if configuration.get("url"):
+                    try:
+                        flow.request.url = str(configuration["url"])
+                    except Exception:
+                        pass
+                _overlay_headers(flow.request.headers, configuration.get("headers"))
+                if configuration.get("body") is not None:
+                    flow.request.set_text(str(configuration.get("body") or ""))
+            elif action_type == "delay":
+                delay = max(int(configuration.get("requestMilliseconds", 0)), 0)
+                if delay:
+                    await asyncio.sleep(delay / 1000.0)
+            elif action_type == "breakpoint" and configuration.get("request"):
+                should_intercept = True
+            elif action_type in ("mock", "block"):
+                status = int(configuration.get("status", 200 if action_type == "mock" else 403))
+                headers = dict(configuration.get("headers") or {})
+                headers["X-FRTM-Rule"] = str(rule.get("id", ""))
+                flow.response = http.Response.make(status, str(configuration.get("body", "")), headers)
+                terminal = True
+                break
+        if terminal:
+            break
+
+    new_key = flow_key(flow)
+    new_map_key = map_local_key(flow)
+    if original_key != new_key:
+        FLOW_BY_KEY.pop(original_key, None)
+    if original_map_key != new_map_key:
+        FLOW_BY_MAP_LOCAL_KEY.pop(original_map_key, None)
+    FLOW_BY_ID[flow.id] = flow
+    FLOW_BY_KEY[new_key] = flow
+    FLOW_BY_MAP_LOCAL_KEY[new_map_key] = flow
+    return should_intercept
+
+async def apply_unified_response_rules(flow: http.HTTPFlow) -> bool:
+    should_intercept = False
+    for rule in _sorted_matching_rules(flow):
+        for action in rule.get("actions") or []:
+            action_type = action.get("type")
+            configuration = action.get("configuration") or {}
+            if action_type == "delay":
+                delay = max(int(configuration.get("responseMilliseconds", 0)), 0)
+                if delay:
+                    await asyncio.sleep(delay / 1000.0)
+            elif action_type == "breakpoint" and configuration.get("response"):
+                should_intercept = True
+            else:
+                _apply_unified_response_action(flow, action)
+    return should_intercept
 
 def track_map_local_key(rule_key: str):
     base = base_key_from_rule_key(rule_key)
@@ -449,10 +589,37 @@ def stdin_reader():
             handle_command(message)  # fallback pre-running (raro)
 
 def handle_command(cmd):
+    global TRAFFIC_RULES, TRAFFIC_RULES_REVISION
     t = cmd.get("type")
     flow_id = cmd.get("id")
     debug_log(f"command received type={t} flow_id={flow_id}")
     flow = FLOW_BY_ID.get(flow_id)
+
+    if t == "replace_rules":
+        revision = int(cmd.get("revision", TRAFFIC_RULES_REVISION + 1))
+        document = cmd.get("document") or {}
+        rules = document.get("rules") if isinstance(document, dict) else None
+        if not isinstance(rules, list):
+            send({"event": "rules_error", "revision": revision, "message": "document.rules must be an array"})
+            return
+        invalid = []
+        for rule in rules:
+            matcher = rule.get("matcher") or {}
+            patterns = [matcher.get(key) for key in ("scheme", "host", "path", "method", "query", "body")]
+            patterns += [header.get("value") for header in matcher.get("headers") or []]
+            for pattern in patterns:
+                if isinstance(pattern, dict) and pattern.get("mode") == "regularExpression":
+                    try:
+                        re.compile(str(pattern.get("value", "")))
+                    except re.error as exc:
+                        invalid.append(f"{rule.get('id', 'unknown')}: {exc}")
+        if invalid:
+            send({"event": "rules_error", "revision": revision, "message": "; ".join(invalid)})
+            return
+        TRAFFIC_RULES = list(rules)
+        TRAFFIC_RULES_REVISION = revision
+        send({"event": "rules_ack", "revision": revision, "count": len(TRAFFIC_RULES)})
+        return
 
     if t == "traffic_profile":
         update_traffic_profile(cmd.get("profile"))
@@ -670,13 +837,15 @@ async def request(flow: http.HTTPFlow):
     FLOW_BY_MAP_LOCAL_KEY[map_local_key(flow)] = flow
     prune_flow_maps()
 
-    waiting_request = should_break(flow, "request")
+    unified_waiting_request = await apply_unified_request_rules(flow)
+    waiting_request = unified_waiting_request or should_break(flow, "request")
     if waiting_request:
         flow.intercept()
 
     await apply_profile_to_request(flow)
 
-    # Apply Map Local before sending the request to the server.
+    # Apply legacy Map Local before sending the request to the server. A terminal
+    # unified mock/block takes precedence and is never overwritten here.
     base = flow_key(flow)
     computed_key = map_local_key(flow)
     candidates_all = MAP_LOCAL_RULE_KEYS_BY_BASE.get(base) or []
@@ -708,11 +877,11 @@ async def request(flow: http.HTTPFlow):
                     matched_key = candidates[idx]
                     MAP_LOCAL_FALLBACK_CURSOR[base] = (idx + 1) % len(candidates)
                     rule = MAP_LOCAL_RULES.get(matched_key)
-    if rule:
+    if rule and flow.response is None:
         if DEBUG_VERBOSE:
             debug_log(f"rule found for {matched_key}, applying mock")
         apply_map_local_response(flow, rule)
-    else:
+    elif flow.response is None:
         wildcard_key = select_wildcard_rule(flow)
         if wildcard_key:
             if DEBUG_VERBOSE:
@@ -736,7 +905,8 @@ async def response(flow: http.HTTPFlow):
 
     await apply_profile_to_response(flow)
 
-    waiting_response = should_break(flow, "response")
+    unified_waiting_response = await apply_unified_response_rules(flow)
+    waiting_response = unified_waiting_response or should_break(flow, "response")
     if waiting_response:
         flow.intercept()
 

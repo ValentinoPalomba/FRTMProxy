@@ -12,11 +12,15 @@ struct InspectorHeaderBar: View {
     let onTogglePinnedApp: (PinnedApp) -> Void
     let onRemovePinnedApp: (PinnedApp) -> Void
     let onShowRules: () -> Void
+    let onShowUnifiedRules: () -> Void
     let onShowBreakpoints: () -> Void
     let onShowCollections: () -> Void
     let onShowDeviceConnect: () -> Void
     let onShowComposer: () -> Void
     let onShowScripts: () -> Void
+    let onShowSessions: () -> Void
+    let onShowSelectiveCapture: () -> Void
+    let onShowWorkspace: () -> Void
     let trafficProfiles: [TrafficProfile]
     let activeTrafficProfile: TrafficProfile
     let onSelectTrafficProfile: (TrafficProfile) -> Void
@@ -56,11 +60,15 @@ struct InspectorHeaderBar: View {
                     activeTrafficProfile: activeTrafficProfile,
                     onSelectTrafficProfile: onSelectTrafficProfile,
                     onShowRules: onShowRules,
+                    onShowUnifiedRules: onShowUnifiedRules,
                     onShowBreakpoints: onShowBreakpoints,
                     onShowCollections: onShowCollections,
                     onShowDeviceConnect: onShowDeviceConnect,
                     onShowComposer: onShowComposer,
-                    onShowScripts: onShowScripts
+                    onShowScripts: onShowScripts,
+                    onShowSessions: onShowSessions,
+                    onShowSelectiveCapture: onShowSelectiveCapture,
+                    onShowWorkspace: onShowWorkspace
                 )
                 ControlButton(
                     title: toggleTitle,
@@ -84,35 +92,28 @@ private struct ManageMenuButton: View {
     let activeTrafficProfile: TrafficProfile
     let onSelectTrafficProfile: (TrafficProfile) -> Void
     let onShowRules: () -> Void
+    let onShowUnifiedRules: () -> Void
     let onShowBreakpoints: () -> Void
     let onShowCollections: () -> Void
     let onShowDeviceConnect: () -> Void
     let onShowComposer: () -> Void
     let onShowScripts: () -> Void
+    let onShowSessions: () -> Void
+    let onShowSelectiveCapture: () -> Void
+    let onShowWorkspace: () -> Void
     @State private var isPresented = false
 
     var body: some View {
-        Button {
+        ControlButton(
+            title: "Manage",
+            systemImage: "ellipsis",
+            style: .ghost(colors)
+        ) {
             isPresented.toggle()
-        } label: {
-            Label("Manage", systemImage: "ellipsis")
-                .font(DesignSystem.Fonts.mono(13, weight: .semibold))
-                .padding(.horizontal, DesignSystem.Spacing.md)
-                .padding(.vertical, DesignSystem.Spacing.sm)
-                .frame(minHeight: DesignSystem.Metrics.scaled(34))
-                .background(colors.surface)
-                .foregroundStyle(colors.textPrimary)
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
-                        .stroke(colors.border.opacity(0.9), lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.md))
         }
-        .buttonStyle(.plain)
         .popover(isPresented: $isPresented, arrowEdge: .bottom) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                sectionHeader("Settings")
-                menuButton(title: "Rules", icon: "slider.horizontal.3", action: {
+                menuButton(title: "Map Local Rules", icon: "slider.horizontal.3", action: {
                     isPresented = false; onShowRules()
                 })
                 menuButton(title: "Breakpoints", icon: "record.circle", action: {
@@ -121,18 +122,17 @@ private struct ManageMenuButton: View {
                 menuButton(title: "Collections", icon: "folder", action: {
                     isPresented = false; onShowCollections()
                 })
+                menuButton(title: "Sessions", icon: "clock.arrow.circlepath", action: {
+                    isPresented = false; onShowSessions()
+                })
                 menuButton(title: "Device", icon: "qrcode", action: {
                     isPresented = false; onShowDeviceConnect()
                 })
 
-                sectionHeader("Tools")
-                    .padding(.top, DesignSystem.Spacing.sm)
-                menuButton(title: "Compose", icon: "paperplane.fill", action: {
-                    isPresented = false; onShowComposer()
-                })
-                menuButton(title: "Scripts", icon: "curlybraces", action: {
-                    isPresented = false; onShowScripts()
-                })
+                Divider()
+                    .padding(.vertical, DesignSystem.Spacing.xs)
+
+                advancedToolsSection
 
                 Divider()
                     .padding(.vertical, DesignSystem.Spacing.xs)
@@ -148,7 +148,7 @@ private struct ManageMenuButton: View {
                 )
             }
             .padding(DesignSystem.Spacing.lg)
-            .frame(width: DesignSystem.Metrics.scaled(280))
+            .frame(width: DesignSystem.Metrics.scaled(300))
             .background(
                 RoundedRectangle(cornerRadius: DesignSystem.Radius.lg)
                     .fill(colors.surface)
@@ -157,25 +157,75 @@ private struct ManageMenuButton: View {
         }
     }
 
-    private func sectionHeader(_ text: String) -> some View {
-        Text(text.uppercased())
-            .font(DesignSystem.Fonts.sans(10, weight: .semibold))
-            .foregroundStyle(colors.textSecondary.opacity(0.7))
-            .tracking(0.8)
+    private var advancedToolsSection: some View {
+        Menu {
+            Button("Traffic Rules", systemImage: "point.3.connected.trianglepath.dotted") {
+                isPresented = false
+                onShowUnifiedRules()
+            }
+            Button("Workspace", systemImage: "shippingbox") {
+                isPresented = false
+                onShowWorkspace()
+            }
+            Button("Selective Capture", systemImage: "scope") {
+                isPresented = false
+                onShowSelectiveCapture()
+            }
+            Divider()
+            Button("Scripts", systemImage: "curlybraces") {
+                isPresented = false
+                onShowScripts()
+            }
+            Button("Compose", systemImage: "paperplane.fill") {
+                isPresented = false
+                onShowComposer()
+            }
+        } label: {
+            HStack(spacing: DesignSystem.Spacing.sm) {
+                Image(systemName: "wrench.and.screwdriver")
+                    .frame(width: DesignSystem.Metrics.scaled(18))
+                    .foregroundStyle(colors.textSecondary)
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
+                    Text("Advanced Tools")
+                        .font(DesignSystem.Fonts.body.weight(.semibold))
+                        .foregroundStyle(colors.textPrimary)
+                    Text("Automation, scripting, and custom routing")
+                        .font(DesignSystem.Fonts.caption)
+                        .foregroundStyle(colors.textSecondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(DesignSystem.Fonts.caption.weight(.semibold))
+                    .foregroundStyle(colors.textSecondary)
+            }
+            .padding(.horizontal, DesignSystem.Spacing.sm)
+            .padding(.vertical, DesignSystem.Spacing.sm)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize(horizontal: false, vertical: true)
+        .hoverHighlight(colors, cornerRadius: DesignSystem.Radius.md)
+        .accessibilityHint("Opens advanced debugging and automation tools")
     }
 
     private func menuButton(title: String, icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: DesignSystem.Spacing.sm) {
                 Image(systemName: icon)
+                    .frame(width: DesignSystem.Metrics.scaled(18))
+                    .foregroundStyle(colors.textSecondary)
                 Text(title)
-                    .font(DesignSystem.Fonts.sans(13, weight: .semibold))
+                    .font(DesignSystem.Fonts.body.weight(.medium))
                 Spacer()
             }
             .foregroundStyle(colors.textPrimary)
+            .padding(.horizontal, DesignSystem.Spacing.sm)
             .padding(.vertical, DesignSystem.Spacing.sm)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
+        .hoverHighlight(colors, cornerRadius: DesignSystem.Radius.sm)
     }
 }
 

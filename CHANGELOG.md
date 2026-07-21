@@ -6,6 +6,28 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-07-21
+
+### Added
+- Unified traffic rules with ordered actions for mocking, redirecting, rewriting, blocking,
+  delaying, breaking, and scripting matched traffic.
+- Encrypted persistent capture sessions with paged timelines, notes, bookmarks, retention, and
+  corruption reporting.
+- Selective capture for individual apps, Chromium/Electron profiles, and command-line processes.
+- Structured protocol inspection for GraphQL, JWT, cookies, forms, multipart, SSE, XML/HTML,
+  gRPC, and generic Protobuf payloads.
+- Importable and exportable Git-friendly workspaces containing rules, scripts, and breakpoints.
+- Local MCP automation server with secure redaction defaults and atomic rule replacement.
+
+### Changed
+- Replaced the animated menu bar status assets with native app state rendering.
+- Updated the application icon and README branding.
+- Expanded flow filters with client app, client IP, protocol, and operation matching.
+
+### Fixed
+- Mitmproxy now opens upstream connections lazily, avoiding unnecessary connection failures.
+- Rule synchronization keeps legacy and unified traffic rules consistent with the Python bridge.
+
 ## [1.7.0] - 2026-07-13
 
 ### Added
@@ -44,7 +66,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 ### Fixed
 - New EdDSA signing key for Sparkle updates and appcast publishing fixes.
 
-[Unreleased]: https://github.com/ValentinoPalomba/FRTMProxy/compare/v.1.7.0...HEAD
+[Unreleased]: https://github.com/ValentinoPalomba/FRTMProxy/compare/v.1.8.0...HEAD
+[1.8.0]: https://github.com/ValentinoPalomba/FRTMProxy/releases/tag/v.1.8.0
 [1.7.0]: https://github.com/ValentinoPalomba/FRTMProxy/releases/tag/v.1.7.0
 [1.6.0]: https://github.com/ValentinoPalomba/FRTMProxy/releases/tag/v.1.6.0
 [1.5.1]: https://github.com/ValentinoPalomba/FRTMProxy/releases/tag/v1.5.1

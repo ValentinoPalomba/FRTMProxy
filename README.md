@@ -74,6 +74,17 @@ page. The app is signed with a Developer ID, notarized, and auto-updates via
 - **Connect devices**: guided certificate setup for iOS simulators, physical devices (via QR), and Android.
 - **Capture this Mac's traffic** with a one-toggle system proxy override.
 - **Shape traffic**: simulate latency, jitter, bandwidth limits, and packet loss.
+- **Build rule pipelines**: match traffic once, then mock, redirect, rewrite, block, delay,
+  breakpoint, or script it with ordered actions.
+- **Return to earlier captures**: encrypted persistent sessions keep a paged timeline with notes
+  and bookmarks.
+- **Launch selective targets**: route one app, Chromium/Electron profile, or CLI process through
+  FRTMProxy without changing the system proxy.
+- **Inspect structured protocols**: GraphQL, JWT, cookies, forms, multipart, SSE, XML/HTML, gRPC,
+  and generic Protobuf wire payloads.
+- **Share a workspace**: import or export versioned, Git-friendly rules, scripts, and breakpoints.
+- **Automate locally**: expose redacted flows and atomic rule replacement through a local MCP
+  server bound to a user-only Unix socket.
 
 ### Key tools
 
@@ -86,6 +97,13 @@ reuse. Enable a collection to enter **Replay** mode: matching calls are served f
 
 **Device setup** — a dedicated section to connect iOS/Android: guided simulator install and a QR
 code to install the certificate on a physical device.
+
+### MCP automation
+
+Start FRTMProxy, then choose **Device → Copy MCP Server Configuration** and paste the copied JSON
+into your MCP client. The bundled stdio launcher connects to FRTMProxy's local Unix socket. Flow
+headers and URLs are redacted by default, bodies are omitted by default, and the socket is
+accessible only to the current macOS user.
 
 ---
 

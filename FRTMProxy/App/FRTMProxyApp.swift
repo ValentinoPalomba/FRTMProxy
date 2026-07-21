@@ -11,9 +11,11 @@ import Sparkle
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     weak var proxyViewModel: ProxyViewModel?
+    var mcpServer: LocalMCPServer?
 
     func applicationWillTerminate(_ notification: Notification) {
         proxyViewModel?.stopProxy()
+        mcpServer?.stop()
     }
 }
 
@@ -45,6 +47,7 @@ struct FRTMProxyApp: App {
                 .task {
                     appDelegate.proxyViewModel = proxyViewModel
                     proxyViewModel.bind(settings: settingsStore)
+                    startMCPServerIfNeeded()
                 }
                 .alert(item: $deviceAlert) { alert in
                     Alert(
@@ -106,6 +109,10 @@ struct FRTMProxyApp: App {
 
                 Button("Copy CLI Proxy Environment Variables") {
                     copyProxyEnvironmentVariables()
+                }
+
+                Button("Copy MCP Server Configuration") {
+                    copyMCPConfiguration()
                 }
 
                 Divider()
@@ -223,6 +230,50 @@ struct FRTMProxyApp: App {
         deviceAlert = DeviceAlert(
             title: "Copied",
             message: "Proxy environment variables copied. Paste them into the terminal session whose CLI traffic you want to capture, then run your command."
+        )
+    }
+
+    @MainActor
+    private func startMCPServerIfNeeded() {
+        guard appDelegate.mcpServer == nil else { return }
+        let router = MCPAutomationRouter(
+            flowProvider: { proxyViewModel.flows },
+            ruleUpdater: { proxyViewModel.saveUnifiedTrafficRules($0) }
+        )
+        let socketURL = URL.applicationSupportDirectory
+            .appending(path: "FRTMProxy", directoryHint: .isDirectory)
+            .appending(path: "Automation", directoryHint: .isDirectory)
+            .appending(path: "mcp.sock")
+        let server = LocalMCPServer(socketURL: socketURL) { data in
+            await router.handle(data)
+        }
+        do {
+            try server.start()
+            appDelegate.mcpServer = server
+            proxyViewModel.appendLog("[MCP] local Unix socket ready\n")
+        } catch {
+            proxyViewModel.appendLog("[MCP] unable to start: \(error.localizedDescription)\n")
+        }
+    }
+
+    private func copyMCPConfiguration() {
+        let launcher = Bundle.main.url(forResource: "frtmproxy_mcp", withExtension: "py")
+        let repositoryLauncher = URL(filePath: FileManager.default.currentDirectoryPath)
+            .appending(path: "scripts/frtmproxy_mcp.py")
+        let command = launcher?.path ?? repositoryLauncher.path
+        let configuration: [String: Any] = [
+            "mcpServers": [
+                "frtmproxy": [
+                    "command": "/usr/bin/python3",
+                    "args": [command]
+                ]
+            ]
+        ]
+        let data = try? JSONSerialization.data(withJSONObject: configuration, options: [.prettyPrinted, .sortedKeys])
+        ClipboardHelper.copy(data.flatMap { String(data: $0, encoding: .utf8) })
+        deviceAlert = DeviceAlert(
+            title: "Copied",
+            message: "MCP configuration copied. FRTMProxy must be running while the MCP client is connected."
         )
     }
 }

@@ -78,6 +78,9 @@ private struct FlowQuery {
     var statusPredicate: ((Int) -> Bool)?
     var contentTypeTerms: [String] = []
     var excludedContentTypeTerms: [String] = []
+    var protocolTerms: [String] = []
+    var excludedProtocolTerms: [String] = []
+    var operationTerms: [String] = []
 
     var isEmpty: Bool {
         keywords.isEmpty &&
@@ -93,7 +96,10 @@ private struct FlowQuery {
             excludedMethods.isEmpty &&
             statusPredicate == nil &&
             contentTypeTerms.isEmpty &&
-            excludedContentTypeTerms.isEmpty
+            excludedContentTypeTerms.isEmpty &&
+            protocolTerms.isEmpty &&
+            excludedProtocolTerms.isEmpty &&
+            operationTerms.isEmpty
     }
 
     func matches(_ flow: MitmFlow) -> Bool {
@@ -156,6 +162,24 @@ private struct FlowQuery {
             if Self.matchesContentType(term: term, headerValue: contentType, responseBody: response?.body) { return false }
         }
 
+        if !protocolTerms.isEmpty || !excludedProtocolTerms.isEmpty || !operationTerms.isEmpty {
+            let requestInspection = ProtocolInspector.inspect(body: request?.body, headers: request?.headers ?? [:])
+            let responseInspection = ProtocolInspector.inspect(body: response?.body, headers: response?.headers ?? [:])
+            let inspections = [requestInspection, responseInspection].compactMap { $0 }
+            let protocolNames = inspections.flatMap { [$0.kind.rawValue.lowercased(), $0.kind.displayName.lowercased()] }
+            let operations = inspections.compactMap(\.summary).map { $0.lowercased() }
+
+            for term in protocolTerms where !term.isEmpty {
+                if !protocolNames.contains(where: { $0.localizedStandardContains(term) }) { return false }
+            }
+            for term in excludedProtocolTerms where !term.isEmpty {
+                if protocolNames.contains(where: { $0.localizedStandardContains(term) }) { return false }
+            }
+            for term in operationTerms where !term.isEmpty {
+                if !operations.contains(where: { $0.localizedStandardContains(term) }) { return false }
+            }
+        }
+
         if !keywords.isEmpty || !excludedKeywords.isEmpty {
             let requestHeaders = Self.allHeadersLowercased(request?.headers)
             let responseHeaders = Self.allHeadersLowercased(response?.headers)
@@ -209,7 +233,9 @@ private struct FlowQuery {
            query.appTerms.isEmpty, query.excludedAppTerms.isEmpty,
            query.methods.isEmpty, query.excludedMethods.isEmpty,
            query.statusPredicate == nil,
-           query.contentTypeTerms.isEmpty, query.excludedContentTypeTerms.isEmpty {
+           query.contentTypeTerms.isEmpty, query.excludedContentTypeTerms.isEmpty,
+           query.protocolTerms.isEmpty, query.excludedProtocolTerms.isEmpty,
+           query.operationTerms.isEmpty {
             return FlowQuery()
         }
 
@@ -219,6 +245,9 @@ private struct FlowQuery {
         query.excludedClientTerms = query.excludedClientTerms.filter { !$0.isEmpty }
         query.appTerms = query.appTerms.filter { !$0.isEmpty }
         query.excludedAppTerms = query.excludedAppTerms.filter { !$0.isEmpty }
+        query.protocolTerms = query.protocolTerms.filter { !$0.isEmpty }
+        query.excludedProtocolTerms = query.excludedProtocolTerms.filter { !$0.isEmpty }
+        query.operationTerms = query.operationTerms.filter { !$0.isEmpty }
         return query
     }
 
@@ -267,6 +296,16 @@ private struct FlowQuery {
             } else {
                 contentTypeTerms.append(term)
             }
+        case "protocol", "proto":
+            let term = normalizedValue.lowercased()
+            if excluded {
+                excludedProtocolTerms.append(term)
+            } else {
+                protocolTerms.append(term)
+            }
+        case "operation", "operation-name", "graphql-operation":
+            guard !excluded else { return }
+            operationTerms.append(normalizedValue.lowercased())
         default:
             if excluded {
                 excludedKeywords.append((key + ":" + value).lowercased())

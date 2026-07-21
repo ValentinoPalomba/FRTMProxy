@@ -45,6 +45,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     private var warmupProcess: Process?
     private var prewarmTask: Task<Void, Never>?
     private var cachedMitmdumpURL: URL?
+    private var rulesRevision = 0
     /// Serializza le scritture su stdin del bridge fuori dal MainActor: una
     /// pipe piena bloccherebbe la UI, e la write può fallire (EPIPE) se il
     /// processo è morto — qui viene gestita senza bloccare né crashare.
@@ -55,8 +56,10 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     /// Proxy running?
     @Published private(set) var isRunning: Bool = false
     @Published var flows: [String: MitmFlow] = [:]
+    private let flowEventsSubject = PassthroughSubject<MitmFlow, Never>()
 
     var flowsPublisher: AnyPublisher<[String: MitmFlow], Never> { $flows.eraseToAnyPublisher() }
+    var flowEventsPublisher: AnyPublisher<MitmFlow, Never> { flowEventsSubject.eraseToAnyPublisher() }
     var isRunningPublisher: AnyPublisher<Bool, Never> { $isRunning.eraseToAnyPublisher() }
     
     nonisolated init(config: MitmproxyConfig) {
@@ -204,7 +207,8 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         var args: [String] = [
             "-p", "\(selectedPort)",
             "-s", scriptURL.path,
-            "--set", "ssl_insecure=true"
+            "--set", "ssl_insecure=true",
+            "--set", "connection_strategy=lazy"
         ]
 
         if restrictToHosts {
@@ -340,6 +344,18 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     private nonisolated func handleIncomingLine(_ line: String) {
         guard let data = line.data(using: .utf8) else { return }
 
+        if let rulesEvent = try? JSONDecoder().decode(RulesSyncEvent.self, from: data) {
+            DispatchQueue.main.async {
+                switch rulesEvent.event {
+                case .acknowledged:
+                    self.onLog?("[RULES] revision \(rulesEvent.revision) applied (\(rulesEvent.count ?? 0) rules)\n")
+                case .failed:
+                    self.onLog?("[RULES] revision \(rulesEvent.revision) rejected: \(rulesEvent.message ?? "unknown error")\n")
+                }
+            }
+            return
+        }
+
         // WebSocket message events are decoded separately to avoid polluting MitmFlow.
         if let wsEvent = try? JSONDecoder().decode(WebSocketMessageEvent.self, from: data),
            wsEvent.event == "websocket_message" {
@@ -365,6 +381,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         guard var existing = flows[event.id] else { return }
         existing.websocketMessages.append(event.websocketMessage)
         flows[event.id] = existing
+        flowEventsSubject.send(existing)
     }
     
     @MainActor
@@ -404,6 +421,9 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
 
         if flows.count > maxFlowsStored {
             trimOldFlows()
+        }
+        if let merged = flows[incoming.id] {
+            flowEventsSubject.send(merged)
         }
     }
 
@@ -509,6 +529,22 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         ]
 
         sendCommand(payload, successLog: "[MAP LOCAL] rule updated for \(rule.key)\n")
+    }
+
+    func replaceRules(_ document: TrafficRuleDocument) {
+        guard let documentData = try? JSONEncoder().encode(document),
+              let documentObject = try? JSONSerialization.jsonObject(with: documentData) as? [String: Any]
+        else {
+            onLog?("[RULES] unable to encode rule document\n")
+            return
+        }
+        rulesRevision += 1
+        let payload: [String: Any] = [
+            "type": "replace_rules",
+            "revision": rulesRevision,
+            "document": documentObject
+        ]
+        sendCommand(payload, successLog: "[RULES] revision \(rulesRevision) sent\n")
     }
 
     func deleteRule(forKey key: String) {

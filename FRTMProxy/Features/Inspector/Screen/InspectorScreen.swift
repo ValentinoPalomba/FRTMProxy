@@ -10,6 +10,7 @@ struct InspectorScreen: View {
 
     @State private var showMapSheet = false
     @State private var showRulesSheet = false
+    @State private var showUnifiedRulesSheet = false
     @State private var showCollectionsSheet = false
     @State private var showRetrySheet = false
     @State private var showBreakpointSheet = false
@@ -18,6 +19,10 @@ struct InspectorScreen: View {
     @State private var showCommandPalette = false
     @State private var showComposerSheet = false
     @State private var showScriptsSheet = false
+    @State private var showSessionsSheet = false
+    @State private var showSelectiveCaptureSheet = false
+    @State private var showWorkspaceSheet = false
+    @State private var selectedSessionID: UUID?
     @State private var compareFlowID: String?
     @State private var filter = FlowFilter()
     @State private var activeBreakpointPhase: FlowBreakpointPhase = .request
@@ -80,11 +85,18 @@ struct InspectorScreen: View {
                 onTogglePinnedApp: { togglePinnedApp($0) },
                 onRemovePinnedApp: { removePinnedApp($0) },
                 onShowRules: { showRulesSheet = true },
+                onShowUnifiedRules: { showUnifiedRulesSheet = true },
                 onShowBreakpoints: { showBreakpointsManager = true },
                 onShowCollections: { showCollectionsSheet = true },
                 onShowDeviceConnect: { showDeviceConnectSheet = true },
                 onShowComposer: { openComposer() },
                 onShowScripts: { showScriptsSheet = true },
+                onShowSessions: {
+                    selectedSessionID = viewModel.activeCaptureSessionID ?? viewModel.captureSessions.first?.id
+                    showSessionsSheet = true
+                },
+                onShowSelectiveCapture: { showSelectiveCaptureSheet = true },
+                onShowWorkspace: { showWorkspaceSheet = true },
                 trafficProfiles: trafficProfiles,
                 activeTrafficProfile: viewModel.activeTrafficProfile,
                 onSelectTrafficProfile: { profile in
@@ -204,6 +216,13 @@ struct InspectorScreen: View {
         let withSheets1 = withOverlays
             .sheet(isPresented: $showMapSheet) { mapSheet }
             .sheet(isPresented: $showRulesSheet) { rulesSheet }
+            .sheet(isPresented: $showUnifiedRulesSheet) {
+                UnifiedTrafficRulesManagerView(
+                    document: viewModel.trafficRuleDocument,
+                    onSave: viewModel.saveUnifiedTrafficRules,
+                    onClose: { showUnifiedRulesSheet = false }
+                )
+            }
             .sheet(isPresented: $showCollectionsSheet) { collectionsSheet }
             .sheet(isPresented: $showRetrySheet) { retrySheet }
             .sheet(isPresented: $showBreakpointSheet) { breakpointSheet }
@@ -232,6 +251,52 @@ struct InspectorScreen: View {
                     onClose: { showScriptsSheet = false }
                 )
                 .environmentObject(settings)
+            }
+            .sheet(isPresented: $showSessionsSheet) {
+                SessionBrowserView(
+                    sessions: viewModel.captureSessions,
+                    selectedSessionID: $selectedSessionID,
+                    colors: colors,
+                    loadPage: { sessionID, cursor, limit in
+                        try await viewModel.loadCaptureSessionPage(
+                            sessionID: sessionID,
+                            after: cursor,
+                            limit: limit
+                        )
+                    },
+                    deleteSession: { sessionID in
+                        try await viewModel.deleteCaptureSessionNow(sessionID)
+                    },
+                    setMetadata: { flowID, sessionID, note, isBookmarked in
+                        try await viewModel.setCaptureFlowMetadata(
+                            flowID: flowID,
+                            sessionID: sessionID,
+                            note: note,
+                            isBookmarked: isBookmarked
+                        )
+                    },
+                    closeSession: { sessionID in
+                        try await viewModel.closeCaptureSessionNow(sessionID)
+                    },
+                    onOpenFlow: { flow in
+                        viewModel.openStoredFlow(flow)
+                        showSessionsSheet = false
+                    }
+                )
+            }
+            .sheet(isPresented: $showSelectiveCaptureSheet) {
+                SelectiveCaptureView(
+                    proxyPort: viewModel.activePort,
+                    proxyIsRunning: viewModel.isRunning,
+                    colors: colors,
+                    onClose: { showSelectiveCaptureSheet = false }
+                )
+            }
+            .sheet(isPresented: $showWorkspaceSheet) {
+                WorkspaceManagerView(
+                    exportBundle: viewModel.currentWorkspaceBundle(),
+                    onImport: viewModel.applyWorkspaceBundle
+                )
             }
 
         return withSheets2
@@ -359,8 +424,16 @@ struct InspectorScreen: View {
                 requestClearTraffic()
             },
             CommandPaletteAction(
+                title: "Open Traffic Rules",
+                subtitle: "Mock, redirect, rewrite, block, delay, pause, or script traffic",
+                systemImage: "point.3.connected.trianglepath.dotted",
+                keywords: ["rules", "rewrite", "redirect", "block", "delay"]
+            ) {
+                showUnifiedRulesSheet = true
+            },
+            CommandPaletteAction(
                 title: "Open Rules",
-                subtitle: "Manage map local rules",
+                subtitle: "Manage legacy Map Local rules",
                 systemImage: "slider.horizontal.3",
                 keywords: ["rules", "map", "local"]
             ) {
@@ -381,6 +454,31 @@ struct InspectorScreen: View {
                 keywords: ["collections", "map", "rules"]
             ) {
                 showCollectionsSheet = true
+            },
+            CommandPaletteAction(
+                title: "Open Sessions",
+                subtitle: "Browse persistent captures",
+                systemImage: "clock.arrow.circlepath",
+                keywords: ["sessions", "history", "capture"]
+            ) {
+                selectedSessionID = viewModel.activeCaptureSessionID ?? viewModel.captureSessions.first?.id
+                showSessionsSheet = true
+            },
+            CommandPaletteAction(
+                title: "Open Workspace",
+                subtitle: "Import or export a Git-friendly debugging workspace",
+                systemImage: "shippingbox",
+                keywords: ["workspace", "git", "export", "import"]
+            ) {
+                showWorkspaceSheet = true
+            },
+            CommandPaletteAction(
+                title: "Selective Capture",
+                subtitle: "Launch one app, browser, or CLI through the proxy",
+                systemImage: "scope",
+                keywords: ["selective", "launch", "app", "browser", "cli"]
+            ) {
+                showSelectiveCaptureSheet = true
             },
             CommandPaletteAction(
                 title: "Open Device Setup",

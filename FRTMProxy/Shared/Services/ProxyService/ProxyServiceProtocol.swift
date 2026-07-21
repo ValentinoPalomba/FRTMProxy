@@ -3,6 +3,7 @@ import Foundation
 
 protocol ProxyServiceProtocol: AnyObject {
     var flowsPublisher: AnyPublisher<[String: MitmFlow], Never> { get }
+    var flowEventsPublisher: AnyPublisher<MitmFlow, Never> { get }
     var isRunningPublisher: AnyPublisher<Bool, Never> { get }
     var onLog: ((String) -> Void)? { get set }
 
@@ -12,6 +13,7 @@ protocol ProxyServiceProtocol: AnyObject {
     func mockResponse(for flowID: String, body: String)
     func mockRule(_ rule: MapRule)
     func deleteRule(forKey key: String)
+    func replaceRules(_ document: TrafficRuleDocument)
     func mockRequest(for flowID: String, body: String, headers: [String: String]?)
     func mockResponse(for flowID: String, body: String, status: Int?, headers: [String: String]?)
     func applyTrafficProfile(_ profile: TrafficProfile)

@@ -224,5 +224,6 @@ extension ProxyViewModel {
         }
 
         appliedRules = merged
+        syncUnifiedTrafficRules()
     }
 }

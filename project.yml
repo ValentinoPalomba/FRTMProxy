@@ -41,6 +41,8 @@ targets:
           - "Resources/mitmdump"
       - path: FRTMProxy/Resources/mitmdump
         buildPhase: resources
+      - path: scripts/frtmproxy_mcp.py
+        buildPhase: resources
     dependencies:
       - package: Sparkle
         product: Sparkle
@@ -50,8 +52,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.valentinopalomba.frtmproxy
         PRODUCT_NAME: "$(TARGET_NAME)"
-        MARKETING_VERSION: "1.7.0"
-        CURRENT_PROJECT_VERSION: "1.7.0"
+        MARKETING_VERSION: "1.8.0"
+        CURRENT_PROJECT_VERSION: "1.8.0"
         DEVELOPMENT_TEAM: 8JS222QZL3
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_IDENTITY: "Apple Development"
@@ -70,6 +72,9 @@ targets:
         LD_RUNPATH_SEARCH_PATHS:
           - "$(inherited)"
           - "@executable_path/../Frameworks"
+        OTHER_LDFLAGS:
+          - "$(inherited)"
+          - "-lsqlite3"
 
   FRTMProxyTests:
     type: bundle.unit-test

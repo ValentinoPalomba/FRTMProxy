@@ -207,6 +207,7 @@ extension ProxyViewModel {
         }
 
         appliedBreakpointRules = merged
+        syncUnifiedTrafficRules()
     }
 
     func enqueueBreakpointHits(from flows: [MitmFlow]) {

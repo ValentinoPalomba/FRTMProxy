@@ -11,6 +11,7 @@ extension ProxyViewModel {
 
     func persistScripts() {
         scriptStore.save(scripts)
+        syncUnifiedTrafficRules()
     }
 
     // MARK: - Execution
@@ -18,6 +19,8 @@ extension ProxyViewModel {
     /// Run all enabled matching scripts against `flow` after a response event.
     func processScripts(for flow: MitmFlow) {
         guard flow.response != nil else { return }
+
+        var executedScriptIDs = Set<UUID>()
 
         let matchingScripts = scripts.filter { rule in
             guard rule.isEnabled else { return false }
@@ -28,6 +31,7 @@ extension ProxyViewModel {
 
         for rule in matchingScripts {
             if let result = executeScript(rule, for: flow) {
+                executedScriptIDs.insert(rule.id)
                 service.mockResponse(
                     for: flow.id,
                     body: result.body,
@@ -35,6 +39,47 @@ extension ProxyViewModel {
                     headers: result.headers
                 )
                 appendLog("[SCRIPT] \"\(rule.name)\" applied to \(flow.host)\(flow.path)\n")
+            }
+        }
+
+        guard let request = flow.request,
+              let components = URLComponents(string: request.url) else { return }
+        let context = TrafficRuleMatchContext(
+            scheme: components.scheme ?? "",
+            host: components.host ?? flow.host,
+            path: components.path,
+            method: request.method,
+            url: request.url,
+            headers: request.headers,
+            body: request.body
+        )
+        let unifiedScripts = trafficRuleDocument.rules
+            .filter { $0.isEnabled && $0.matcher.matches(context) }
+            .sorted { $0.priority < $1.priority }
+            .flatMap { rule in
+                rule.actions.compactMap { action -> (TrafficRule, TrafficRuleAction.Script)? in
+                    guard case .script(let script) = action else { return nil }
+                    return (rule, script)
+                }
+            }
+
+        for (trafficRule, script) in unifiedScripts where !executedScriptIDs.contains(script.id) {
+            let rule = ScriptRule(
+                id: script.id,
+                name: trafficRule.name,
+                host: "",
+                path: "",
+                code: script.source,
+                isEnabled: true
+            )
+            if let result = executeScript(rule, for: flow) {
+                service.mockResponse(
+                    for: flow.id,
+                    body: result.body,
+                    status: result.status,
+                    headers: result.headers
+                )
+                appendLog("[SCRIPT] \"\(trafficRule.name)\" applied to \(flow.host)\(flow.path)\n")
             }
         }
     }

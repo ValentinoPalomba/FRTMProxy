@@ -304,6 +304,15 @@ private struct BodyInspector: View {
         return json["query"] != nil || json["mutation"] != nil || json["subscription"] != nil
     }
 
+    private var structuredInspection: ProtocolInspectionResult? {
+        ProtocolInspector.inspect(body: payload, headers: headers)
+    }
+
+    private var hasDedicatedStructuredInspection: Bool {
+        guard let kind = structuredInspection?.kind else { return false }
+        return ![.json, .graphQL, .grpc, .text, .binary].contains(kind)
+    }
+
     private var availableModes: [BodyMode] {
         var modes: [BodyMode] = []
         if renderedImage != nil {
@@ -314,6 +323,9 @@ private struct BodyInspector: View {
         }
         if isGRPC {
             modes.append(.grpc)
+        }
+        if hasDedicatedStructuredInspection {
+            modes.append(.structured)
         }
         modes.append(contentsOf: [.pretty, .raw, .hex])
         return modes
@@ -355,12 +367,12 @@ private struct BodyInspector: View {
             }
         }
         .onAppear(perform: refreshIfNeeded)
-        .onChange(of: payload ?? "") { _ in
+        .onChange(of: payload ?? "") { _, _ in
             // Reset cache when switching flow to avoid stale content.
             cache = BodyRenderCache(source: nil)
             refreshIfNeeded()
         }
-        .onChange(of: mode) { _ in
+        .onChange(of: mode) { _, _ in
             refreshIfNeeded()
         }
     }
@@ -368,7 +380,7 @@ private struct BodyInspector: View {
     private func refreshIfNeeded() {
         let raw = (payload ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
 
-        guard !raw.isEmpty else {
+        guard !raw.isEmpty || structuredInspection != nil else {
             renderedText = ""
             renderedImage = nil
             return
@@ -392,6 +404,9 @@ private struct BodyInspector: View {
         if isGRPC, mode == .pretty {
             mode = .grpc
         }
+        if hasDedicatedStructuredInspection, mode == .pretty {
+            mode = .structured
+        }
 
         switch mode {
         case .raw:
@@ -406,7 +421,19 @@ private struct BodyInspector: View {
             renderedText = cache.graphqlText ?? cache.graphql()
         case .grpc:
             renderedText = cache.grpcText ?? cache.grpc()
+        case .structured:
+            renderedText = renderStructuredInspection()
         }
+    }
+
+    private func renderStructuredInspection() -> String {
+        guard let inspection = structuredInspection else { return payload ?? "" }
+        var blocks: [String] = []
+        if let summary = inspection.summary, !summary.isEmpty {
+            blocks.append("# \(summary)")
+        }
+        blocks.append(contentsOf: inspection.sections.map { "## \($0.title)\n\($0.content)" })
+        return blocks.joined(separator: "\n\n")
     }
 }
 
@@ -767,7 +794,7 @@ private struct WebSocketMessageRow: View {
 // MARK: - Body Modes
 
 private enum BodyMode: CaseIterable {
-    case image, raw, pretty, hex, graphql, grpc
+    case image, raw, pretty, hex, graphql, grpc, structured
 
     var label: String {
         switch self {
@@ -777,6 +804,7 @@ private enum BodyMode: CaseIterable {
         case .hex: return "Hex"
         case .graphql: return "GraphQL"
         case .grpc: return "gRPC"
+        case .structured: return "Structured"
         }
     }
 }
