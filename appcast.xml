@@ -3,6 +3,20 @@
     <channel>
         <title>FRTMProxy</title>
         <item>
+            <title>1.8.1</title>
+            <pubDate>Thu, 23 Jul 2026 14:35:41 +0200</pubDate>
+            <link>https://github.com/ValentinoPalomba/FRTMProxy/releases</link>
+            <sparkle:version>1.8.1</sparkle:version>
+            <sparkle:shortVersionString>1.8.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.1</sparkle:minimumSystemVersion>
+            <enclosure url="https://valentinopalomba.github.io/FRTMProxy/FRTMProxy-1.8.1.zip" length="43163232" type="application/octet-stream" sparkle:edSignature="+TEMEEH5JsGNyBO6A9A/wM8EGcd2NnyGhY2ocoJX4IUM1ORx21Gam35m4lpu0hL+MyuyJ+7t0kCwQshQ3DlDCA=="/>
+            <sparkle:deltas>
+                <enclosure url="https://valentinopalomba.github.io/FRTMProxy/FRTMProxy1.8.1-1.7.0.delta" sparkle:deltaFrom="1.7.0" length="2373934" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="858560" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="IE//H08sDknopJIZPC40dFoGcZWZwSur6X1MMCN/hiWkEjhPVQ6k2Iw6J9mEqN/GCsOd5hCJyWLALC3vWZcYDg=="/>
+                <enclosure url="https://valentinopalomba.github.io/FRTMProxy/FRTMProxy1.8.1-1.6.0.delta" sparkle:deltaFrom="1.6.0" length="3142150" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="860528" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="sXiuLtwkw3e6nOFPrJzzdP/jlM3v+FaU4lH4yqOAtJqycPtvvsDcEZ1m7eAkkWC3x85l/z4S3nL3Xj1iuBbrCw=="/>
+                <enclosure url="https://valentinopalomba.github.io/FRTMProxy/FRTMProxy1.8.1-1.5.1.delta" sparkle:deltaFrom="1.5.1" length="3141790" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="860528" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="2+jwxZI8PPfVZWCKnJhqa+L/ozkGQlUbw9VE4mvomfzPCXQgW+0Vc3ip+2FI9NyyX4+BpKoWBKETdRToEpHSBA=="/>
+            </sparkle:deltas>
+        </item>
+        <item>
             <title>1.8.0</title>
             <pubDate>Tue, 21 Jul 2026 12:40:27 +0200</pubDate>
             <link>https://github.com/ValentinoPalomba/FRTMProxy/releases</link>
@@ -25,18 +39,6 @@
             <sparkle:deltas>
                 <enclosure url="https://valentinopalomba.github.io/FRTMProxy/FRTMProxy1.7.0-1.6.0.delta" sparkle:deltaFrom="1.6.0" length="1682594" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="860528" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="H5FeRG2PkIWmJQhxp5BRhinjofAllGSNy9rAw2+8jeyPb3s/LTAMdNMF95BJlnxpcK80O93CU7iHegtrzlN4AQ=="/>
                 <enclosure url="https://valentinopalomba.github.io/FRTMProxy/FRTMProxy1.7.0-1.5.1.delta" sparkle:deltaFrom="1.5.1" length="1682482" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="860528" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="y4Ld6Qk/xqG+Aw1XGt7pa+0cL+YBNewL6oyn4wAEZyK0paqh5LMogD6UZFecO4KYZdO/ouEScAKyWlukVvLfCw=="/>
-            </sparkle:deltas>
-        </item>
-        <item>
-            <title>1.6.0</title>
-            <pubDate>Tue, 03 Mar 2026 09:29:50 +0100</pubDate>
-            <link>https://github.com/ValentinoPalomba/FRTMProxy/releases</link>
-            <sparkle:version>1.6.0</sparkle:version>
-            <sparkle:shortVersionString>1.6.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.1</sparkle:minimumSystemVersion>
-            <enclosure url="https://valentinopalomba.github.io/FRTMProxy/FRTMProxy-1.6.0.zip" length="42041642" type="application/octet-stream" sparkle:edSignature="LuKM3En3nyA6Cpb1Oe2RmqcT3FqeFKPovvkBJXLKpt6LhvXSNuQdf5J9ieVWWyCYLaS5XbdaKhK4Ykim+qqNBw=="/>
-            <sparkle:deltas>
-                <enclosure url="https://github.com/ValentinoPalomba/FRTMProxy/releases/download/v.1.6.0/FRTMProxy1.6.0-1.5.1.delta" sparkle:deltaFrom="1.5.1" length="2506" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="860528" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="HwbKEcgnUvVqBs3ympMsMTC2hGh/gB35hpGwfVH7LwboFuARTD2gsPxGFzVVNjLZJBfaI8qhpGR6s0TptQ0LDA=="/>
             </sparkle:deltas>
         </item>
     </channel>
