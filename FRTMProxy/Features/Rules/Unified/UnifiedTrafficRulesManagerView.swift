@@ -46,14 +46,15 @@ struct UnifiedTrafficRulesManagerView: View {
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
+                let orderedRules = model.orderedRules
                 ScrollView {
                     LazyVStack(spacing: DesignSystem.Spacing.sm) {
-                        ForEach(model.orderedRules) { rule in
+                        ForEach(orderedRules.enumerated(), id: \.element.id) { index, rule in
                             UnifiedTrafficRuleRow(
                                 rule: rule,
                                 colors: colors,
-                                canMoveUp: model.canMove(ruleID: rule.id, direction: .up),
-                                canMoveDown: model.canMove(ruleID: rule.id, direction: .down),
+                                canMoveUp: index > orderedRules.startIndex,
+                                canMoveDown: index < orderedRules.index(before: orderedRules.endIndex),
                                 onToggle: { model.setEnabled($0, ruleID: rule.id) },
                                 onEdit: { editingRule = rule },
                                 onMoveUp: { model.move(ruleID: rule.id, direction: .up) },
@@ -117,7 +118,7 @@ private struct UnifiedTrafficRulesManagerHeader: View {
                 Text("Traffic Rules")
                     .font(DesignSystem.Fonts.title)
                     .foregroundStyle(colors.textPrimary)
-                Text("\(ruleCount) configured · lower priority runs first")
+                Text("\(ruleCount) configured · top rule runs first")
                     .font(DesignSystem.Fonts.caption)
                     .foregroundStyle(colors.textSecondary)
             }

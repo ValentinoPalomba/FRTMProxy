@@ -1,15 +1,37 @@
 import Foundation
 
+struct SessionFlowUpsertSummary: Equatable, Sendable {
+    var insertedFlowCount: Int
+    var updatedFlowCount: Int
+    var latestFlowDate: Date?
+
+    static let empty = SessionFlowUpsertSummary(
+        insertedFlowCount: 0,
+        updatedFlowCount: 0,
+        latestFlowDate: nil
+    )
+
+    mutating func merge(_ other: SessionFlowUpsertSummary) {
+        insertedFlowCount += other.insertedFlowCount
+        updatedFlowCount += other.updatedFlowCount
+        latestFlowDate = [latestFlowDate, other.latestFlowDate].compactMap { $0 }.max()
+    }
+}
+
 protocol SessionStoreProtocol: Actor {
     static var schemaVersion: Int { get }
 
     func createSession(name: String, at date: Date) throws -> CaptureSession
+    func activeSessionOrCreate(name: String, at date: Date) throws -> CaptureSession
     func sessions() throws -> [CaptureSession]
     func session(id: UUID) throws -> CaptureSession?
     func closeSession(id: UUID, at date: Date) throws
     func deleteSession(id: UUID) throws
 
-    func upsert(flow: sending MitmFlow, in sessionID: UUID) throws
+    @discardableResult
+    func upsert(flow: sending MitmFlow, in sessionID: UUID) throws -> SessionFlowUpsertSummary
+    @discardableResult
+    func upsert(flows: sending [MitmFlow], in sessionID: UUID) throws -> SessionFlowUpsertSummary
     func flow(id: String, in sessionID: UUID) throws -> CaptureSessionFlow?
     func page(
         in sessionID: UUID,
@@ -34,6 +56,22 @@ extension SessionStoreProtocol {
 
     func closeSession(id: UUID) throws {
         try closeSession(id: id, at: .now)
+    }
+
+    func activeSessionOrCreate(name: String, at date: Date) throws -> CaptureSession {
+        if let activeSession = try sessions().first(where: \.isActive) {
+            return activeSession
+        }
+        return try createSession(name: name, at: date)
+    }
+
+    @discardableResult
+    func upsert(flows incoming: sending [MitmFlow], in sessionID: UUID) throws -> SessionFlowUpsertSummary {
+        var summary = SessionFlowUpsertSummary.empty
+        for flow in incoming {
+            try summary.merge(upsert(flow: flow, in: sessionID))
+        }
+        return summary
     }
 
     func page(

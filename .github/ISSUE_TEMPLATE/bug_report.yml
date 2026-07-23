@@ -28,14 +28,14 @@ body:
     attributes:
       label: FRTMProxy version
       description: See FRTMProxy → About.
-      placeholder: "1.7.0"
+      placeholder: "x.y.z"
     validations:
       required: true
   - type: input
     id: macos-version
     attributes:
       label: macOS version
-      placeholder: "26.0"
+      placeholder: "14.1"
     validations:
       required: true
   - type: textarea

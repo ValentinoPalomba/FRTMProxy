@@ -1,0 +1,71 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "FRTMProxy"
+          }
+        }
+      }
+    },
+    "NSLocationWhenInUseUsageDescription" : {
+      "comment" : "Privacy - Location When In Use Usage Description",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erlaubt FRTMProxy, den Namen des WLANs (SSID) zu lesen, um das Proxy-Konfigurationsprofil automatisch zu erstellen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allows FRTMProxy to read the Wi-Fi network name (SSID) to automatically generate the proxy configuration profile."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permite que FRTMProxy lea el nombre de la red Wi-Fi (SSID) para generar automáticamente el perfil de configuración del proxy."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autorise FRTMProxy à lire le nom du réseau Wi-Fi (SSID) afin de générer automatiquement le profil de configuration du proxy."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consente a FRTMProxy di leggere il nome della rete Wi-Fi (SSID) per generare automaticamente il profilo di configurazione del proxy."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FRTMProxy が Wi-Fi ネットワーク名（SSID）を読み取り、プロキシ構成プロファイルを自動生成できるようにします。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permite que o FRTMProxy leia o nome da rede Wi-Fi (SSID) para gerar automaticamente o perfil de configuração do proxy."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "允许 FRTMProxy 读取 Wi-Fi 网络名称（SSID），以自动生成代理配置描述文件。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.1"
+}

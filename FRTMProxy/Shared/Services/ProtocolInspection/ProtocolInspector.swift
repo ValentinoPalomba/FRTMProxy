@@ -2,7 +2,7 @@ import Foundation
 
 enum ProtocolInspector {
     static func inspect(body: String?, headers: [String: String]) -> ProtocolInspectionResult? {
-        let normalizedHeaders = Dictionary(uniqueKeysWithValues: headers.map { ($0.key.lowercased(), $0.value) })
+        let normalizedHeaders = normalized(headers)
         let contentType = normalizedHeaders["content-type"]?.lowercased() ?? ""
         let raw = body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
@@ -158,5 +158,16 @@ enum ProtocolInspector {
         var normalized = value.replacing("-", with: "+").replacing("_", with: "/")
         normalized += String(repeating: "=", count: (4 - normalized.count % 4) % 4)
         return Data(base64Encoded: normalized)
+    }
+
+    private static func normalized(_ headers: [String: String]) -> [String: String] {
+        headers.reduce(into: [:]) { result, header in
+            let name = header.key.lowercased()
+            if let existing = result[name] {
+                result[name] = existing + ", " + header.value
+            } else {
+                result[name] = header.value
+            }
+        }
     }
 }

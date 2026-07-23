@@ -1,20 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <rect x="56" y="56" width="912" height="912" rx="208" fill="#0B0D10"/>
+  <rect width="1024" height="1024" fill="#D9DEE2"/>
 
-  <!-- One bidirectional connection: request above, response below. -->
-  <path d="M184 410h624" fill="none" stroke="#E7EAEF" stroke-width="48" stroke-linecap="round"/>
-  <path d="M216 614h624" fill="none" stroke="#9AA3AF" stroke-width="48" stroke-linecap="round"/>
-  <path d="M792 370l72 40-72 40z" fill="#E7EAEF"/>
-  <path d="M232 574l-72 40 72 40z" fill="#9AA3AF"/>
+  <g transform="translate(-41 -41) scale(1.08)">
+  <g fill="none" stroke="#202326" stroke-width="58" stroke-linecap="round" stroke-linejoin="miter">
+    <path d="M108 376h300l76 76"/>
+    <path d="M108 474h282l54 54"/>
+    <path d="M568 554l72-72h276"/>
+    <path d="M568 554l72 72h276"/>
+    <path d="M330 700L704 284" stroke-width="68"/>
+  </g>
 
-  <!-- A pair of vertical jaws marks the controllable MITM boundary. -->
-  <rect x="352" y="312" width="48" height="400" rx="24" fill="#E7EAEF"/>
-  <rect x="624" y="312" width="48" height="400" rx="24" fill="#E7EAEF"/>
+  <g fill="#202326">
+    <rect x="482" y="176" width="54" height="136" rx="27"/>
+    <path d="M482 176h54v20l-12-7-11 7-10-8-10 7-11-6z"/>
+    <rect x="482" y="712" width="54" height="136" rx="27"/>
+    <path d="M482 712h54v20l-12-7-11 7-10-8-10 7-11-6z"/>
+  </g>
 
-  <!-- The intercepted HTTP frame, held between the clamps for inspection/editing. -->
-  <rect x="424" y="372" width="176" height="280" rx="32" fill="#5E6AD2"/>
-  <path d="M424 464h176" fill="none" stroke="#0B0D10" stroke-width="24"/>
-  <rect x="464" y="516" width="96" height="24" rx="12" fill="#E7EAEF" opacity="0.9"/>
-  <rect x="464" y="560" width="68" height="24" rx="12" fill="#E7EAEF" opacity="0.55"/>
+  <g stroke="#D9DEE2" stroke-width="9">
+    <path d="M139 347v58M160 347v58"/>
+    <path d="M139 445v58M160 445v58"/>
+    <path d="M866 453v58M887 453v58"/>
+    <path d="M866 597v58M887 597v58"/>
+    <path d="M482 224h54M482 242h54"/>
+    <path d="M482 760h54M482 778h54"/>
+    <path d="M620 341l43 39M606 356l43 39"/>
+    <path d="M567 400l43 39M553 415l43 39"/>
+  </g>
+
+  <g transform="rotate(-48 330 700)">
+    <rect x="296" y="670" width="68" height="88" rx="30" fill="#315EF5"/>
+    <rect x="323" y="709" width="11" height="30" rx="5.5" fill="#202326"/>
+  </g>
+  </g>
 </svg>

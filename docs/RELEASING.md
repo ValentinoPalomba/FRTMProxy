@@ -43,9 +43,12 @@ key is `SUPublicEDKey` in the root `Info.plist`.
 After publishing a GitHub Release, update the cask metadata (`version`, `sha256`, `url`):
 
 ```bash
+VERSION="x.y.z"
+TAG="v.${VERSION}"
+
 ./scripts/update_homebrew_cask.sh \
-  --version 1.7.0 \
-  --tag v.1.7.0 \
+  --version "$VERSION" \
+  --tag "$TAG" \
   --tap-dir ~/Repositories/homebrew-frtmtools
 ```
 
@@ -53,11 +56,11 @@ Optional automation in the tap repository:
 
 ```bash
 # commit in the tap repo
-./scripts/update_homebrew_cask.sh --version 1.7.0 --tag v.1.7.0 \
+./scripts/update_homebrew_cask.sh --version "$VERSION" --tag "$TAG" \
   --tap-dir ~/Repositories/homebrew-frtmtools --commit
 
 # commit + push in the tap repo
-./scripts/update_homebrew_cask.sh --version 1.7.0 --tag v.1.7.0 \
+./scripts/update_homebrew_cask.sh --version "$VERSION" --tag "$TAG" \
   --tap-dir ~/Repositories/homebrew-frtmtools --push
 ```
 

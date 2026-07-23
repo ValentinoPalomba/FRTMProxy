@@ -42,20 +42,15 @@ actor MacOSProxyOverrideManager {
         var snapshot = loadSnapshot() ?? MacOSProxySnapshot(services: [:])
         var snapshotUpdated = false
 
-        // 1) Cattura lo stato originale di TUTTI i servizi prima di modificare
-        //    qualunque cosa, così lo snapshot riflette il sistema pre-override.
         for service in services where snapshot.services[service] == nil {
             snapshot.services[service] = try readServiceSettings(service)
             snapshotUpdated = true
         }
 
-        // 2) Persisti lo snapshot PRIMA di applicare: un crash a metà apply
-        //    non lascia il sistema con un proxy non più ripristinabile.
         if snapshotUpdated {
             persistSnapshot(snapshot)
         }
 
-        // 3) Applica l'override su ogni servizio.
         for service in services {
             try applyProxySettings(
                 .init(enabled: true, host: host, port: port),
@@ -154,7 +149,11 @@ actor MacOSProxyOverrideManager {
         return .init(enabled: enabled, host: host, port: port)
     }
 
-    private func applyProxySettings(_ settings: MacOSProxySnapshot.ProxySettings, service: String, secure: Bool) throws {
+    private func applyProxySettings(
+        _ settings: MacOSProxySnapshot.ProxySettings,
+        service: String,
+        secure: Bool
+    ) throws {
         if settings.enabled {
             guard let host = settings.host, let port = settings.port else {
                 try setProxyState(service: service, enabled: false, secure: secure)

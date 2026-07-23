@@ -11,12 +11,17 @@ struct WorkspaceManagerView: View {
     @State private var isChoosingExportRoot = false
 
     private let exportBundle: WorkspaceBundle?
-    private let onImport: (WorkspaceBundle) -> Void
+    private let onImport: (WorkspaceImportPlan) throws -> WorkspaceImportResult
 
     init(
         service: WorkspaceBundleService = WorkspaceBundleService(),
         exportBundle: WorkspaceBundle? = nil,
-        onImport: @escaping (WorkspaceBundle) -> Void = { _ in }
+        onImport: @escaping (WorkspaceImportPlan) throws -> WorkspaceImportResult = {
+            WorkspaceImportResult(
+                appliedResources: $0.resourcesToApply,
+                skippedResources: $0.skippedResources
+            )
+        }
     ) {
         _model = State(initialValue: WorkspaceManagerModel(service: service))
         self.exportBundle = exportBundle
@@ -39,7 +44,16 @@ struct WorkspaceManagerView: View {
             Divider()
 
             Group {
-                if let bundle = model.loadedBundle ?? exportBundle {
+                if let plan = model.importPlan {
+                    WorkspaceImportPreviewView(
+                        plan: plan,
+                        result: model.importResult,
+                        isWorking: model.isWorking,
+                        colors: colors,
+                        onApply: { model.applyImport(using: onImport) },
+                        onDiscard: model.discardImport
+                    )
+                } else if let bundle = exportBundle {
                     WorkspaceBundleDetailView(
                         bundle: bundle,
                         lastExportURL: model.lastExportURL,
@@ -67,9 +81,7 @@ struct WorkspaceManagerView: View {
             switch result {
             case let .success(url):
                 Task {
-                    if let bundle = await model.importWorkspace(from: url) {
-                        onImport(bundle)
-                    }
+                    await model.prepareImport(from: url)
                 }
             case let .failure(error):
                 model.errorMessage = error.localizedDescription
@@ -99,6 +111,170 @@ struct WorkspaceManagerView: View {
             Button("OK") { model.errorMessage = nil }
         } message: {
             Text(model.errorMessage ?? "")
+        }
+    }
+}
+
+private struct WorkspaceImportPreviewView: View {
+    let plan: WorkspaceImportPlan
+    let result: WorkspaceImportResult?
+    let isWorking: Bool
+    let colors: DesignSystem.ColorPalette
+    let onApply: () -> Void
+    let onDiscard: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
+            HStack {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                    Text(result == nil ? "Review Import" : "Import Complete")
+                        .font(DesignSystem.Fonts.heading)
+                        .foregroundStyle(colors.textPrimary)
+                    Text(
+                        result == nil
+                            ? "Confirm the supported resources before changing the current setup."
+                            : "\(result?.appliedResources.count ?? 0) applied, \(result?.skippedResources.count ?? 0) skipped."
+                    )
+                    .font(DesignSystem.Fonts.body)
+                    .foregroundStyle(colors.textSecondary)
+                }
+
+                Spacer()
+
+                ControlButton(
+                    title: result == nil ? "Cancel" : "Done",
+                    systemImage: result == nil ? "xmark" : "checkmark",
+                    style: .ghost(colors),
+                    disabled: isWorking,
+                    action: onDiscard
+                )
+                if result == nil {
+                    ControlButton(
+                        title: "Apply Workspace",
+                        systemImage: "checkmark.circle",
+                        style: .filled(colors),
+                        disabled: isWorking || plan.resourcesToApply.isEmpty,
+                        action: onApply
+                    )
+                }
+            }
+
+            WorkspaceSummaryCard(
+                bundle: plan.bundle,
+                lastExportURL: nil,
+                colors: colors
+            )
+
+            Text("Resources")
+                .font(DesignSystem.Fonts.heading)
+                .foregroundStyle(colors.textPrimary)
+
+            List(plan.resources) { resource in
+                WorkspaceImportResourceRow(
+                    resource: resource,
+                    didApply: result?.appliedResources.contains(resource) == true,
+                    colors: colors
+                )
+            }
+            .scrollContentBackground(.hidden)
+            .background(colors.surface)
+            .clipShape(.rect(cornerRadius: DesignSystem.Radius.md))
+            .overlay {
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
+                    .strokeBorder(colors.border, lineWidth: 1)
+            }
+        }
+    }
+}
+
+private struct WorkspaceImportResourceRow: View {
+    let resource: WorkspaceImportResource
+    let didApply: Bool
+    let colors: DesignSystem.ColorPalette
+
+    var body: some View {
+        HStack(spacing: DesignSystem.Spacing.md) {
+            Image(systemName: statusIcon)
+                .foregroundStyle(statusColor)
+                .frame(width: DesignSystem.Spacing.lg)
+
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
+                Text(resource.reference.identifier)
+                    .font(DesignSystem.Fonts.body)
+                    .foregroundStyle(colors.textPrimary)
+                    .lineLimit(1)
+                Text(resource.reference.path)
+                    .font(DesignSystem.Fonts.caption)
+                    .foregroundStyle(colors.textSecondary)
+                    .lineLimit(1)
+                if case let .skip(reason) = resource.disposition {
+                    skipReason(reason)
+                        .font(DesignSystem.Fonts.caption)
+                        .foregroundStyle(colors.textSecondary)
+                }
+            }
+
+            Spacer()
+
+            statusLabel
+            Text(Int64(resource.byteCount), format: .byteCount(style: .file))
+                .font(DesignSystem.Fonts.caption)
+                .foregroundStyle(colors.textSecondary)
+        }
+        .padding(.vertical, DesignSystem.Spacing.xs)
+    }
+
+    @ViewBuilder
+    private var statusLabel: some View {
+        if didApply {
+            Text("Applied")
+                .font(DesignSystem.Fonts.caption)
+                .foregroundStyle(statusColor)
+        } else {
+            switch resource.disposition {
+            case .apply:
+                Text("Will apply")
+                    .font(DesignSystem.Fonts.caption)
+                    .foregroundStyle(statusColor)
+            case .skip:
+                Text("Skipped")
+                    .font(DesignSystem.Fonts.caption)
+                    .foregroundStyle(statusColor)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func skipReason(_ reason: WorkspaceImportSkipReason) -> some View {
+        switch reason {
+        case .javascriptRequiresManualImport:
+            Text("JavaScript files are preserved but not imported as script rules.")
+        case .unsupportedResourceType:
+            Text("This resource type is not supported by this version.")
+        }
+    }
+
+    private var statusIcon: String {
+        if didApply {
+            return "checkmark.circle.fill"
+        }
+        switch resource.disposition {
+        case .apply:
+            return "checkmark.circle"
+        case .skip:
+            return "minus.circle"
+        }
+    }
+
+    private var statusColor: Color {
+        if didApply {
+            return colors.success
+        }
+        switch resource.disposition {
+        case .apply:
+            return colors.accent
+        case .skip:
+            return colors.textSecondary
         }
     }
 }

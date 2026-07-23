@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 enum LegacyTrafficRuleAdapter {
@@ -34,24 +33,29 @@ enum LegacyTrafficRuleAdapter {
             matcher.body = .init(value: TrafficRuleCanonicalizer.body(request.body, contentType: contentType))
         }
         return TrafficRule(
-            id: stableUUID("map:\(rule.key)"),
+            id: TrafficRuleCanonicalizer.legacyIdentifier(for: "map:\(rule.key)"),
             name: "Map Local · \(rule.host)\(rule.path)",
             isEnabled: rule.isEnabled,
             priority: priority,
             matcher: matcher,
-            actions: [.mock(.init(id: stableUUID("map-action:\(rule.key)"), status: rule.status, headers: rule.headers, body: rule.body))]
+            actions: [.mock(.init(
+                id: TrafficRuleCanonicalizer.legacyIdentifier(for: "map-action:\(rule.key)"),
+                status: rule.status,
+                headers: rule.headers,
+                body: rule.body
+            ))]
         )
     }
 
     private static func breakpoint(_ rule: FlowBreakpointRule, priority: Int) -> TrafficRule {
         TrafficRule(
-            id: stableUUID("breakpoint:\(rule.key)"),
+            id: TrafficRuleCanonicalizer.legacyIdentifier(for: "breakpoint:\(rule.key)"),
             name: "Breakpoint · \(rule.host)\(rule.path)",
             isEnabled: rule.isEnabled,
             priority: priority,
             matcher: matcher(host: rule.host, path: rule.path, scheme: rule.scheme),
             actions: [.breakpoint(.init(
-                id: stableUUID("breakpoint-action:\(rule.key)"),
+                id: TrafficRuleCanonicalizer.legacyIdentifier(for: "breakpoint-action:\(rule.key)"),
                 request: rule.interceptRequest,
                 response: rule.interceptResponse
             ))]
@@ -80,15 +84,5 @@ enum LegacyTrafficRuleAdapter {
     private static func pattern(_ value: String, caseSensitive: Bool) -> TrafficRuleTextPattern {
         let mode: TrafficRuleTextPattern.Mode = value.contains("*") || value.contains("?") ? .wildcard : .exact
         return .init(value: value, mode: mode, isCaseSensitive: caseSensitive)
-    }
-
-    private static func stableUUID(_ seed: String) -> UUID {
-        var bytes = Array(SHA256.hash(data: Data(seed.utf8)).prefix(16))
-        bytes[6] = (bytes[6] & 0x0f) | 0x50
-        bytes[8] = (bytes[8] & 0x3f) | 0x80
-        return UUID(uuid: (
-            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
-            bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]
-        ))
     }
 }

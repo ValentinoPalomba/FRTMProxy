@@ -135,11 +135,6 @@ extension ProxyViewModel {
         }
         updateProxySelfHealingState()
 
-        if settings.autoStartProxy && !isRunning {
-            Task { @MainActor in
-                await self.startProxy()
-            }
-        }
     }
 
     func handleInterceptionConfigChanged() {

@@ -7,8 +7,8 @@ Update via Homebrew (`brew upgrade --cask frtmproxy`) or the built-in Sparkle up
 
 | Version         | Supported |
 | --------------- | :-------: |
-| Latest (1.7.x)  |     ✅    |
-| Older           |     ❌    |
+| Current release |     ✅    |
+| Older releases  |     ❌    |
 
 ## Reporting a vulnerability
 

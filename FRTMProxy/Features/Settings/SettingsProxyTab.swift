@@ -12,6 +12,11 @@ struct SettingsProxyTab: View {
         ) {
             SettingsCard(title: "Behavior", colors: colors) {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                    Toggle(isOn: $settings.showProxyInMenuBar) {
+                        Text("Show proxy in menu bar")
+                            .font(DesignSystem.Fonts.sans(13, weight: .medium))
+                            .foregroundStyle(colors.textPrimary)
+                    }
                     Toggle(isOn: $settings.autoStartProxy) {
                         Text("Start proxy automatically")
                             .font(DesignSystem.Fonts.sans(13, weight: .medium))
@@ -54,6 +59,9 @@ struct SettingsProxyTab: View {
                     }
 
                     Text("Port used when starting the embedded mitmproxy. Range 1024–65535.")
+                        .font(DesignSystem.Fonts.caption)
+                        .foregroundStyle(colors.textSecondary)
+                    Text("The menu bar item provides quick access to proxy status and controls.")
                         .font(DesignSystem.Fonts.caption)
                         .foregroundStyle(colors.textSecondary)
                     Text("When enabled, macOS routes HTTP and HTTPS traffic to localhost on the selected port.")

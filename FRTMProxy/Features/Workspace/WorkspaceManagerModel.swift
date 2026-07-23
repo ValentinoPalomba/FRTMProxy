@@ -6,7 +6,8 @@ import Observation
 final class WorkspaceManagerModel {
     private let service: WorkspaceBundleService
 
-    private(set) var loadedBundle: WorkspaceBundle?
+    private(set) var importPlan: WorkspaceImportPlan?
+    private(set) var importResult: WorkspaceImportResult?
     private(set) var isWorking = false
     private(set) var lastExportURL: URL?
     var errorMessage: String?
@@ -15,19 +16,39 @@ final class WorkspaceManagerModel {
         self.service = service
     }
 
-    func importWorkspace(from url: URL) async -> WorkspaceBundle? {
-        guard !isWorking else { return nil }
+    func prepareImport(from url: URL) async {
+        guard !isWorking else { return }
         isWorking = true
         defer { isWorking = false }
         do {
-            let bundle = try await service.importWorkspace(from: url)
-            loadedBundle = bundle
+            importPlan = try await service.importPlan(from: url)
+            importResult = nil
             errorMessage = nil
-            return bundle
         } catch {
+            importPlan = nil
+            importResult = nil
             errorMessage = error.localizedDescription
-            return nil
         }
+    }
+
+    func applyImport(
+        using apply: (WorkspaceImportPlan) throws -> WorkspaceImportResult
+    ) {
+        guard !isWorking, let importPlan else { return }
+        isWorking = true
+        defer { isWorking = false }
+        do {
+            importResult = try apply(importPlan)
+            errorMessage = nil
+        } catch {
+            importResult = nil
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func discardImport() {
+        importPlan = nil
+        importResult = nil
     }
 
     func exportWorkspace(_ bundle: WorkspaceBundle, toSelectedRoot url: URL) async {

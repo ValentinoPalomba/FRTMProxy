@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 protocol TrafficRuleStoreProtocol {
@@ -137,13 +136,13 @@ private struct LegacyMapRule: Decodable {
             body: request.map { .init(value: TrafficRuleCanonicalizer.body($0.body, contentType: contentType)) }
         )
         return TrafficRule(
-            id: stableTrafficRuleUUID("map:\(key)"),
+            id: TrafficRuleCanonicalizer.legacyIdentifier(for: "map:\(key)"),
             name: "Map Local · \(key)",
             isEnabled: isEnabled,
             priority: priority,
             matcher: matcher,
             actions: [.mock(.init(
-                id: stableTrafficRuleUUID("map-action:\(key)"),
+                id: TrafficRuleCanonicalizer.legacyIdentifier(for: "map-action:\(key)"),
                 status: status,
                 headers: headers,
                 body: body
@@ -171,7 +170,7 @@ private struct LegacyBreakpointRule: Decodable {
 
     func trafficRule(priority: Int) -> TrafficRule {
         TrafficRule(
-            id: stableTrafficRuleUUID("breakpoint:\(key)"),
+            id: TrafficRuleCanonicalizer.legacyIdentifier(for: "breakpoint:\(key)"),
             name: "Breakpoint · \(key)",
             isEnabled: isEnabled,
             priority: priority,
@@ -182,7 +181,7 @@ private struct LegacyBreakpointRule: Decodable {
             ),
             actions: [
                 .breakpoint(.init(
-                    id: stableTrafficRuleUUID("breakpoint-action:\(key)"),
+                    id: TrafficRuleCanonicalizer.legacyIdentifier(for: "breakpoint-action:\(key)"),
                     request: interceptRequest,
                     response: interceptResponse
                 ))
@@ -215,14 +214,4 @@ private struct LegacyScriptRule: Decodable {
             actions: [.script(.init(id: id, source: code, responseOnly: true))]
         )
     }
-}
-
-private func stableTrafficRuleUUID(_ seed: String) -> UUID {
-    var bytes = Array(SHA256.hash(data: Data(seed.utf8)).prefix(16))
-    bytes[6] = (bytes[6] & 0x0f) | 0x50
-    bytes[8] = (bytes[8] & 0x3f) | 0x80
-    return UUID(uuid: (
-        bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
-        bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]
-    ))
 }

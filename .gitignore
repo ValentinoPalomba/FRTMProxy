@@ -8,7 +8,10 @@ DerivedData/
 **/xcuserdata/
 
 # Artefatti di tool/esperimenti esterni al progetto
+.claude/
+.impeccable/
 .playwright-mcp/
+artifacts/
 /*.png
 /*.mp
 /*.mp4

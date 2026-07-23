@@ -13,35 +13,34 @@ final class UnifiedTrafficRulesViewModel {
     var selectedRuleID: TrafficRule.ID?
 
     init(document: TrafficRuleDocument) {
-        self.document = document
-        selectedRuleID = nil
-        selectedRuleID = orderedRules.first?.id
+        var normalizedDocument = document
+        normalizedDocument.rules = Self.normalized(document.rules)
+        self.document = normalizedDocument
+        selectedRuleID = normalizedDocument.rules.first?.id
     }
 
     var orderedRules: [TrafficRule] {
-        document.rules.sorted {
-            if $0.priority == $1.priority {
-                return $0.id.uuidString < $1.id.uuidString
-            }
-            return $0.priority < $1.priority
-        }
+        document.rules
     }
 
     func upsert(_ rule: TrafficRule) {
         if let index = document.rules.firstIndex(where: { $0.id == rule.id }) {
-            document.rules[index] = rule
+            var updatedRule = rule
+            updatedRule.priority = index
+            document.rules[index] = updatedRule
         } else {
-            document.rules.append(rule)
+            var appendedRule = rule
+            appendedRule.priority = document.rules.count
+            document.rules.append(appendedRule)
         }
         selectedRuleID = rule.id
-        normalizePriorities(preservingOrder: orderedRules)
     }
 
     func delete(ruleID: TrafficRule.ID) {
         document.rules.removeAll { $0.id == ruleID }
-        normalizePriorities(preservingOrder: orderedRules)
+        document.rules = Self.normalized(document.rules, sortByPriority: false)
         if selectedRuleID == ruleID {
-            selectedRuleID = orderedRules.first?.id
+            selectedRuleID = document.rules.first?.id
         }
     }
 
@@ -51,36 +50,36 @@ final class UnifiedTrafficRulesViewModel {
     }
 
     func move(ruleID: TrafficRule.ID, direction: MoveDirection) {
-        var rules = orderedRules
-        guard let index = rules.firstIndex(where: { $0.id == ruleID }) else { return }
+        guard let index = document.rules.firstIndex(where: { $0.id == ruleID }) else { return }
         let destination = direction == .up ? index - 1 : index + 1
-        guard rules.indices.contains(destination) else { return }
-        rules.swapAt(index, destination)
-        normalizePriorities(preservingOrder: rules)
-    }
-
-    func canMove(ruleID: TrafficRule.ID, direction: MoveDirection) -> Bool {
-        guard let index = orderedRules.firstIndex(where: { $0.id == ruleID }) else { return false }
-        switch direction {
-        case .up: return index > orderedRules.startIndex
-        case .down: return index < orderedRules.index(before: orderedRules.endIndex)
-        }
+        guard document.rules.indices.contains(destination) else { return }
+        document.rules.swapAt(index, destination)
+        document.rules = Self.normalized(document.rules, sortByPriority: false)
     }
 
     func preparedDocument() -> TrafficRuleDocument {
         var result = document
         result.schemaVersion = TrafficRuleDocument.currentSchemaVersion
+        result.rules = Self.normalized(result.rules, sortByPriority: false)
         for index in result.rules.indices {
             result.rules[index].schemaVersion = TrafficRule.currentSchemaVersion
         }
         return result
     }
 
-    private func normalizePriorities(preservingOrder rules: [TrafficRule]) {
-        var normalized = rules
+    private static func normalized(
+        _ rules: [TrafficRule],
+        sortByPriority: Bool = true
+    ) -> [TrafficRule] {
+        var normalized = sortByPriority ? rules.sorted {
+            if $0.priority == $1.priority {
+                return $0.id.uuidString < $1.id.uuidString
+            }
+            return $0.priority < $1.priority
+        } : rules
         for index in normalized.indices {
             normalized[index].priority = index
         }
-        document.rules = normalized
+        return normalized
     }
 }

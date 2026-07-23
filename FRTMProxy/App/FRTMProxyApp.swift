@@ -43,6 +43,7 @@ struct FRTMProxyApp: App {
             AppRootView(viewModel: proxyViewModel, rulesViewModel: rulesViewModel)
                 .environmentObject(settingsStore)
                 .environmentObject(onboardingManager)
+                .environment(\.locale, settingsStore.selectedLanguage.locale)
                 .preferredColorScheme(settingsStore.activeTheme.preferredColorScheme)
                 .task {
                     appDelegate.proxyViewModel = proxyViewModel
@@ -62,6 +63,7 @@ struct FRTMProxyApp: App {
         
         .commands {
             InspectorCommandsMenu()
+            InspectorNavigationCommands()
             CommandGroup(after: .appTermination) {
                             CheckForUpdatesView(updater: updaterController.updater)
                         }
@@ -120,10 +122,12 @@ struct FRTMProxyApp: App {
             }
         }
         
-        MenuBarExtra {
+        MenuBarExtra(isInserted: menuBarInsertionBinding) {
             ProxyMenuBarExtra(proxyViewModel: proxyViewModel, settings: settingsStore)
+                .environment(\.locale, settingsStore.selectedLanguage.locale)
         } label: {
             ProxyMenuBarLabel(isRunning: proxyViewModel.isRunning)
+                .environment(\.locale, settingsStore.selectedLanguage.locale)
         }
         
         
@@ -131,15 +135,27 @@ struct FRTMProxyApp: App {
             SettingsView()
                 .environmentObject(settingsStore)
                 .environmentObject(onboardingManager)
+                .environment(\.locale, settingsStore.selectedLanguage.locale)
                 .frame(minWidth: 480, maxWidth: 1280, minHeight: 480, maxHeight: 720)
         }
         
         Window("About FRTMProxy", id: "about-frtmproxy") {
             AboutFRTMProxyView()
                 .environmentObject(settingsStore)
+                .environment(\.locale, settingsStore.selectedLanguage.locale)
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unifiedCompact)
+    }
+
+    private var menuBarInsertionBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.showProxyInMenuBar },
+            set: { isInserted in
+                guard settingsStore.showProxyInMenuBar != isInserted else { return }
+                settingsStore.showProxyInMenuBar = isInserted
+            }
+        )
     }
 
     private func installMitmproxyCertificateOnSimulator() {
@@ -238,7 +254,7 @@ struct FRTMProxyApp: App {
         guard appDelegate.mcpServer == nil else { return }
         let router = MCPAutomationRouter(
             flowProvider: { proxyViewModel.flows },
-            ruleUpdater: { proxyViewModel.saveUnifiedTrafficRules($0) }
+            ruleUpdater: { try proxyViewModel.saveUnifiedTrafficRulesNow($0) }
         )
         let socketURL = URL.applicationSupportDirectory
             .appending(path: "FRTMProxy", directoryHint: .isDirectory)
@@ -282,4 +298,68 @@ private struct DeviceAlert: Identifiable {
     let id = UUID()
     let title: LocalizedStringKey
     let message: String
+}
+
+private struct InspectorNavigationCommands: Commands {
+    var body: some Commands {
+        CommandMenu("Capture") {
+            Button("Sessions…") {
+                post(.sessions)
+            }
+            Button("Selective Capture…") {
+                post(.selectiveCapture)
+            }
+            Button("Device Setup…") {
+                post(.deviceSetup)
+            }
+        }
+
+        CommandMenu("Rules") {
+            Button("Traffic Rules…") {
+                post(.trafficRules)
+            }
+            Button("Map Local Rules…") {
+                post(.mapLocalRules)
+            }
+            Button("Breakpoints…") {
+                post(.breakpoints)
+            }
+            Button("Collections…") {
+                post(.collections)
+            }
+        }
+
+        CommandMenu("Tools") {
+            Button("Compose Request…") {
+                post(.composer)
+            }
+            Button("Scripts…") {
+                post(.scripts)
+            }
+            Button("Workspace…") {
+                post(.workspace)
+            }
+        }
+    }
+
+    private func post(_ request: InspectorNavigationRequest) {
+        NotificationCenter.default.post(name: .inspectorNavigationRequested, object: request)
+    }
+}
+
+enum InspectorNavigationRequest {
+    case sessions
+    case selectiveCapture
+    case deviceSetup
+    case trafficRules
+    case mapLocalRules
+    case breakpoints
+    case collections
+    case composer
+    case scripts
+    case workspace
+}
+
+extension Notification.Name {
+    static let inspectorNavigationRequested = Notification.Name("FRTMProxy.inspector.navigate")
 }

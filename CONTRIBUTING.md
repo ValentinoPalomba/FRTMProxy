@@ -5,7 +5,7 @@ contributions of all kinds are welcome — bug reports, fixes, features, docs.
 
 ## Prerequisites
 
-- macOS 26.0+ and a recent Xcode.
+- macOS 14.1+ and a current Xcode version that supports the project's Swift 5 language mode.
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`).
 
 The Xcode project is **generated from `project.yml`** (the source of truth). Never hand-edit
@@ -34,7 +34,7 @@ Two processes talk over stdin/stdout, plus a SwiftUI layer:
   stdout into flows, sends commands to stdin.
 - **`ProxyViewModel`** — the app's brain, split across feature extensions.
 
-See `CLAUDE.md` for a deeper architecture overview.
+See `AGENTS.md` for a deeper architecture overview.
 
 > **Map Local keys must stay in sync.** The Swift `MapRuleKeyBuilder` and the Python key logic in
 > `bridge.py` generate the same keys. If you change key/signature logic on either side, update both
@@ -44,7 +44,7 @@ See `CLAUDE.md` for a deeper architecture overview.
 ## Code style
 
 `FRTMProxy/AGENTS.md` is the authoritative Swift/SwiftUI style guide — please read it. Highlights:
-target macOS 26 / modern Swift concurrency, modern Foundation/SwiftUI APIs, one type per file,
+target macOS 14.1 / Swift 5, deployment-compatible Foundation/SwiftUI APIs, one type per file,
 avoid force unwraps, no third-party frameworks without discussion first. Match the surrounding
 file's paradigm (some shared state uses `ObservableObject` + Combine — don't mix paradigms within
 a type).

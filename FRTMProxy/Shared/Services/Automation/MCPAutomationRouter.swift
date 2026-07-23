@@ -1,9 +1,8 @@
 import Foundation
 
-@MainActor
-final class MCPAutomationRouter {
-    typealias FlowProvider = @MainActor () -> [MitmFlow]
-    typealias RuleUpdater = @MainActor (TrafficRuleDocument) -> Void
+final class MCPAutomationRouter: @unchecked Sendable {
+    typealias FlowProvider = @MainActor @Sendable () -> [MitmFlow]
+    typealias RuleUpdater = @MainActor @Sendable (TrafficRuleDocument) throws -> Void
 
     private let flowProvider: FlowProvider
     private let ruleUpdater: RuleUpdater
@@ -22,7 +21,7 @@ final class MCPAutomationRouter {
         self.ruleUpdater = ruleUpdater
     }
 
-    func handle(_ data: Data) -> Data? {
+    func handle(_ data: Data) async -> Data? {
         guard data.count <= limits.maximumRequestBytes,
               let request = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               request["jsonrpc"] as? String == "2.0",
@@ -44,7 +43,7 @@ final class MCPAutomationRouter {
         case "tools/list":
             return encode(success(id: id, result: ["tools": tools]))
         case "tools/call":
-            return handleToolCall(id: id, parameters: request["params"] as? [String: Any] ?? [:])
+            return await handleToolCall(id: id, parameters: request["params"] as? [String: Any] ?? [:])
         case "ping":
             return encode(success(id: id, result: [:]))
         default:
@@ -52,7 +51,7 @@ final class MCPAutomationRouter {
         }
     }
 
-    private func handleToolCall(id: Any?, parameters: [String: Any]) -> Data? {
+    private func handleToolCall(id: Any?, parameters: [String: Any]) async -> Data? {
         guard let name = parameters["name"] as? String else {
             return encode(error(id: id, code: -32602, message: "Missing tool name"))
         }
@@ -64,10 +63,11 @@ final class MCPAutomationRouter {
             case "list_flows":
                 let requestedLimit = arguments["limit"] as? Int ?? 100
                 let limit = max(1, min(requestedLimit, limits.maximumBatchItems))
-                result = Array(flowProvider().prefix(limit)).map(flowObject)
+                let flows = await flowProvider()
+                result = Array(flows.prefix(limit)).map(flowObject)
             case "get_flow":
                 guard let flowID = arguments["id"] as? String,
-                      let flow = flowProvider().first(where: { $0.id == flowID }) else {
+                      let flow = await flowProvider().first(where: { $0.id == flowID }) else {
                     throw RouterFailure.invalidArguments("Unknown flow id")
                 }
                 result = flowObject(flow)
@@ -82,7 +82,7 @@ final class MCPAutomationRouter {
                 guard validationErrors.isEmpty else {
                     throw RouterFailure.invalidArguments(validationErrors.joined(separator: "; "))
                 }
-                ruleUpdater(document)
+                try await ruleUpdater(document)
                 result = ["accepted": true, "count": document.rules.count]
             default:
                 throw RouterFailure.unknownTool

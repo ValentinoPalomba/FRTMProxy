@@ -92,12 +92,9 @@ private struct UnifiedTrafficRuleGeneralEditor: View {
             HStack(spacing: DesignSystem.Spacing.lg) {
                 TextField("Rule name", text: $draft.rule.name)
                     .accessibilityLabel("Rule name")
-                TextField("Priority", value: $draft.rule.priority, format: .number)
-                    .frame(width: 130)
-                    .accessibilityHint("Lower values run first")
                 Toggle("Enabled", isOn: $draft.rule.isEnabled)
             }
-            Text("Rules execute by ascending priority. Actions within a rule execute top to bottom.")
+            Text("Rules execute from top to bottom. Reorder them in the Traffic Rules list.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

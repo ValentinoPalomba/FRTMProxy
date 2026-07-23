@@ -118,14 +118,56 @@ actor SQLiteSessionStore: SessionStoreProtocol {
         }
     }
 
-    func upsert(flow incoming: sending MitmFlow, in sessionID: UUID) throws {
+    @discardableResult
+    func upsert(
+        flow incoming: sending MitmFlow,
+        in sessionID: UUID
+    ) throws -> SessionFlowUpsertSummary {
+        try upsert(flows: [incoming], in: sessionID)
+    }
+
+    @discardableResult
+    func upsert(
+        flows incoming: sending [MitmFlow],
+        in sessionID: UUID
+    ) throws -> SessionFlowUpsertSummary {
+        guard !incoming.isEmpty else { return .empty }
         try requireSession(sessionID)
+        var orderedFlowIDs: [String] = []
+        var coalescedFlows: [String: MitmFlow] = [:]
+        for flow in incoming {
+            if let existing = coalescedFlows[flow.id] {
+                coalescedFlows[flow.id] = existing.mergingSessionSnapshot(with: flow)
+            } else {
+                orderedFlowIDs.append(flow.id)
+                coalescedFlows[flow.id] = flow
+            }
+        }
+        return try transaction {
+            var insertedFlowCount = 0
+            for flowID in orderedFlowIDs {
+                guard let flow = coalescedFlows[flowID] else { continue }
+                if try upsertFlow(flow, in: sessionID) {
+                    insertedFlowCount += 1
+                }
+            }
+            let latestTimestamp = incoming.map(Self.sortTimestamp).max() ?? Date.now.timeIntervalSince1970
+            try touchSession(sessionID, at: Date(timeIntervalSince1970: latestTimestamp))
+            return SessionFlowUpsertSummary(
+                insertedFlowCount: insertedFlowCount,
+                updatedFlowCount: orderedFlowIDs.count - insertedFlowCount,
+                latestFlowDate: Date(timeIntervalSince1970: latestTimestamp)
+            )
+        }
+    }
+
+    private func upsertFlow(_ incoming: MitmFlow, in sessionID: UUID) throws -> Bool {
         let existing = try encryptedEnvelope(flowID: incoming.id, sessionID: sessionID)
         let envelope: EncryptedFlowEnvelope
         let bookmarked: Bool
         if let existing {
             envelope = EncryptedFlowEnvelope(
-                flow: Self.merging(existing.envelope.flow, with: incoming),
+                flow: existing.envelope.flow.mergingSessionSnapshot(with: incoming),
                 note: existing.envelope.note
             )
             bookmarked = existing.isBookmarked
@@ -136,26 +178,24 @@ actor SQLiteSessionStore: SessionStoreProtocol {
 
         let payload = try encrypt(envelope, flowID: incoming.id, sessionID: sessionID)
         let timestamp = Self.sortTimestamp(envelope.flow)
-        try transaction {
-            try withStatement(
-                """
-                INSERT INTO flows(session_id, flow_id, sort_timestamp, is_bookmarked, encrypted_payload)
-                VALUES(?, ?, ?, ?, ?)
-                ON CONFLICT(session_id, flow_id) DO UPDATE SET
-                    sort_timestamp = excluded.sort_timestamp,
-                    is_bookmarked = excluded.is_bookmarked,
-                    encrypted_payload = excluded.encrypted_payload
-                """
-            ) { statement in
-                bind(sessionID.uuidString, at: 1, to: statement)
-                bind(incoming.id, at: 2, to: statement)
-                bind(timestamp, at: 3, to: statement)
-                bind(bookmarked ? 1 : 0, at: 4, to: statement)
-                bind(payload, at: 5, to: statement)
-                try stepDone(statement)
-            }
-            try touchSession(sessionID, at: Date(timeIntervalSince1970: timestamp))
+        try withStatement(
+            """
+            INSERT INTO flows(session_id, flow_id, sort_timestamp, is_bookmarked, encrypted_payload)
+            VALUES(?, ?, ?, ?, ?)
+            ON CONFLICT(session_id, flow_id) DO UPDATE SET
+                sort_timestamp = excluded.sort_timestamp,
+                is_bookmarked = excluded.is_bookmarked,
+                encrypted_payload = excluded.encrypted_payload
+            """
+        ) { statement in
+            bind(sessionID.uuidString, at: 1, to: statement)
+            bind(incoming.id, at: 2, to: statement)
+            bind(timestamp, at: 3, to: statement)
+            bind(bookmarked ? 1 : 0, at: 4, to: statement)
+            bind(payload, at: 5, to: statement)
+            try stepDone(statement)
         }
+        return existing == nil
     }
 
     func flow(id: String, in sessionID: UUID) throws -> CaptureSessionFlow? {
@@ -365,7 +405,13 @@ actor SQLiteSessionStore: SessionStoreProtocol {
     }
 
     private func requireSession(_ id: UUID) throws {
-        guard try session(id: id) != nil else { throw SessionStoreError.sessionNotFound(id) }
+        let exists = try withStatement("SELECT 1 FROM sessions WHERE id = ? LIMIT 1") { statement in
+            bind(id.uuidString, at: 1, to: statement)
+            let result = sqlite3_step(statement)
+            guard result == SQLITE_ROW || result == SQLITE_DONE else { throw databaseError() }
+            return result == SQLITE_ROW
+        }
+        guard exists else { throw SessionStoreError.sessionNotFound(id) }
     }
 
     private func touchSession(_ id: UUID, at date: Date) throws {
@@ -437,24 +483,6 @@ actor SQLiteSessionStore: SessionStoreProtocol {
 
     private func associatedData(flowID: String, sessionID: UUID) -> Data {
         Data("frtm-session-v1|\(sessionID.uuidString)|\(flowID)".utf8)
-    }
-
-    private static func merging(_ existing: MitmFlow, with incoming: MitmFlow) -> MitmFlow {
-        var merged = existing
-        if incoming.request != nil { merged.request = incoming.request }
-        if incoming.response != nil { merged.response = incoming.response }
-        merged.event = incoming.event
-        merged.timestamp = existing.timestamp ?? incoming.timestamp
-        merged.requestTimestamp = incoming.requestTimestamp ?? existing.requestTimestamp
-        merged.responseTimestamp = incoming.responseTimestamp ?? existing.responseTimestamp
-        merged.client = incoming.client ?? existing.client
-        merged.clientApp = incoming.clientApp ?? existing.clientApp
-        merged.breakpoint = incoming.breakpoint
-        if !incoming.websocketMessages.isEmpty {
-            let existingIDs = Set(merged.websocketMessages.map(\.id))
-            merged.websocketMessages.append(contentsOf: incoming.websocketMessages.filter { !existingIDs.contains($0.id) })
-        }
-        return merged
     }
 
     private static func sortTimestamp(_ flow: MitmFlow) -> TimeInterval {

@@ -3,8 +3,8 @@ import SwiftUI
 
 struct SelectiveCaptureView: View {
     private enum Target: String, CaseIterable, Identifiable {
-        case application = "App / Browser"
-        case command = "CLI"
+        case application = "App or browser"
+        case command = "Command line tool"
 
         var id: Self { self }
     }
@@ -18,152 +18,207 @@ struct SelectiveCaptureView: View {
     @State private var selectedURL: URL?
     @State private var profile: CaptureLaunchProfile = .standardEnvironment
     @State private var arguments = ""
-    @State private var errorMessage: String?
-    @State private var isLaunching = false
-    @State private var launchedProcess: Process?
+    @State private var launchModel: SelectiveCaptureLaunchModel
 
-    private let service = SelectiveCaptureService()
+    @MainActor
+    init(
+        proxyPort: Int,
+        proxyIsRunning: Bool,
+        colors: DesignSystem.ColorPalette,
+        onClose: @escaping () -> Void
+    ) {
+        self.init(
+            proxyPort: proxyPort,
+            proxyIsRunning: proxyIsRunning,
+            colors: colors,
+            launcher: SelectiveCaptureService(),
+            onClose: onClose
+        )
+    }
+
+    @MainActor
+    init(
+        proxyPort: Int,
+        proxyIsRunning: Bool,
+        colors: DesignSystem.ColorPalette,
+        launcher: any SelectiveCaptureLaunching,
+        onClose: @escaping () -> Void
+    ) {
+        self.proxyPort = proxyPort
+        self.proxyIsRunning = proxyIsRunning
+        self.colors = colors
+        self.onClose = onClose
+        _launchModel = State(initialValue: SelectiveCaptureLaunchModel(launcher: launcher))
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            SelectiveCaptureHeader(colors: colors, onClose: onClose)
+        VStack(spacing: 0) {
+            HStack {
+                VStack(alignment: .leading) {
+                    Text("Selective Capture")
+                        .font(DesignSystem.Fonts.title)
+                        .foregroundStyle(colors.textPrimary)
+                    Text("Launch one target through FRTMProxy without changing the system proxy.")
+                        .font(DesignSystem.Fonts.body)
+                        .foregroundStyle(colors.textSecondary)
+                }
+                Spacer()
+                Button("Close", systemImage: "xmark", action: onClose)
+                    .keyboardShortcut(.cancelAction)
+                    .accessibilityHint("Closes this window without stopping a launched target.")
+            }
+            .padding()
+            .background(colors.surface)
 
             Divider()
 
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xl) {
-                targetConfiguration
-                targetSelection
+            Form {
+                Section("Target") {
+                    Picker("Type", selection: $target) {
+                        ForEach(Target.allCases) { option in
+                            Text(option.rawValue).tag(option)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .disabled(launchModel.isActive)
+                    .onChange(of: target) {
+                        selectedURL = nil
+                        launchModel.resetStatus()
+                    }
+
+                    LabeledContent(target == .application ? "Application" : "Executable") {
+                        HStack {
+                            Text(selectedURL?.path ?? "No target selected")
+                                .foregroundStyle(selectedURL == nil ? colors.textSecondary : colors.textPrimary)
+                                .lineLimit(2)
+                                .truncationMode(.middle)
+                                .textSelection(.enabled)
+                            Button("Choose…", systemImage: "folder", action: chooseTarget)
+                                .disabled(launchModel.isActive)
+                        }
+                    }
+
+                    if let targetValidationMessage {
+                        Label(targetValidationMessage, systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(colors.danger)
+                    }
+                }
+
+                if target == .application {
+                    Section("Launch profile") {
+                        Picker("Profile", selection: $profile) {
+                            Text("Standard environment").tag(CaptureLaunchProfile.standardEnvironment)
+                            Text("Chromium").tag(CaptureLaunchProfile.chromium)
+                            Text("Electron").tag(CaptureLaunchProfile.electron)
+                        }
+                        .disabled(launchModel.isActive)
+
+                        if profile == .chromium || profile == .electron {
+                            Text("Uses a temporary browser profile that is removed after the launched app exits.")
+                                .font(DesignSystem.Fonts.caption)
+                                .foregroundStyle(colors.textSecondary)
+                        }
+                    }
+                }
 
                 if target == .command {
-                    commandArguments
+                    Section("Arguments") {
+                        TextEditor(text: $arguments)
+                            .font(DesignSystem.Fonts.mono(12))
+                            .frame(minHeight: 90)
+                            .disabled(launchModel.isActive)
+                        Text("Enter one argument per line. Arguments are passed directly without a shell.")
+                            .font(DesignSystem.Fonts.caption)
+                            .foregroundStyle(colors.textSecondary)
+                    }
                 }
-                statusMessage
 
-                Spacer()
+                Section("Status") {
+                    if !proxyIsRunning {
+                        Label(
+                            "Start the proxy before launching a selective target.",
+                            systemImage: "exclamationmark.triangle.fill"
+                        )
+                        .foregroundStyle(colors.warning)
+                    } else {
+                        Label(
+                            "Proxy ready at 127.0.0.1:\(proxyPort)",
+                            systemImage: "checkmark.circle.fill"
+                        )
+                        .foregroundStyle(colors.success)
+                    }
 
-                HStack(spacing: DesignSystem.Spacing.md) {
-                    Label("127.0.0.1:\(proxyPort)", systemImage: proxyIsRunning ? "circle.fill" : "circle")
-                        .font(DesignSystem.Fonts.mono(12))
-                        .foregroundStyle(proxyIsRunning ? colors.success : colors.textSecondary)
-                    Spacer()
-                    ControlButton(
-                        title: isLaunching ? "Launching…" : "Launch",
-                        systemImage: "play.fill",
-                        style: .filled(colors),
-                        disabled: selectedURL == nil || !proxyIsRunning || isLaunching,
-                        action: launch
-                    )
+                    switch launchModel.state {
+                    case .idle:
+                        Text("Choose a target, then launch it with the proxy environment.")
+                            .foregroundStyle(colors.textSecondary)
+                    case .launching:
+                        Label("Launching target…", systemImage: "hourglass")
+                            .foregroundStyle(colors.accent)
+                    case let .running(displayName):
+                        Label("\(displayName) is running through FRTMProxy.", systemImage: "play.circle.fill")
+                            .foregroundStyle(colors.success)
+                    case let .failed(message):
+                        Label(message, systemImage: "xmark.octagon.fill")
+                            .foregroundStyle(colors.danger)
+                            .textSelection(.enabled)
+                    case let .terminated(displayName, exitCode):
+                        if let exitCode {
+                            Label(
+                                "\(displayName) exited with status \(exitCode).",
+                                systemImage: exitCode == 0 ? "checkmark.circle" : "exclamationmark.circle"
+                            )
+                            .foregroundStyle(exitCode == 0 ? colors.textSecondary : colors.warning)
+                        } else {
+                            Label("\(displayName) has exited.", systemImage: "stop.circle")
+                                .foregroundStyle(colors.textSecondary)
+                        }
+                    }
                 }
             }
-            .padding(DesignSystem.Spacing.xl)
+            .formStyle(.grouped)
+            .padding()
+
+            Divider()
+
+            HStack {
+                Text("The launched target keeps running if you close this window.")
+                    .font(DesignSystem.Fonts.caption)
+                    .foregroundStyle(colors.textSecondary)
+                Spacer()
+                Button("Launch", systemImage: "play.fill", action: launch)
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(!canLaunch)
+                    .accessibilityHint("Launches the selected target using the current FRTMProxy connection.")
+            }
+            .padding()
         }
-        .frame(minWidth: 620, minHeight: 440)
+        .frame(minWidth: 620, minHeight: 500)
         .background(colors.background)
     }
 
-    private var targetConfiguration: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                Text("Capture target")
-                    .font(DesignSystem.Fonts.label)
-                    .foregroundStyle(colors.textSecondary)
-                Picker("Capture target", selection: $target) {
-                    ForEach(Target.allCases) { target in
-                        Text(target.rawValue).tag(target)
-                    }
-                }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .onChange(of: target) { _, _ in selectedURL = nil }
-            }
+    private var targetValidationMessage: String? {
+        guard let selectedURL else { return nil }
 
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                Text("Launch profile")
-                    .font(DesignSystem.Fonts.label)
-                    .foregroundStyle(colors.textSecondary)
-                Picker("Launch profile", selection: $profile) {
-                    Text("Standard environment").tag(CaptureLaunchProfile.standardEnvironment)
-                    Text("Chromium").tag(CaptureLaunchProfile.chromium)
-                    Text("Electron").tag(CaptureLaunchProfile.electron)
-                }
-                .labelsHidden()
-                .disabled(target == .command)
+        do {
+            switch target {
+            case .application:
+                try SelectiveCaptureError.validateApplication(at: selectedURL)
+            case .command:
+                try SelectiveCaptureError.validateExecutable(at: selectedURL)
             }
+            return nil
+        } catch {
+            return error.localizedDescription
         }
     }
 
-    private var targetSelection: some View {
-        HStack(spacing: DesignSystem.Spacing.lg) {
-            Image(systemName: target == .application ? "app.dashed" : "terminal")
-                .font(.title2)
-                .foregroundStyle(selectedURL == nil ? colors.textSecondary : colors.accent)
-                .frame(width: DesignSystem.Metrics.scaled(32))
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
-                Text(target == .application ? "Application" : "Executable")
-                    .font(DesignSystem.Fonts.heading)
-                    .foregroundStyle(colors.textPrimary)
-                Text(selectedURL?.path ?? "No target selected")
-                    .font(DesignSystem.Fonts.mono(12))
-                    .foregroundStyle(colors.textSecondary)
-                    .lineLimit(2)
-                    .truncationMode(.middle)
-            }
-            Spacer()
-            ControlButton(
-                title: "Choose…",
-                systemImage: "folder",
-                style: .ghost(colors),
-                action: chooseTarget
-            )
-        }
-        .padding(DesignSystem.Spacing.lg)
-        .surfaceCard(palette: colors, radius: DesignSystem.Radius.md, shadowOpacity: 0)
-    }
-
-    private var commandArguments: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text("Arguments")
-                .font(DesignSystem.Fonts.label)
-                .foregroundStyle(colors.textSecondary)
-            TextEditor(text: $arguments)
-                .font(DesignSystem.Fonts.mono(12))
-                .scrollContentBackground(.hidden)
-                .padding(DesignSystem.Spacing.sm)
-                .frame(minHeight: 100)
-                .background(colors.surface)
-                .clipShape(.rect(cornerRadius: DesignSystem.Radius.sm))
-                .overlay {
-                    RoundedRectangle(cornerRadius: DesignSystem.Radius.sm)
-                        .strokeBorder(colors.border, lineWidth: 1)
-                }
-            Text("Enter one argument per line. Arguments are passed directly without a shell.")
-                .font(DesignSystem.Fonts.caption)
-                .foregroundStyle(colors.textSecondary)
-        }
-    }
-
-    @ViewBuilder
-    private var statusMessage: some View {
-        if !proxyIsRunning {
-            Label("Start the proxy before launching a selective target.", systemImage: "exclamationmark.triangle.fill")
-                .font(DesignSystem.Fonts.body)
-                .foregroundStyle(colors.warning)
-                .padding(DesignSystem.Spacing.md)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(colors.warning.opacity(0.1))
-                .clipShape(.rect(cornerRadius: DesignSystem.Radius.md))
-        }
-
-        if let errorMessage {
-            Label(errorMessage, systemImage: "xmark.octagon.fill")
-                .font(DesignSystem.Fonts.body)
-                .foregroundStyle(colors.danger)
-                .padding(DesignSystem.Spacing.md)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(colors.danger.opacity(0.1))
-                .clipShape(.rect(cornerRadius: DesignSystem.Radius.md))
-                .textSelection(.enabled)
-        }
+    private var canLaunch: Bool {
+        selectedURL != nil
+            && targetValidationMessage == nil
+            && proxyIsRunning
+            && !launchModel.isActive
     }
 
     private func chooseTarget() {
@@ -173,15 +228,16 @@ struct SelectiveCaptureView: View {
         panel.canChooseFiles = target == .command
         panel.resolvesAliases = true
         panel.prompt = "Choose"
+
         if panel.runModal() == .OK {
             selectedURL = panel.url
+            launchModel.resetStatus()
         }
     }
 
     private func launch() {
-        guard let selectedURL else { return }
-        errorMessage = nil
-        isLaunching = true
+        guard let selectedURL, canLaunch else { return }
+
         let configuration = SelectiveCaptureConfiguration(
             proxyPort: proxyPort,
             certificateURL: FileManager.default.homeDirectoryForCurrentUser
@@ -191,50 +247,18 @@ struct SelectiveCaptureView: View {
 
         switch target {
         case .application:
-            Task { @MainActor in
-                defer { isLaunching = false }
-                do {
-                    _ = try await service.launchApplication(at: selectedURL, configuration: configuration)
-                    onClose()
-                } catch {
-                    errorMessage = error.localizedDescription
-                }
-            }
-        case .command:
-            do {
-                launchedProcess = try service.launchCommand(
-                    executableURL: selectedURL,
-                    arguments: arguments.split(whereSeparator: \.isNewline).map(String.init),
+            Task {
+                await launchModel.launchApplication(
+                    at: selectedURL,
                     configuration: configuration
                 )
-                isLaunching = false
-                onClose()
-            } catch {
-                isLaunching = false
-                errorMessage = error.localizedDescription
             }
+        case .command:
+            launchModel.launchCommand(
+                executableURL: selectedURL,
+                arguments: arguments.split(whereSeparator: \.isNewline).map(String.init),
+                configuration: configuration
+            )
         }
-    }
-}
-
-private struct SelectiveCaptureHeader: View {
-    let colors: DesignSystem.ColorPalette
-    let onClose: () -> Void
-
-    var body: some View {
-        HStack(spacing: DesignSystem.Spacing.lg) {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                Text("Selective Capture")
-                    .font(DesignSystem.Fonts.title)
-                    .foregroundStyle(colors.textPrimary)
-                Text("Route one app, browser profile, or CLI through FRTMProxy without changing the system proxy.")
-                    .font(DesignSystem.Fonts.body)
-                    .foregroundStyle(colors.textSecondary)
-            }
-            Spacer()
-            ControlButton(title: "Close", systemImage: "xmark", style: .ghost(colors), action: onClose)
-        }
-        .padding(DesignSystem.Spacing.xl)
-        .background(colors.surface)
     }
 }

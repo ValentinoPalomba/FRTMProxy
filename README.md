@@ -9,7 +9,7 @@ Free forever. Public domain.
 
 [![Latest release](https://img.shields.io/github/v/release/ValentinoPalomba/FRTMProxy?color=5E6AD2&label=release)](https://github.com/ValentinoPalomba/FRTMProxy/releases)
 [![Downloads](https://img.shields.io/github/downloads/ValentinoPalomba/FRTMProxy/total?color=5E6AD2)](https://github.com/ValentinoPalomba/FRTMProxy/releases)
-[![Platform](https://img.shields.io/badge/macOS-26%2B-black)](https://www.apple.com/macos/)
+[![Platform](https://img.shields.io/badge/macOS-14.1%2B-black)](https://www.apple.com/macos/)
 [![License: Unlicense](https://img.shields.io/badge/license-Unlicense-5E6AD2)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/ValentinoPalomba/FRTMProxy?style=flat&color=5E6AD2)](https://github.com/ValentinoPalomba/FRTMProxy/stargazers)
 

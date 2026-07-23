@@ -2,6 +2,17 @@ import SwiftUI
 import Combine
 
 final class SettingsStore: ObservableObject {
+    @Published var selectedLanguageID: String {
+        didSet {
+            let validID = AppLanguage.language(with: selectedLanguageID).id
+            if validID != selectedLanguageID {
+                selectedLanguageID = validID
+                return
+            }
+            defaults.set(selectedLanguageID, forKey: languageKey)
+        }
+    }
+
     @Published var selectedThemeID: String {
         didSet { defaults.set(selectedThemeID, forKey: themeKey) }
     }
@@ -35,6 +46,10 @@ final class SettingsStore: ObservableObject {
 
     @Published var overrideMacOSProxy: Bool {
         didSet { defaults.set(overrideMacOSProxy, forKey: macOSProxyOverrideKey) }
+    }
+
+    @Published var showProxyInMenuBar: Bool {
+        didSet { defaults.set(showProxyInMenuBar, forKey: showProxyInMenuBarKey) }
     }
 
     @Published var pinnedHosts: [PinnedHost] {
@@ -128,7 +143,8 @@ final class SettingsStore: ObservableObject {
     }
 
 
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
+    private let languageKey = "settings.language"
     private let themeKey = "settings.theme"
     private let interfaceScaleKey = DesignSystem.Metrics.interfaceScaleStorageKey
     private let gitAuthorNameKey = "settings.gitAuthorName"
@@ -137,6 +153,7 @@ final class SettingsStore: ObservableObject {
     private let autoStartKey = "settings.autoStart"
     private let autoClearKey = "settings.autoClear"
     private let macOSProxyOverrideKey = "settings.macosProxyOverride"
+    private let showProxyInMenuBarKey = "settings.showProxyInMenuBar"
     private let pinnedHostsKey = "settings.pinnedHosts"
     private let pinnedAppsKey = "settings.pinnedApps"
     private let restrictInterceptionKey = "settings.restrictInterceptionToActivePinnedHosts"
@@ -177,7 +194,15 @@ final class SettingsStore: ObservableObject {
         TrafficProfileLibrary.profile(with: selectedTrafficProfileID, manualProfile: manualTrafficProfile)
     }
 
-    init() {
+    var selectedLanguage: AppLanguage {
+        AppLanguage.language(with: selectedLanguageID)
+    }
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        self.selectedLanguageID = AppLanguage.language(
+            with: defaults.string(forKey: languageKey)
+        ).id
         let storedThemeID = defaults.string(forKey: themeKey)
         self.selectedThemeID = ThemeLibrary.theme(with: storedThemeID).id
         let storedInterfaceScaleID = defaults.string(forKey: interfaceScaleKey)
@@ -190,6 +215,7 @@ final class SettingsStore: ObservableObject {
         self.autoStartProxy = defaults.bool(forKey: autoStartKey)
         self.autoClearOnStart = defaults.bool(forKey: autoClearKey)
         self.overrideMacOSProxy = defaults.bool(forKey: macOSProxyOverrideKey)
+        self.showProxyInMenuBar = defaults.object(forKey: showProxyInMenuBarKey) as? Bool ?? true
         self.pinnedHosts = SettingsStore.loadPinnedHosts(from: defaults, key: pinnedHostsKey)
         self.pinnedApps = SettingsStore.loadPinnedApps(from: defaults, key: pinnedAppsKey)
         self.restrictInterceptionToActivePinnedHosts = defaults.bool(forKey: restrictInterceptionKey)
@@ -220,6 +246,7 @@ final class SettingsStore: ObservableObject {
         self.alertsEnabled = defaults.bool(forKey: alertsEnabledKey)
         self.alertRules = SettingsStore.loadAlertRules(from: defaults, key: alertRulesKey)
 
+        defaults.set(selectedLanguageID, forKey: languageKey)
         DesignSystem.Metrics.applyInterfaceScale(activeInterfaceScale)
     }
 

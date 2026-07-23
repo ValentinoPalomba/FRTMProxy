@@ -35,5 +35,5 @@ clean: ## Pulisce gli artefatti di build
 	xcodebuild -scheme $(SCHEME) clean || true
 	rm -rf $(DERIVED)
 
-screenshots: ## Cattura gli screenshot 1.7.0 via XCUITest (richiede sessione GUI)
+screenshots: ## Cattura gli screenshot via XCUITest (richiede sessione GUI)
 	./scripts/capture_screenshots.sh

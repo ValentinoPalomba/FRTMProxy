@@ -50,7 +50,8 @@ struct SessionBrowserView: View {
                 sessions: sessions,
                 selection: $selectedSessionID,
                 colors: colors,
-                onDelete: { pendingDeletion = $0 }
+                onClose: close,
+                onDelete: requestDeletion
             )
             .navigationTitle("Sessions")
         } detail: {
@@ -59,6 +60,7 @@ struct SessionBrowserView: View {
                     session: selectedSession,
                     model: timelineModel,
                     colors: colors,
+                    onReload: reloadSelectedSession,
                     onLoadMore: loadNextPage,
                     onEditMetadata: { editingFlow = $0 },
                     onToggleBookmark: toggleBookmark,
@@ -71,14 +73,20 @@ struct SessionBrowserView: View {
                             Button("Close Session", systemImage: "stop.circle") {
                                 close(selectedSession)
                             }
+                            .buttonStyle(.borderedProminent)
                             .disabled(isPerformingSessionAction)
                         }
                     }
                     ToolbarItem {
                         Button("Delete Session", systemImage: "trash", role: .destructive) {
-                            pendingDeletion = selectedSession
+                            requestDeletion(selectedSession)
                         }
-                        .disabled(isPerformingSessionAction)
+                        .disabled(selectedSession.isActive || isPerformingSessionAction)
+                        .help(
+                            selectedSession.isActive
+                                ? "Close the active session before deleting it."
+                                : "Permanently delete this captured session."
+                        )
                     }
                 }
             } else {
@@ -117,7 +125,7 @@ struct SessionBrowserView: View {
             titleVisibility: .visible
         ) {
             Button("Delete Session", role: .destructive) {
-                guard let pendingDeletion else { return }
+                guard let pendingDeletion, !pendingDeletion.isActive else { return }
                 delete(pendingDeletion)
             }
             Button("Cancel", role: .cancel) { pendingDeletion = nil }
@@ -145,7 +153,7 @@ struct SessionBrowserView: View {
     private func loadSelectedSession() async {
         guard let selectedSessionID else { return }
         timelineModel.reset(for: selectedSessionID)
-        timelineModel.isLoading = true
+        timelineModel.startLoading()
         do {
             let page = try await loadPage(selectedSessionID, nil, pageSize)
             guard !Task.isCancelled else { return }
@@ -163,7 +171,7 @@ struct SessionBrowserView: View {
         guard let selectedSessionID,
               let cursor = timelineModel.nextCursor,
               timelineModel.canLoadMore else { return }
-        timelineModel.isLoading = true
+        timelineModel.startLoading()
         Task {
             do {
                 let page = try await loadPage(selectedSessionID, cursor, pageSize)
@@ -171,6 +179,12 @@ struct SessionBrowserView: View {
             } catch {
                 timelineModel.fail(error, for: selectedSessionID)
             }
+        }
+    }
+
+    private func reloadSelectedSession() {
+        Task {
+            await loadSelectedSession()
         }
     }
 
@@ -188,6 +202,7 @@ struct SessionBrowserView: View {
     }
 
     private func close(_ session: CaptureSession) {
+        guard session.isActive else { return }
         isPerformingSessionAction = true
         Task {
             defer { isPerformingSessionAction = false }
@@ -199,8 +214,14 @@ struct SessionBrowserView: View {
         }
     }
 
+    private func requestDeletion(_ session: CaptureSession) {
+        guard !session.isActive else { return }
+        pendingDeletion = session
+    }
+
     private func delete(_ session: CaptureSession) {
         pendingDeletion = nil
+        guard !session.isActive else { return }
         isPerformingSessionAction = true
         Task {
             defer { isPerformingSessionAction = false }

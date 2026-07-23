@@ -1,6 +1,8 @@
 import Foundation
 
 enum SelectiveCaptureEnvironment {
+    typealias LaunchPlan = (arguments: [String], temporaryProfileDirectory: URL?)
+
     static func make(
         configuration: SelectiveCaptureConfiguration,
         inheriting base: [String: String] = ProcessInfo.processInfo.environment
@@ -26,18 +28,32 @@ enum SelectiveCaptureEnvironment {
         configuration: SelectiveCaptureConfiguration,
         applicationSupportDirectory: URL
     ) -> [String] {
+        launchPlan(
+            configuration: configuration,
+            applicationSupportDirectory: applicationSupportDirectory
+        ).arguments
+    }
+
+    static func launchPlan(
+        configuration: SelectiveCaptureConfiguration,
+        applicationSupportDirectory: URL,
+        profileIdentifier: UUID = UUID()
+    ) -> LaunchPlan {
         switch configuration.profile {
         case .standardEnvironment:
-            return []
+            return ([], nil)
         case .chromium, .electron:
             let profileDirectory = applicationSupportDirectory
                 .appending(path: "SelectiveCapture", directoryHint: .isDirectory)
-                .appending(path: UUID().uuidString, directoryHint: .isDirectory)
-            return [
-                "--proxy-server=\(configuration.proxyURL)",
-                "--user-data-dir=\(profileDirectory.path)",
-                "--no-first-run"
-            ]
+                .appending(path: profileIdentifier.uuidString, directoryHint: .isDirectory)
+            return (
+                [
+                    "--proxy-server=\(configuration.proxyURL)",
+                    "--user-data-dir=\(profileDirectory.path)",
+                    "--no-first-run"
+                ],
+                profileDirectory
+            )
         }
     }
 }

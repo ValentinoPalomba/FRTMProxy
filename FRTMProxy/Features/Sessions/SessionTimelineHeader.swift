@@ -20,6 +20,11 @@ struct SessionTimelineHeader: View {
                 Text("Started \(session.createdAt.formatted(date: .abbreviated, time: .shortened))")
                     .font(DesignSystem.Fonts.caption)
                     .foregroundStyle(colors.textSecondary)
+                if session.isActive {
+                    Text("Close this session before deleting it.")
+                        .font(DesignSystem.Fonts.caption)
+                        .foregroundStyle(colors.textSecondary)
+                }
             }
             Spacer()
             Text(session.flowCount, format: .number)

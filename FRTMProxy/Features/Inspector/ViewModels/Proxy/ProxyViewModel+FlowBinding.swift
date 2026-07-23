@@ -35,28 +35,30 @@ extension ProxyViewModel {
             .store(in: &cancellables)
 
         service.flowEventsPublisher
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] flow in
                 guard let self,
-                      let store = self.sessionStore,
+                      let writer = self.sessionCaptureWriter,
                       let sessionID = self.activeCaptureSessionID else { return }
-                let flowID = flow.id
-                Task {
-                    do {
-                        try await store.upsert(flow: flow, in: sessionID)
-                        let updatedSession = try await store.session(id: sessionID)
-                        await MainActor.run {
-                            guard let updatedSession,
-                                  let index = self.captureSessions.firstIndex(where: { $0.id == sessionID }) else {
-                                return
-                            }
-                            self.captureSessions[index] = updatedSession
-                        }
-                    } catch {
-                        await MainActor.run {
-                            self.appendLog("[SESSION] unable to persist flow \(flowID): \(error.localizedDescription)\n")
-                        }
-                    }
+                writer.enqueue(flow, sessionID: sessionID)
+            }
+            .store(in: &cancellables)
+
+        sessionCaptureWriter?.updatesPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] update in
+                guard let self else { return }
+                if let errorDescription = update.errorDescription {
+                    self.appendLog("[SESSION] unable to persist flow batch: \(errorDescription)\n")
+                    return
                 }
+                guard let index = self.captureSessions.firstIndex(where: { $0.id == update.sessionID }) else {
+                    return
+                }
+                var session = self.captureSessions[index]
+                session.flowCount += update.insertedFlowCount
+                session.updatedAt = max(session.updatedAt, update.updatedAt)
+                self.captureSessions[index] = session
             }
             .store(in: &cancellables)
 

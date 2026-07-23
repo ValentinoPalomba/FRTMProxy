@@ -33,6 +33,10 @@ actor WorkspaceBundleService {
         }
     }
 
+    func importPlan(from workspaceRoot: URL) throws -> WorkspaceImportPlan {
+        try WorkspaceImportPlan.prepare(importWorkspace(from: workspaceRoot))
+    }
+
     private func exportWithinScope(
         _ bundle: WorkspaceBundle,
         selectedRoot: URL,

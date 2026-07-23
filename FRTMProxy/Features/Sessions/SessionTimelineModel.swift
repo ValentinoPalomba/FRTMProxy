@@ -26,6 +26,11 @@ final class SessionTimelineModel {
         errorMessage = nil
     }
 
+    func startLoading() {
+        isLoading = true
+        errorMessage = nil
+    }
+
     func receive(_ page: CaptureSessionPage, for sessionID: UUID) {
         guard self.sessionID == sessionID else { return }
         var indexes = Dictionary(uniqueKeysWithValues: flows.enumerated().map { ($0.element.id, $0.offset) })

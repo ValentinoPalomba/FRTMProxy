@@ -143,8 +143,7 @@ extension ProxyViewModel {
     }
 
     func reapplyStoredRules() {
-        appliedRules.removeAll()
-        syncAppliedRules()
+        synchronizeEffectiveTrafficRules(force: true)
     }
 
     func record(rule: MapRule) {
@@ -183,47 +182,6 @@ extension ProxyViewModel {
     }
 
     func syncAppliedRules() {
-        var merged: [String: MapRule] = [:]
-        var orderedKeys: [String] = []
-
-        func upsert(_ rule: MapRule) {
-            if let index = orderedKeys.firstIndex(of: rule.key) {
-                orderedKeys.remove(at: index)
-            }
-            orderedKeys.append(rule.key)
-            merged[rule.key] = rule
-        }
-
-        for rule in rules.values.sorted(by: { $0.key < $1.key }) where rule.isEnabled {
-            upsert(rule)
-        }
-
-        let enabledCollections = collections
-            .filter { $0.isEnabled }
-            .sorted(by: { ($0.enabledAt ?? Date.distantPast) < ($1.enabledAt ?? Date.distantPast) })
-
-        for collection in enabledCollections {
-            for rule in collection.rules where rule.isEnabled {
-                upsert(rule)
-            }
-        }
-
-        let oldKeys = Set(appliedRules.keys)
-        let newKeys = Set(merged.keys)
-        let removedKeys = oldKeys.subtracting(newKeys)
-        for key in removedKeys {
-            service.deleteRule(forKey: key)
-        }
-
-        for key in orderedKeys {
-            guard let rule = merged[key] else { continue }
-            if let existing = appliedRules[key], existing == rule {
-                continue
-            }
-            service.mockRule(rule)
-        }
-
-        appliedRules = merged
-        syncUnifiedTrafficRules()
+        synchronizeEffectiveTrafficRules()
     }
 }

@@ -2,17 +2,20 @@ import Foundation
 
 extension ProxyViewModel {
     func loadCaptureSessions() {
-        guard let sessionStore else { return }
-        Task {
+        guard let sessionStore, captureSessionLoadTask == nil else { return }
+        captureSessionLoadTask = Task { [weak self] in
             do {
                 let stored = try await sessionStore.sessions()
                 await MainActor.run {
-                    captureSessions = stored
-                    activeCaptureSessionID = stored.first(where: \.isActive)?.id
+                    guard let self else { return }
+                    self.captureSessions = stored
+                    self.activeCaptureSessionID = stored.first(where: \.isActive)?.id
+                    self.captureSessionLoadTask = nil
                 }
             } catch {
                 await MainActor.run {
-                    appendLog("[SESSION] unable to load sessions: \(error.localizedDescription)\n")
+                    self?.appendLog("[SESSION] unable to load sessions: \(error.localizedDescription)\n")
+                    self?.captureSessionLoadTask = nil
                 }
             }
         }
@@ -20,29 +23,48 @@ extension ProxyViewModel {
 
     @MainActor
     func ensureCaptureSession(name: String? = nil) async {
+        await captureSessionLoadTask?.value
+        await captureSessionCloseTask?.value
         guard activeCaptureSessionID == nil, let sessionStore else { return }
         do {
-            let session = try await sessionStore.createSession(name: name ?? defaultCaptureSessionName())
+            let session = try await sessionStore.activeSessionOrCreate(
+                name: name ?? defaultCaptureSessionName(),
+                at: .now
+            )
             activeCaptureSessionID = session.id
-            captureSessions.insert(session, at: 0)
+            if let index = captureSessions.firstIndex(where: { $0.id == session.id }) {
+                captureSessions[index] = session
+            } else {
+                captureSessions.insert(session, at: 0)
+            }
         } catch {
             appendLog("[SESSION] unable to create session: \(error.localizedDescription)\n")
         }
     }
 
+    @MainActor
     func closeActiveCaptureSession() {
-        guard let sessionStore, let sessionID = activeCaptureSessionID else { return }
-        activeCaptureSessionID = nil
-        Task {
+        guard captureSessionCloseTask == nil,
+              let sessionStore,
+              let sessionID = activeCaptureSessionID else {
+            return
+        }
+        let writer = sessionCaptureWriter
+        captureSessionCloseTask = Task { @MainActor [weak self] in
+            // Allow flow events already scheduled on the main queue to enter the
+            // writer before placing its close barrier.
+            await Task.yield()
+            self?.activeCaptureSessionID = nil
             do {
+                try await writer?.flush(sessionID: sessionID)
                 try await sessionStore.closeSession(id: sessionID)
                 let stored = try await sessionStore.sessions()
-                await MainActor.run { captureSessions = stored }
+                self?.captureSessions = stored
             } catch {
-                await MainActor.run {
-                    appendLog("[SESSION] unable to close session: \(error.localizedDescription)\n")
-                }
+                self?.activeCaptureSessionID = sessionID
+                self?.appendLog("[SESSION] unable to close session: \(error.localizedDescription)\n")
             }
+            self?.captureSessionCloseTask = nil
         }
     }
 
@@ -71,11 +93,23 @@ extension ProxyViewModel {
     @MainActor
     func closeCaptureSessionNow(_ id: UUID) async throws {
         guard let sessionStore else { return }
-        try await sessionStore.closeSession(id: id)
-        if activeCaptureSessionID == id {
+        let wasActive = activeCaptureSessionID == id
+        if wasActive {
+            await Task.yield()
             activeCaptureSessionID = nil
         }
-        captureSessions = try await sessionStore.sessions()
+        do {
+            if wasActive {
+                try await sessionCaptureWriter?.flush(sessionID: id)
+            }
+            try await sessionStore.closeSession(id: id)
+            captureSessions = try await sessionStore.sessions()
+        } catch {
+            if wasActive {
+                activeCaptureSessionID = id
+            }
+            throw error
+        }
     }
 
     func setCaptureFlowMetadata(

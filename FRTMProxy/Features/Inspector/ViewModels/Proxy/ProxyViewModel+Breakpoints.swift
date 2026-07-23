@@ -173,11 +173,6 @@ extension ProxyViewModel {
         consumeActiveBreakpoint()
     }
 
-    func reapplyBreakpointRules() {
-        appliedBreakpointRules.removeAll()
-        syncBreakpointRules()
-    }
-
     func saveBreakpointRule(_ rule: FlowBreakpointRule) {
         breakpointRules[rule.key] = rule
         persistBreakpoints()
@@ -185,29 +180,7 @@ extension ProxyViewModel {
     }
 
     func syncBreakpointRules() {
-        let activeRules = breakpointRules.values.filter { $0.isEnabled && ($0.interceptRequest || $0.interceptResponse) }
-        var merged: [String: FlowBreakpointRule] = [:]
-        for rule in activeRules {
-            merged[rule.key] = rule
-        }
-
-        let oldKeys = Set(appliedBreakpointRules.keys)
-        let newKeys = Set(merged.keys)
-
-        let removedKeys = oldKeys.subtracting(newKeys)
-        for key in removedKeys {
-            service.deleteBreakpointRule(forKey: key)
-        }
-
-        for (key, rule) in merged {
-            if let existing = appliedBreakpointRules[key], existing == rule {
-                continue
-            }
-            service.updateBreakpointRule(rule)
-        }
-
-        appliedBreakpointRules = merged
-        syncUnifiedTrafficRules()
+        synchronizeEffectiveTrafficRules()
     }
 
     func enqueueBreakpointHits(from flows: [MitmFlow]) {

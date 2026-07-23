@@ -11,6 +11,10 @@ struct SettingsView: View {
     var body: some View {
         if #available(macOS 15.0, *) {
             TabView {
+                Tab("General", systemImage: "gearshape") {
+                    SettingsGeneralTab(colors: colors)
+                }
+
                 Tab("Git", systemImage: "arrow.triangle.branch") {
                     SettingsGitTab(colors: colors)
                 }
@@ -39,6 +43,11 @@ struct SettingsView: View {
             .frame(minWidth: 560, minHeight: 520)
         } else {
             TabView {
+                SettingsGeneralTab(colors: colors)
+                    .tabItem {
+                        Label("General", systemImage: "gearshape")
+                    }
+
                 SettingsGitTab(colors: colors)
                     .tabItem {
                         Label("Git", systemImage: "arrow.triangle.branch")

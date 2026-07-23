@@ -1,6 +1,6 @@
 import Foundation
 
-struct FlowFilter: Equatable {
+struct FlowFilter: Equatable, Sendable {
     var searchText: String = ""
     var showMappedOnly: Bool = false
     var showErrorsOnly: Bool = false
@@ -9,8 +9,18 @@ struct FlowFilter: Equatable {
     var activeClientIPs: Set<String> = []
 
     func apply(to flows: [MitmFlow]) -> [MitmFlow] {
+        apply(to: flows, using: Cache())
+    }
+
+    func apply(to flows: [MitmFlow], using cache: Cache) -> [MitmFlow] {
+        (try? applyCancellable(to: flows, using: cache)) ?? []
+    }
+
+    func applyCancellable(to flows: [MitmFlow], using cache: Cache) throws -> [MitmFlow] {
+        try Task.checkCancellation()
         let trimmedSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !showMappedOnly, !showErrorsOnly, activePinnedHosts.isEmpty, activePinnedApps.isEmpty, activeClientIPs.isEmpty, trimmedSearch.isEmpty {
+            cache.retain(flowIDs: Set(flows.map(\.id)))
             return flows
         }
 
@@ -18,30 +28,44 @@ struct FlowFilter: Equatable {
         let pinnedHosts = activePinnedHosts
         let pinnedApps = activePinnedApps
         let activeClients = activeClientIPs
-        return flows.filter { flow in
-            if showMappedOnly && !flow.isMapped { return false }
-            if showErrorsOnly, let status = flow.response?.status, status < 400 { return false }
+        var filtered: [MitmFlow] = []
+        filtered.reserveCapacity(flows.count)
+
+        for (index, flow) in flows.enumerated() {
+            if index.isMultiple(of: 32) {
+                try Task.checkCancellation()
+            }
+            if showMappedOnly && !flow.isMapped { continue }
+            if showErrorsOnly, let status = flow.response?.status, status < 400 { continue }
+            var projection: FlowProjection?
             if !pinnedHosts.isEmpty {
-                let host = PinnedHost.normalized(flow.host)
+                let cachedProjection = cache.projection(for: flow)
+                projection = cachedProjection
+                let host = cachedProjection.host
                 if host.isEmpty || !pinnedHosts.contains(host) {
-                    return false
+                    continue
                 }
             }
             if !pinnedApps.isEmpty {
                 let appID = flow.clientApp?.id ?? ""
                 if appID.isEmpty || !pinnedApps.contains(appID) {
-                    return false
+                    continue
                 }
             }
             if !activeClients.isEmpty {
                 let clientIP = flow.clientIP
                 if clientIP.isEmpty || !activeClients.contains(clientIP) {
-                    return false
+                    continue
                 }
             }
-            if query.isEmpty { return true }
-            return query.matches(flow)
+            if query.isEmpty || query.matches(projection ?? cache.projection(for: flow)) {
+                filtered.append(flow)
+            }
         }
+
+        try Task.checkCancellation()
+        cache.retain(flowIDs: Set(flows.map(\.id)))
+        return filtered
     }
 
     mutating func updateActivePinnedHosts(_ hosts: [String]) {
@@ -59,6 +83,30 @@ struct FlowFilter: Equatable {
             activeClientIPs.remove(normalized)
         } else {
             activeClientIPs.insert(normalized)
+        }
+    }
+
+    final class Cache {
+        private var entries: [String: CacheEntry] = [:]
+
+        fileprivate func projection(for flow: MitmFlow) -> FlowProjection {
+            let source = ProjectionSource(flow: flow)
+            if let entry = entries[flow.id], entry.source == source {
+                return entry.projection
+            }
+
+            let projection = FlowProjection(flow: flow)
+            entries[flow.id] = CacheEntry(source: source, projection: projection)
+            return projection
+        }
+
+        fileprivate func retain(flowIDs: Set<String>) {
+            entries = entries.filter { flowIDs.contains($0.key) }
+        }
+
+        private struct CacheEntry {
+            let source: ProjectionSource
+            let projection: FlowProjection
         }
     }
 }
@@ -102,26 +150,19 @@ private struct FlowQuery {
             operationTerms.isEmpty
     }
 
-    func matches(_ flow: MitmFlow) -> Bool {
+    func matches(_ flow: FlowProjection) -> Bool {
         if isEmpty { return true }
 
         let request = flow.request
         let response = flow.response
 
-        let urlString = request?.url ?? ""
-        let url = URLComponents(string: urlString)
-
-        let host = PinnedHost.normalized(url?.host ?? urlString)
-        let path = (url?.path ?? "").lowercased()
-        let urlLowercased = urlString.lowercased()
-        let method = (request?.method ?? "").uppercased()
+        let host = flow.host
+        let path = flow.path
+        let urlLowercased = flow.urlLowercased
+        let method = flow.method
         let status = response?.status
-        let clientIP = flow.clientIP.lowercased()
-        let appHaystack = [
-            flow.clientApp?.displayName.lowercased() ?? "",
-            flow.clientApp?.bundleIdentifier?.lowercased() ?? "",
-            flow.clientApp?.id.lowercased() ?? ""
-        ].joined(separator: " ")
+        let clientIP = flow.clientIP
+        let appHaystack = flow.appHaystack
 
         if !methods.isEmpty && !methods.contains(method) { return false }
         if excludedMethods.contains(method) { return false }
@@ -154,7 +195,7 @@ private struct FlowQuery {
             if appHaystack.localizedStandardContains(term) { return false }
         }
 
-        let contentType = Self.headerValue("content-type", in: response?.headers)?.lowercased() ?? ""
+        let contentType = flow.responseContentType
         for term in contentTypeTerms where !term.isEmpty {
             if !Self.matchesContentType(term: term, headerValue: contentType, responseBody: response?.body) { return false }
         }
@@ -163,9 +204,7 @@ private struct FlowQuery {
         }
 
         if !protocolTerms.isEmpty || !excludedProtocolTerms.isEmpty || !operationTerms.isEmpty {
-            let requestInspection = ProtocolInspector.inspect(body: request?.body, headers: request?.headers ?? [:])
-            let responseInspection = ProtocolInspector.inspect(body: response?.body, headers: response?.headers ?? [:])
-            let inspections = [requestInspection, responseInspection].compactMap { $0 }
+            let inspections = flow.inspections
             let protocolNames = inspections.flatMap { [$0.kind.rawValue.lowercased(), $0.kind.displayName.lowercased()] }
             let operations = inspections.compactMap(\.summary).map { $0.lowercased() }
 
@@ -181,18 +220,7 @@ private struct FlowQuery {
         }
 
         if !keywords.isEmpty || !excludedKeywords.isEmpty {
-            let requestHeaders = Self.allHeadersLowercased(request?.headers)
-            let responseHeaders = Self.allHeadersLowercased(response?.headers)
-            let haystack = [
-                urlLowercased,
-                method.lowercased(),
-                host,
-                path,
-                requestHeaders,
-                responseHeaders,
-                request?.body?.lowercased() ?? "",
-                response?.body?.lowercased() ?? ""
-            ].joined(separator: " ")
+            let haystack = flow.keywordHaystack
 
             for keyword in keywords where !keyword.isEmpty {
                 if !haystack.localizedStandardContains(keyword) { return false }
@@ -354,20 +382,6 @@ private struct FlowQuery {
         return body.hasPrefix("{") || body.hasPrefix("[")
     }
 
-    private static func headerValue(_ name: String, in headers: [String: String]?) -> String? {
-        guard let headers else { return nil }
-        let lower = name.lowercased()
-        if let direct = headers[name] { return direct }
-        return headers.first(where: { $0.key.lowercased() == lower })?.value
-    }
-
-    private static func allHeadersLowercased(_ headers: [String: String]?) -> String {
-        guard let headers else { return "" }
-        return headers
-            .map { "\($0.key.lowercased()):\($0.value.lowercased())" }
-            .joined(separator: " ")
-    }
-
     private static func splitOnce(_ string: String, separator: Character) -> (String, String)? {
         guard let idx = string.firstIndex(of: separator) else { return nil }
         let lhs = String(string[..<idx])
@@ -398,5 +412,84 @@ private struct FlowQuery {
             tokens.append(current)
         }
         return tokens
+    }
+}
+
+private struct ProjectionSource: Equatable {
+    let request: MitmFlow.Request?
+    let response: MitmFlow.Response?
+    let client: MitmFlow.Client?
+    let clientApp: FlowClientApp?
+
+    init(flow: MitmFlow) {
+        request = flow.request
+        response = flow.response
+        client = flow.client
+        clientApp = flow.clientApp
+    }
+}
+
+private final class FlowProjection {
+    let request: MitmFlow.Request?
+    let response: MitmFlow.Response?
+    let clientIP: String
+    let appHaystack: String
+    let urlLowercased: String
+    let host: String
+    let path: String
+    let method: String
+    let responseContentType: String
+
+    lazy var inspections: [ProtocolInspectionResult] = {
+        [
+            ProtocolInspector.inspect(body: request?.body, headers: request?.headers ?? [:]),
+            ProtocolInspector.inspect(body: response?.body, headers: response?.headers ?? [:])
+        ].compactMap { $0 }
+    }()
+
+    lazy var keywordHaystack: String = {
+        [
+            urlLowercased,
+            method.lowercased(),
+            host,
+            path,
+            Self.allHeadersLowercased(request?.headers),
+            Self.allHeadersLowercased(response?.headers),
+            request?.body?.lowercased() ?? "",
+            response?.body?.lowercased() ?? ""
+        ].joined(separator: " ")
+    }()
+
+    init(flow: MitmFlow) {
+        request = flow.request
+        response = flow.response
+        clientIP = flow.clientIP.lowercased()
+        appHaystack = [
+            flow.clientApp?.displayName.lowercased() ?? "",
+            flow.clientApp?.bundleIdentifier?.lowercased() ?? "",
+            flow.clientApp?.id.lowercased() ?? ""
+        ].joined(separator: " ")
+
+        let urlString = flow.request?.url ?? ""
+        let url = URLComponents(string: urlString)
+        urlLowercased = urlString.lowercased()
+        host = PinnedHost.normalized(url?.host ?? urlString)
+        path = (url?.path ?? "").lowercased()
+        method = (flow.request?.method ?? "").uppercased()
+        responseContentType = Self.headerValue("content-type", in: flow.response?.headers)?.lowercased() ?? ""
+    }
+
+    private static func headerValue(_ name: String, in headers: [String: String]?) -> String? {
+        guard let headers else { return nil }
+        let lower = name.lowercased()
+        if let direct = headers[name] { return direct }
+        return headers.first(where: { $0.key.lowercased() == lower })?.value
+    }
+
+    private static func allHeadersLowercased(_ headers: [String: String]?) -> String {
+        guard let headers else { return "" }
+        return headers
+            .map { "\($0.key.lowercased()):\($0.value.lowercased())" }
+            .joined(separator: " ")
     }
 }

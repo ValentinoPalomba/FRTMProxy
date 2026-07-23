@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 /// Canonicalization contract for request matching.
@@ -7,6 +8,20 @@ import Foundation
 /// JSON object keys are sorted, while invalid JSON and all other bodies remain unchanged
 /// after CRLF/CR line endings are normalized to LF.
 enum TrafficRuleCanonicalizer {
+    /// Reproduces the deterministic identifiers used by the legacy rule import.
+    ///
+    /// These identifiers are persisted, so changing this algorithm would break
+    /// deduplication between migrated and still-readable legacy stores.
+    static func legacyIdentifier(for seed: String) -> UUID {
+        var bytes = Array(SHA256.hash(data: Data(seed.utf8)).prefix(16))
+        bytes[6] = (bytes[6] & 0x0f) | 0x50
+        bytes[8] = (bytes[8] & 0x3f) | 0x80
+        return UUID(uuid: (
+            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+            bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]
+        ))
+    }
+
     static func method(_ value: String?) -> String {
         let normalized = value?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() ?? ""
         return normalized.isEmpty ? "GET" : normalized
