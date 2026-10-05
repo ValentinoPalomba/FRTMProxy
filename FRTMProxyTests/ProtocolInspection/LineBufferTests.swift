@@ -7,6 +7,17 @@ import Foundation
 @Suite("LineBuffer")
 struct LineBufferTests {
 
+    @Test("Oversized frame is discarded through its newline; next frame survives")
+    func oversizedFrameResynchronizes() {
+        let sink = Sink()
+        let overflow = Sink()
+        let buffer = LineBuffer(maximumLineBytes: 4, onOverflow: { overflow.append("overflow") }) { sink.append($0) }
+        buffer.append(data("12345"))
+        buffer.append(data("tail\nok\n"))
+        #expect(overflow.snapshot == ["overflow"])
+        #expect(sink.snapshot == ["ok"])
+    }
+
     /// Collettore thread-safe delle righe consegnate dal buffer.
     private final class Sink: @unchecked Sendable {
         private let lock = NSLock()

@@ -12,7 +12,7 @@ enum SessionStoreError: Error, Equatable {
 }
 
 actor SQLiteSessionStore: SessionStoreProtocol {
-    static let schemaVersion = 1
+    static let schemaVersion = 2
 
     private struct EncryptedFlowEnvelope: Codable {
         var flow: MitmFlow
@@ -32,10 +32,13 @@ actor SQLiteSessionStore: SessionStoreProtocol {
     private let encryptionKey: SymmetricKey
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
+    private let bodyDirectory: URL
+    private var bodyReferencesIndexed = false
 
     init(
         databaseURL: URL,
-        keyProvider: any SessionEncryptionKeyProviding = KeychainSessionEncryptionKeyProvider()
+        keyProvider: any SessionEncryptionKeyProviding = KeychainSessionEncryptionKeyProvider(),
+        bodyDirectory: URL = CaptureBodyStore.directory
     ) throws {
         try FileManager.default.createDirectory(
             at: databaseURL.deletingLastPathComponent(),
@@ -51,6 +54,7 @@ actor SQLiteSessionStore: SessionStoreProtocol {
             throw SessionStoreError.database(message)
         }
         database = handle
+        self.bodyDirectory = bodyDirectory
 
         do {
             encryptionKey = try keyProvider.loadOrCreateKey()
@@ -112,9 +116,91 @@ actor SQLiteSessionStore: SessionStoreProtocol {
     }
 
     func deleteSession(id: UUID) throws {
-        try withStatement("DELETE FROM sessions WHERE id = ?") { statement in
-            bind(id.uuidString, at: 1, to: statement)
-            try stepDone(statement)
+        try indexExistingBodyReferences()
+        try transaction {
+            try withStatement("INSERT OR IGNORE INTO body_cleanup(reference) SELECT reference FROM body_references WHERE session_id = ?") { statement in
+                bind(id.uuidString, at: 1, to: statement)
+                try stepDone(statement)
+            }
+            try withStatement("DELETE FROM sessions WHERE id = ?") { statement in
+                bind(id.uuidString, at: 1, to: statement)
+                try stepDone(statement)
+            }
+        }
+        // Durable queue survives a crash or disk error after the database commit.
+        try cleanupDeletedBodies()
+    }
+
+    private func recordBodyReferences(_ flow: MitmFlow, sessionID: UUID) throws {
+        for reference in [flow.request?.originalBodyReference, flow.response?.originalBodyReference].compactMap({ $0 }) {
+            guard CaptureBodyStore.isValidReference(reference) else { continue }
+            try withStatement("INSERT OR IGNORE INTO body_references(session_id, reference) VALUES(?, ?)") { statement in
+                bind(sessionID.uuidString, at: 1, to: statement)
+                bind(reference, at: 2, to: statement)
+                try stepDone(statement)
+            }
+        }
+    }
+
+    private func indexExistingBodyReferences() throws {
+        guard !bodyReferencesIndexed else { return }
+        let alreadyIndexed = try withStatement("SELECT completed FROM body_reference_state WHERE id = 1") { statement in
+            sqlite3_step(statement) == SQLITE_ROW && sqlite3_column_int(statement, 0) == 1
+        }
+        if alreadyIndexed { bodyReferencesIndexed = true; return }
+        // Backfill old encrypted payloads before deleting anything. Authentication failure
+        // stops cleanup instead of treating unreadable references as unreferenced files.
+        try transaction {
+            try withStatement("SELECT session_id, flow_id, encrypted_payload FROM flows") { statement in
+                var result = sqlite3_step(statement)
+                while result == SQLITE_ROW {
+                    guard let sessionID = UUID(uuidString: columnString(statement, at: 0)) else {
+                        throw SessionStoreError.payloadEncodingFailed
+                    }
+                    let flowID = columnString(statement, at: 1)
+                    let envelope = try decrypt(columnData(statement, at: 2), flowID: flowID, sessionID: sessionID)
+                    try recordBodyReferences(envelope.flow, sessionID: sessionID)
+                    result = sqlite3_step(statement)
+                }
+                guard result == SQLITE_DONE else { throw SessionStoreError.database(String(cString: sqlite3_errmsg(database))) }
+            }
+            try Self.execute("INSERT OR REPLACE INTO body_reference_state(id, completed) VALUES(1, 1)", on: database)
+        }
+        bodyReferencesIndexed = true
+    }
+
+    func cleanupDeletedBodies() throws {
+        try indexExistingBodyReferences()
+        var pending: [String] = []
+        try withStatement("SELECT reference FROM body_cleanup WHERE reference NOT IN (SELECT reference FROM body_references)") { statement in
+            var result = sqlite3_step(statement)
+            while result == SQLITE_ROW {
+                pending.append(columnString(statement, at: 0))
+                result = sqlite3_step(statement)
+            }
+            guard result == SQLITE_DONE else { throw SessionStoreError.database(String(cString: sqlite3_errmsg(database))) }
+        }
+        for reference in pending {
+            guard CaptureBodyStore.isValidReference(reference) else { throw CocoaError(.fileReadInvalidFileName) }
+            let url = bodyDirectory.appending(path: reference)
+            do { try FileManager.default.removeItem(at: url) }
+            catch let error as CocoaError where error.code == .fileNoSuchFile { /* Already removed before a crash. */ }
+            try withStatement("DELETE FROM body_cleanup WHERE reference = ?") { statement in
+                bind(reference, at: 1, to: statement)
+                try stepDone(statement)
+            }
+        }
+        try transaction {
+            _ = try CaptureBodyStore.pruneOrphans(directory: bodyDirectory, before: .now.addingTimeInterval(-24 * 60 * 60)) { reference in
+                try withStatement("SELECT 1 FROM body_references WHERE reference = ? LIMIT 1") { statement in
+                    bind(reference, at: 1, to: statement)
+                    let result = sqlite3_step(statement)
+                    guard result == SQLITE_ROW || result == SQLITE_DONE else {
+                        throw SessionStoreError.database(String(cString: sqlite3_errmsg(database)))
+                    }
+                    return result == SQLITE_ROW
+                }
+            }
         }
     }
 
@@ -195,6 +281,7 @@ actor SQLiteSessionStore: SessionStoreProtocol {
             bind(payload, at: 5, to: statement)
             try stepDone(statement)
         }
+        try recordBodyReferences(envelope.flow, sessionID: sessionID)
         return existing == nil
     }
 
@@ -361,6 +448,20 @@ actor SQLiteSessionStore: SessionStoreProtocol {
                 throw error
             }
         }
+        if currentVersion < 2 {
+            try execute("BEGIN IMMEDIATE", on: database)
+            do {
+                try execute("CREATE TABLE body_references(session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, reference TEXT NOT NULL, PRIMARY KEY(session_id, reference)) WITHOUT ROWID", on: database)
+                try execute("CREATE INDEX body_reference_lookup ON body_references(reference)", on: database)
+                try execute("CREATE TABLE body_cleanup(reference TEXT PRIMARY KEY NOT NULL) WITHOUT ROWID", on: database)
+                try execute("PRAGMA user_version = 2", on: database)
+                try execute("COMMIT", on: database)
+            } catch {
+                try? execute("ROLLBACK", on: database)
+                throw error
+            }
+        }
+        try execute("CREATE TABLE IF NOT EXISTS body_reference_state(id INTEGER PRIMARY KEY CHECK(id = 1), completed INTEGER NOT NULL)", on: database)
     }
 
     private static func execute(_ sql: String, on database: OpaquePointer) throws {

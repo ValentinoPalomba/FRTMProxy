@@ -48,7 +48,7 @@ struct UnifiedTrafficRuleEditor: View {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xl) {
                     UnifiedTrafficRuleGeneralEditor(draft: draft)
                     Divider()
-                    UnifiedTrafficRuleMatcherEditor(draft: draft)
+                    UnifiedTrafficRuleMatcherEditor(draft: draft, colors: colors)
                     Divider()
                     UnifiedTrafficRuleActionsEditor(draft: draft)
                     if !draft.validationErrors.isEmpty {
@@ -62,6 +62,9 @@ struct UnifiedTrafficRuleEditor: View {
             }
         }
         .frame(minWidth: 980, minHeight: 760)
+        .textFieldStyle(ProxyTextFieldStyle(palette: colors, size: .compact))
+        .font(DesignSystem.Fonts.body)
+        .foregroundStyle(colors.textPrimary)
         .background(colors.background)
     }
 

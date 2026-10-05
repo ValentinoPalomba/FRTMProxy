@@ -7,9 +7,11 @@ import uuid
 import base64
 import random
 import asyncio
+import fcntl
 import hashlib
 import fnmatch
 import re
+import gc
 from urllib.parse import urlsplit, urlunsplit, parse_qsl
 from mitmproxy import http, ctx
 
@@ -17,10 +19,14 @@ from mitmproxy import http, ctx
 # separato) lo usa per eseguire i comandi SUL loop, evitando data race con gli
 # hook request/response che mutano gli stessi dizionari globali.
 MAIN_LOOP = None
+SCRIPT_TIMEOUT_SECONDS = 2.0
+SCRIPT_SLOTS = None
 
 # Limite oltre il quale i dizionari FLOW_BY_* vengono potati (evita crescita
 # illimitata lato bridge; lato Swift il cap è 500 flussi).
 MAX_TRACKED_FLOWS = 1000
+MAX_TRACKED_BODY_BYTES = 64 * 1024 * 1024
+EVICTED_BODY_BYTES = 0
 
 # Cap sulla dimensione del body serializzato verso l'app: un download di decine
 # di MB diventerebbe una singola riga JSON enorme (memoria + parsing O(n)).
@@ -36,6 +42,9 @@ FLOW_BY_ID = {}
 FLOW_BY_KEY = {}
 FLOW_BY_MAP_LOCAL_KEY = {}
 BREAKPOINT_RULES = {}
+BREAKPOINT_TIMERS = {}
+STREAM_CAPTURES = {}
+MAX_PAUSED_FLOWS = 256
 # Unified, versioned rule snapshots supplied atomically by the Swift app.
 # Legacy Map Local/Breakpoint registries remain active for one compatibility release.
 TRAFFIC_RULES = []
@@ -91,7 +100,7 @@ def canonical_request_signature(flow: http.HTTPFlow) -> str:
     url = flow.request.pretty_url or ""
     query = canonical_query(url)
     content_type = _content_type(flow.request.headers).lower()
-    body = flow.request.get_text() or ""
+    body = flow.request.get_text(strict=False) or ""
     body = body.replace("\r\n", "\n").replace("\r", "\n")
     body = canonical_body(body, content_type)
     return method + "\n" + query + "\n" + body
@@ -157,7 +166,7 @@ def _rule_matches(rule, flow: http.HTTPFlow) -> bool:
         "path": path,
         "method": (request.method or "GET").strip().upper(),
         "query": canonical_query(request.pretty_url or ""),
-        "body": canonical_body(request.get_text() or "", _content_type(request.headers)),
+        "body": canonical_body(request.get_text(strict=False) or "", _content_type(request.headers)),
     }
     for key in ("scheme", "host", "path", "method", "query", "body"):
         if matcher.get(key) is not None and not _pattern_matches(matcher.get(key), values[key]):
@@ -220,6 +229,8 @@ async def apply_unified_request_rules(flow: http.HTTPFlow) -> bool:
                 _overlay_headers(flow.request.headers, configuration.get("headers"))
                 if configuration.get("body") is not None:
                     flow.request.set_text(str(configuration.get("body") or ""))
+            elif action_type == "script" and not configuration.get("responseOnly", True):
+                await run_script(flow, configuration, "request")
             elif action_type == "delay":
                 delay = max(int(configuration.get("requestMilliseconds", 0)), 0)
                 if delay:
@@ -230,7 +241,7 @@ async def apply_unified_request_rules(flow: http.HTTPFlow) -> bool:
                 status = int(configuration.get("status", 200 if action_type == "mock" else 403))
                 headers = dict(configuration.get("headers") or {})
                 headers["X-FRTM-Rule"] = str(rule.get("id", ""))
-                flow.response = http.Response.make(status, str(configuration.get("body", "")), headers)
+                apply_response_updates(flow, {"status": status, "body": str(configuration.get("body", "")), "headers": headers})
                 terminal = True
                 break
         if terminal:
@@ -253,7 +264,9 @@ async def apply_unified_response_rules(flow: http.HTTPFlow) -> bool:
         for action in rule.get("actions") or []:
             action_type = action.get("type")
             configuration = action.get("configuration") or {}
-            if action_type == "delay":
+            if action_type == "script":
+                await run_script(flow, configuration, "response")
+            elif action_type == "delay":
                 delay = max(int(configuration.get("responseMilliseconds", 0)), 0)
                 if delay:
                     await asyncio.sleep(delay / 1000.0)
@@ -262,6 +275,55 @@ async def apply_unified_response_rules(flow: http.HTTPFlow) -> bool:
             else:
                 _apply_unified_response_action(flow, action)
     return should_intercept
+
+async def run_script(flow, configuration, phase):
+    global SCRIPT_SLOTS
+    worker = os.environ.get("FRTMPROXY_SCRIPT_WORKER")
+    if not worker:
+        send({"event": "script_error", "id": flow.id, "message": "Script worker unavailable"})
+        return
+    if SCRIPT_SLOTS is None:
+        SCRIPT_SLOTS = asyncio.Semaphore(4)
+    process = None
+    try:
+        payload = {
+            "source": configuration.get("source", ""), "phase": phase,
+            "flow": {"request": {"method": flow.request.method, "url": flow.request.pretty_url,
+                "headers": dict(flow.request.headers), "body": flow.request.get_text(strict=False) or ""},
+                "response": {"status": flow.response.status_code, "headers": dict(flow.response.headers),
+                "body": flow.response.get_text(strict=False) or ""} if flow.response else {}}
+        }
+        data = json.dumps(payload).encode("utf-8")
+        if len(data) > 8 * 1024 * 1024:
+            raise ValueError("Script input exceeds 8 MB")
+        await asyncio.wait_for(SCRIPT_SLOTS.acquire(), SCRIPT_TIMEOUT_SECONDS)
+        try:
+            # ponytail: one process per hook, bounded to four; pool only if profiling justifies it.
+            process = await asyncio.create_subprocess_exec(worker, "--script-worker",
+                stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+            output, diagnostic = await asyncio.wait_for(process.communicate(data), SCRIPT_TIMEOUT_SECONDS)
+            if process.returncode != 0:
+                raise ValueError("JavaScript execution failed")
+            if len(output) > 8 * 1024 * 1024:
+                raise ValueError("Script output exceeds 8 MB")
+            result = json.loads(output)
+            if not isinstance(result, dict):
+                raise ValueError("Script must return an object")
+            updates = result.get(phase, result)
+            if not isinstance(updates, dict):
+                raise ValueError("Script phase result must be an object")
+            if phase == "request":
+                apply_request_updates(flow, updates)
+            else:
+                apply_response_updates(flow, updates)
+        finally:
+            if process and process.returncode is None:
+                process.kill()
+                await process.wait()
+            SCRIPT_SLOTS.release()
+    except Exception as exc:
+        send({"event": "script_error", "id": flow.id, "phase": phase,
+              "message": "Script timed out" if isinstance(exc, asyncio.TimeoutError) else str(exc)})
 
 def track_map_local_key(rule_key: str):
     base = base_key_from_rule_key(rule_key)
@@ -302,6 +364,131 @@ def is_loopback_host(host: str) -> bool:
         return True
     return False
 
+def is_internal_flow(flow) -> bool:
+    # Internal clients may supply this opt-in marker; ordinary localhost APIs remain inspectable.
+    return flow.request.headers.get("X-FRTMProxy-Internal") == "pairing"
+
+BODY_STORAGE_USED = None
+BODY_STORAGE_REFRESH_AT = 0.0
+BODY_LOCK_HANDLE = None
+BODY_LIMIT = 64 * 1024 * 1024
+BODY_DISK_LIMIT = 1024 * 1024 * 1024
+
+def check_body_storage_capacity(root, required_bytes):
+    global BODY_STORAGE_USED, BODY_STORAGE_REFRESH_AT
+    # ponytail: scan once at startup or on quota pressure; count writes otherwise.
+    # Deletions are reclaimed on demand, avoiding O(files) work every five seconds.
+    if BODY_STORAGE_USED is None or (BODY_STORAGE_USED + required_bytes > BODY_DISK_LIMIT
+                                    and time.monotonic() >= BODY_STORAGE_REFRESH_AT):
+        with os.scandir(root) as entries:
+            BODY_STORAGE_USED = sum(entry.stat(follow_symlinks=False).st_size for entry in entries
+                                    if entry.is_file(follow_symlinks=False))
+        BODY_STORAGE_REFRESH_AT = time.monotonic() + 5
+    if BODY_STORAGE_USED + required_bytes > BODY_DISK_LIMIT:
+        raise ValueError("Original body storage quota exceeded")
+
+def lock_body_storage():
+    global BODY_LOCK_HANDLE
+    if BODY_LOCK_HANDLE is not None:
+        return
+    root = os.environ.get("FRTMPROXY_BODY_DIRECTORY")
+    if not root:
+        return
+    descriptor = os.open(os.path.join(root, ".capture.lock"), os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+    try:
+        fcntl.flock(descriptor, fcntl.LOCK_SH | fcntl.LOCK_NB)
+    except Exception:
+        os.close(descriptor)
+        raise
+    BODY_LOCK_HANDLE = descriptor
+
+class BodyCapture:
+    def __init__(self, flow_id, phase):
+        global BODY_STORAGE_USED
+        root = os.environ.get("FRTMPROXY_BODY_DIRECTORY")
+        encoded_key = os.environ.get("FRTMPROXY_BODY_KEY")
+        self.file = None
+        self.size = 0
+        self.path = None
+        self.reference = None
+        if not root or not encoded_key:
+            return
+        try:
+            check_body_storage_capacity(root, 28)
+            from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+            key = base64.b64decode(encoded_key, validate=True)
+            nonce = os.urandom(12)
+            self.encryptor = Cipher(algorithms.AES(key), modes.GCM(nonce)).encryptor()
+            self.encryptor.authenticate_additional_data(f"{flow_id}:{phase}".encode())
+            self.reference = uuid.uuid4().hex + ".gcm"
+            self.path = os.path.join(root, self.reference)
+            descriptor = os.open(self.path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+            self.file = os.fdopen(descriptor, "wb", buffering=0)
+            self.file.write(nonce)
+            BODY_STORAGE_USED += 12
+            self.size = 12
+        except Exception:
+            self.abort()
+
+    def append(self, data):
+        global BODY_STORAGE_USED
+        if not self.file:
+            return
+        try:
+            if self.size + len(data) > BODY_LIMIT + 12:
+                raise ValueError("Original body storage quota exceeded")
+            check_body_storage_capacity(os.path.dirname(self.path), len(data) + 16)
+            encrypted = self.encryptor.update(data)
+            self.file.write(encrypted)
+            self.size += len(encrypted)
+            BODY_STORAGE_USED += len(encrypted)
+        except Exception:
+            self.abort()
+
+    def finish(self):
+        global BODY_STORAGE_USED
+        if not self.file:
+            return None
+        try:
+            check_body_storage_capacity(os.path.dirname(self.path), 16)
+            self.file.write(self.encryptor.finalize() + self.encryptor.tag)
+            BODY_STORAGE_USED += 16
+            self.file.close()
+            self.file = None
+            return self.reference
+        except Exception:
+            self.abort()
+            return None
+
+    def abort(self):
+        global BODY_STORAGE_USED
+        if self.file:
+            try:
+                self.file.close()
+            except OSError:
+                pass
+            self.file = None
+        if self.path:
+            try:
+                os.unlink(self.path)
+                BODY_STORAGE_USED = max(0, (BODY_STORAGE_USED or 0) - self.size)
+            except OSError:
+                pass
+        self.reference = None
+
+def capture_original(flow, phase):
+    metadata_key = "frtm_" + phase + "_original"
+    if metadata_key in flow.metadata:
+        return flow.metadata[metadata_key]
+    message = flow.request if phase == "request" else flow.response
+    capture = BodyCapture(flow.id, phase)
+    capture.append(message.raw_content or b"")
+    reference = capture.finish()
+    flow.metadata[metadata_key] = reference
+    if reference is None and os.environ.get("FRTMPROXY_BODY_DIRECTORY"):
+        send({"event": "capture_warning", "id": flow.id, "message": "Original body could not be saved (storage quota or disk failure)"})
+    return reference
+
 def send(obj):
     sys.stdout.write(json.dumps(obj) + "\n")
     sys.stdout.flush()
@@ -336,9 +523,11 @@ def serialize_message_body(message) -> str:
             return f"[FRTMProxy] image too large ({len(data)} bytes), preview omitted"
         return _as_data_url(mime, data)
 
-    text = message.get_text()
-    if text is not None and len(text) > MAX_SERIALIZED_BODY_BYTES:
-        return text[:MAX_SERIALIZED_BODY_BYTES] + f"\n[FRTMProxy] …truncated ({len(text)} chars total)"
+    text = message.get_text(strict=False)
+    if text is not None and len(text.encode("utf-8")) > MAX_SERIALIZED_BODY_BYTES:
+        return text.encode("utf-8")[:MAX_SERIALIZED_BODY_BYTES].decode("utf-8", errors="replace")
+    if text is None and message.content:
+        return _as_data_url(mime, message.content[:MAX_SERIALIZED_BODY_BYTES])
     return text
 
 def traffic_profile_enabled() -> bool:
@@ -471,7 +660,10 @@ def try_decode_data_url(payload: str):
         return None
     return (mime, data)
 
-def send_flow_event(flow: http.HTTPFlow, event: str, breakpoint_meta=None):
+def header_fields(headers):
+    return [{"name": str(k), "value": str(v)} for k, v in headers.items(multi=True)]
+
+def send_flow_event(flow: http.HTTPFlow, event: str, breakpoint_meta=None, stream_body=None):
     client = None
     try:
         address = getattr(flow.client_conn, "address", None)
@@ -484,12 +676,21 @@ def send_flow_event(flow: http.HTTPFlow, event: str, breakpoint_meta=None):
         "event": event,
         "id": flow.id,
         "timestamp": time.time(),
+        "requestTimestamp": getattr(flow.request, "timestamp_start", None),
+        "responseTimestamp": getattr(flow.response, "timestamp_end", None) if flow.response else None,
+        "captureError": str(flow.error) if getattr(flow, "error", None) else None,
+        "protocolVersion": 1,
         "client": client,
         "request": {
             "method": flow.request.method,
             "url": flow.request.pretty_url,
             "headers": dict(flow.request.headers),
-            "body": flow.request.get_text()
+            "body": serialize_message_body(flow.request),
+            "httpVersion": getattr(flow.request, "http_version", None),
+            "headerFields": header_fields(flow.request.headers),
+            "byteCount": len(flow.request.raw_content or b""),
+            "bodyTruncated": len(flow.request.content or b"") > MAX_SERIALIZED_BODY_BYTES,
+            "originalBodyReference": capture_original(flow, "request") if event in ("request", "response", "error") else flow.metadata.get("frtm_request_original")
         },
         "response": None
     }
@@ -497,11 +698,61 @@ def send_flow_event(flow: http.HTTPFlow, event: str, breakpoint_meta=None):
         payload["response"] = {
             "status": flow.response.status_code,
             "headers": dict(flow.response.headers),
-            "body": serialize_message_body(flow.response)
+            "body": stream_body if stream_body is not None else serialize_message_body(flow.response),
+            "httpVersion": getattr(flow.response, "http_version", None),
+            "headerFields": header_fields(flow.response.headers),
+            "byteCount": flow.metadata.get("frtm_stream_bytes", len(flow.response.raw_content or b"")),
+            "bodyTruncated": flow.metadata.get("frtm_stream_bytes", len(flow.response.content or b"")) > MAX_SERIALIZED_BODY_BYTES,
+            "originalBodyReference": capture_original(flow, "response") if event == "response" else flow.metadata.get("frtm_response_original")
         }
     if breakpoint_meta:
         payload["breakpoint"] = breakpoint_meta
     send(payload)
+
+def pause_for_breakpoint(flow, phase):
+    if flow.id not in BREAKPOINT_TIMERS and len(BREAKPOINT_TIMERS) >= MAX_PAUSED_FLOWS:
+        send({"event": "capture_warning", "id": flow.id, "message": "Breakpoint capacity reached; forwarding this flow"})
+        return False
+    paused_bytes = sum(tracked_body_bytes(item) for item in FLOW_BY_ID.values()
+                       if item.id != flow.id and getattr(item, "intercepted", False))
+    if paused_bytes + tracked_body_bytes(flow) > MAX_TRACKED_BODY_BYTES:
+        send({"event": "capture_warning", "id": flow.id, "message": "Breakpoint body memory budget reached; forwarding this flow"})
+        return False
+    flow.intercept()
+    existing = BREAKPOINT_TIMERS.pop(flow.id, None)
+    if existing:
+        existing.cancel()
+    def release():
+        BREAKPOINT_TIMERS.pop(flow.id, None)
+        if getattr(flow, "intercepted", False):
+            flow.resume()
+            send_flow_event(flow, phase, breakpoint_snapshot(flow, phase, "released"))
+            send({"event": "capture_warning", "id": flow.id, "message": "Breakpoint resumed after its five-minute deadline"})
+    BREAKPOINT_TIMERS[flow.id] = asyncio.get_running_loop().call_later(300, release)
+    return True
+
+def client_disconnected(client):
+    for flow in list(FLOW_BY_ID.values()):
+        if getattr(flow, "client_conn", None) == client and getattr(flow, "intercepted", False):
+            flow.resume()
+            timer = BREAKPOINT_TIMERS.pop(flow.id, None)
+            if timer:
+                timer.cancel()
+
+def done():
+    global BODY_LOCK_HANDLE
+    for timer in BREAKPOINT_TIMERS.values():
+        timer.cancel()
+    BREAKPOINT_TIMERS.clear()
+    for capture in STREAM_CAPTURES.values():
+        capture.abort()
+    STREAM_CAPTURES.clear()
+    for flow in FLOW_BY_ID.values():
+        if getattr(flow, "intercepted", False):
+            flow.resume()
+    if BODY_LOCK_HANDLE is not None:
+        os.close(BODY_LOCK_HANDLE)
+        BODY_LOCK_HANDLE = None
 
 def breakpoint_snapshot(flow: http.HTTPFlow, phase: str, state: str) -> dict:
     return {
@@ -520,6 +771,7 @@ def should_break(flow: http.HTTPFlow, phase: str) -> bool:
 def apply_request_updates(flow: http.HTTPFlow, payload):
     if not payload:
         return
+    flow.metadata.pop("frtm_request_original", None)
     method = payload.get("method")
     url = payload.get("url")
     body = payload.get("body", "")
@@ -533,18 +785,28 @@ def apply_request_updates(flow: http.HTTPFlow, payload):
         except Exception as exc:
             ctx.log.error(f"[BREAKPOINT] invalid url '{url}': {exc}")
             debug_log(f"invalid url in request update, keeping original: {exc}")
-    flow.request.set_text(body or "")
-
-    flow.request.headers.clear()
-    for key, value in headers.items():
-        flow.request.headers[str(key)] = value
+    if "body" in payload:
+        flow.request.set_text(body or "")
+    if "headers" in payload:
+        flow.request.headers.clear()
+        for key, value in headers.items():
+            flow.request.headers[str(key)] = value
 
 def apply_response_updates(flow: http.HTTPFlow, payload):
     if not payload:
         return
+    flow.metadata.pop("frtm_response_original", None)
     default_status = flow.response.status_code if flow.response else 200
     status = payload.get("status") or default_status
-    headers = dict(payload.get("headers") or {})
+    if "status" in payload and not 100 <= int(status) <= 599:
+        raise ValueError("Invalid script response status")
+    if flow.response and "body" not in payload:
+        flow.response.status_code = int(status)
+        if "headers" in payload:
+            flow.response.headers.clear()
+            flow.response.headers.update(payload["headers"] or {})
+        return
+    headers = dict(payload.get("headers", dict(flow.response.headers) if flow.response else {}) or {})
     body = payload.get("body", "")
 
     decoded = try_decode_data_url(body)
@@ -567,6 +829,39 @@ def running():
         MAIN_LOOP = asyncio.get_running_loop()
     except RuntimeError:
         MAIN_LOOP = None
+    try:
+        lock_body_storage()
+    except Exception:
+        send({"event": "capture_warning", "message": "Body storage maintenance is active or unavailable; retry startup"})
+        ctx.master.shutdown()
+        return
+    send({"event": "proxy_ready", "startup_id": os.environ.get("FRTMPROXY_STARTUP_ID", ""), "protocol_version": 1})
+    if MAIN_LOOP and os.environ.get("FRTMPROXY_PARENT_PID"):
+        MAIN_LOOP.create_task(watch_parent())
+
+def parent_is_alive(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+
+async def watch_parent():
+    parent = int(os.environ["FRTMPROXY_PARENT_PID"])
+    while parent_is_alive(parent):
+        await asyncio.sleep(1)
+    worker = os.environ.get("FRTMPROXY_SCRIPT_WORKER")
+    if worker:
+        recovery = await asyncio.create_subprocess_exec(worker, "--recover-proxy", str(parent),
+            stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
+        try:
+            await asyncio.wait_for(recovery.wait(), 10)
+        except asyncio.TimeoutError:
+            recovery.kill()
+            await recovery.wait()
+    ctx.master.shutdown()
 
 def stdin_reader():
     for line in sys.stdin:
@@ -594,6 +889,12 @@ def handle_command(cmd):
     flow_id = cmd.get("id")
     debug_log(f"command received type={t} flow_id={flow_id}")
     flow = FLOW_BY_ID.get(flow_id)
+    if t == "capture_stats":
+        send({"event": "capture_stats", "trackedFlows": len(FLOW_BY_ID),
+              "trackedBodyBytes": sum(tracked_body_bytes(item) for item in FLOW_BY_ID.values()),
+              "flowKeys": len(FLOW_BY_KEY), "mapKeys": len(FLOW_BY_MAP_LOCAL_KEY),
+              "pausedFlows": len(BREAKPOINT_TIMERS), "activeStreams": len(STREAM_CAPTURES)})
+        return
 
     if t == "replace_rules":
         revision = int(cmd.get("revision", TRAFFIC_RULES_REVISION + 1))
@@ -748,6 +1049,9 @@ def handle_command(cmd):
             ctx.log.error(f"[BREAKPOINT] error releasing {flow_id}: {exc}")
             debug_log(f"breakpoint release error: {exc}")
         finally:
+            timer = BREAKPOINT_TIMERS.pop(flow.id, None)
+            if timer:
+                timer.cancel()
             try:
                 flow.resume()
             except Exception:
@@ -804,31 +1108,49 @@ def apply_map_local_response(flow: http.HTTPFlow, rule: dict):
         headers["Content-Type"] = "application/json"
 
     headers["X-Map-Local"] = "true"
-    flow.response = http.Response.make(status, body, headers)
+    apply_response_updates(flow, {"status": status, "body": body, "headers": headers})
     ctx.log.info(f"[MAP LOCAL] mock response applied to {flow.request.pretty_url}")
     debug_log(f"mock response sent to {flow_key(flow)} (status {status})")
 
 
+def tracked_body_bytes(flow):
+    return sum(len(getattr(message, "raw_content", None) or b"")
+               for message in (flow.request, flow.response) if message is not None) + len(flow.metadata.get("frtm_stream_preview", b""))
+
+
 def prune_flow_maps():
+    global EVICTED_BODY_BYTES
     """Pota i dizionari FLOW_BY_* per evitarne la crescita illimitata.
     Rimuove i flussi più vecchi (FLOW_BY_ID conserva l'ordine d'inserimento)."""
-    if len(FLOW_BY_ID) <= MAX_TRACKED_FLOWS:
+    retained_bytes = sum(tracked_body_bytes(flow) for flow in FLOW_BY_ID.values())
+    if len(FLOW_BY_ID) <= MAX_TRACKED_FLOWS and retained_bytes <= MAX_TRACKED_BODY_BYTES:
         return
-    overflow = len(FLOW_BY_ID) - MAX_TRACKED_FLOWS
-    for old_id in list(FLOW_BY_ID.keys())[:overflow]:
+    for old_id in list(FLOW_BY_ID.keys()):
+        if len(FLOW_BY_ID) <= MAX_TRACKED_FLOWS and retained_bytes <= MAX_TRACKED_BODY_BYTES:
+            break
+        if getattr(FLOW_BY_ID.get(old_id), "intercepted", False):
+            continue
         old_flow = FLOW_BY_ID.pop(old_id, None)
         if old_flow is None:
             continue
+        released_bytes = tracked_body_bytes(old_flow)
+        retained_bytes -= released_bytes
+        EVICTED_BODY_BYTES += released_bytes
         key = flow_key(old_flow)
         if FLOW_BY_KEY.get(key) is old_flow:
             FLOW_BY_KEY.pop(key, None)
         map_key = map_local_key(old_flow)
         if FLOW_BY_MAP_LOCAL_KEY.get(map_key) is old_flow:
             FLOW_BY_MAP_LOCAL_KEY.pop(map_key, None)
+    # Python 3.14.0–3.14.4's incremental GC delays reclaiming cycles with large bodies.
+    # Bounded workaround until the signed runtime includes the fixed generational GC.
+    if (3, 14, 0) <= sys.version_info[:3] < (3, 14, 5) and EVICTED_BODY_BYTES >= 8 * 1024 * 1024:
+        gc.collect()
+        EVICTED_BODY_BYTES = 0
 
 
 async def request(flow: http.HTTPFlow):
-    if is_loopback_host(flow.request.host):
+    if is_internal_flow(flow):
         return
 
     # Save the flow for later lookup by the mock command.
@@ -840,7 +1162,7 @@ async def request(flow: http.HTTPFlow):
     unified_waiting_request = await apply_unified_request_rules(flow)
     waiting_request = unified_waiting_request or should_break(flow, "request")
     if waiting_request:
-        flow.intercept()
+        waiting_request = pause_for_breakpoint(flow, "request")
 
     await apply_profile_to_request(flow)
 
@@ -894,8 +1216,55 @@ async def request(flow: http.HTTPFlow):
     bp_meta = breakpoint_snapshot(flow, "request", "waiting") if waiting_request else None
     send_flow_event(flow, "request", bp_meta)
 
+def responseheaders(flow: http.HTTPFlow):
+    if is_internal_flow(flow):
+        return
+    mime = _content_type(flow.response.headers).split(";", 1)[0].lower()
+    if mime not in ("text/event-stream", "application/x-ndjson", "application/ndjson", "application/jsonl", "application/x-jsonlines"):
+        return
+    FLOW_BY_ID[flow.id] = flow
+    send_flow_event(flow, "response_headers")
+    requires_buffer = should_break(flow, "response") or any(
+        action.get("type") in ("script", "rewriteResponse", "breakpoint", "delay")
+        for rule in _sorted_matching_rules(flow) for action in rule.get("actions", []))
+    if requires_buffer:
+        send({"event": "capture_warning", "id": flow.id,
+              "message": "Stream is buffered because a response rule needs its body; disable it for live forwarding"})
+        return
+    preview = bytearray()
+    flow.metadata["frtm_stream_bytes"] = 0
+    last_update = time.monotonic()
+    flow.metadata["frtm_stream_preview"] = preview
+    capture_body = BodyCapture(flow.id, "response")
+    STREAM_CAPTURES[flow.id] = capture_body
+
+    def capture(chunk):
+        nonlocal last_update
+        flow.metadata["frtm_stream_bytes"] += len(chunk)
+        capture_body.append(chunk)
+        preview.extend(chunk[:max(0, MAX_SERIALIZED_BODY_BYTES - len(preview))])
+        if chunk and time.monotonic() - last_update >= 0.12:
+            last_update = time.monotonic()
+            send_flow_event(flow, "response_stream", stream_body=stream_preview(flow))
+        return chunk
+
+    flow.response.stream = capture
+
+def stream_preview(flow):
+    preview = bytes(flow.metadata.get("frtm_stream_preview", b""))
+    if flow.response.headers.get("content-encoding", "identity").lower() not in ("", "identity"):
+        return _as_data_url("application/octet-stream", preview)
+    return preview.decode("utf-8", errors="replace")
+
+def error(flow: http.HTTPFlow):
+    if not is_internal_flow(flow):
+        capture_body = STREAM_CAPTURES.pop(flow.id, None)
+        if capture_body:
+            flow.metadata["frtm_response_original"] = capture_body.finish()
+        send_flow_event(flow, "error", stream_body=stream_preview(flow) if "frtm_stream_preview" in flow.metadata else None)
+
 async def response(flow: http.HTTPFlow):
-    if is_loopback_host(flow.request.host):
+    if is_internal_flow(flow):
         return
 
     # Update the cached flow (needed if the command arrives after the response).
@@ -908,26 +1277,30 @@ async def response(flow: http.HTTPFlow):
     unified_waiting_response = await apply_unified_response_rules(flow)
     waiting_response = unified_waiting_response or should_break(flow, "response")
     if waiting_response:
-        flow.intercept()
+        waiting_response = pause_for_breakpoint(flow, "response")
 
+    capture_body = STREAM_CAPTURES.pop(flow.id, None)
+    if capture_body:
+        flow.metadata["frtm_response_original"] = capture_body.finish()
     bp_meta = breakpoint_snapshot(flow, "response", "waiting") if waiting_response else None
-    send_flow_event(flow, "response", bp_meta)
+    send_flow_event(flow, "response", bp_meta, stream_body=stream_preview(flow) if "frtm_stream_preview" in flow.metadata else None)
+    prune_flow_maps()
 
 def websocket_start(flow: http.HTTPFlow):
-    if is_loopback_host(flow.request.host):
+    if is_internal_flow(flow):
         return
     FLOW_BY_ID[flow.id] = flow
     send_flow_event(flow, "websocket_start")
 
 def websocket_message(flow: http.HTTPFlow):
-    if is_loopback_host(flow.request.host):
+    if is_internal_flow(flow):
         return
     if not flow.websocket or not flow.websocket.messages:
         return
     msg = flow.websocket.messages[-1]
     is_text = (msg.type == 1)  # opcode 1 = text frame, 2 = binary
     try:
-        content = msg.content.decode("utf-8", errors="replace") if is_text else base64.b64encode(msg.content).decode()
+        content = msg.content[:MAX_SERIALIZED_BODY_BYTES].decode("utf-8", errors="replace") if is_text else base64.b64encode(msg.content[:MAX_SERIALIZED_BODY_BYTES]).decode()
     except Exception:
         content = ""
     payload = {
@@ -945,7 +1318,7 @@ def websocket_message(flow: http.HTTPFlow):
     send(payload)
 
 def websocket_end(flow: http.HTTPFlow):
-    if is_loopback_host(flow.request.host):
+    if is_internal_flow(flow):
         return
     send_flow_event(flow, "websocket_end")
 

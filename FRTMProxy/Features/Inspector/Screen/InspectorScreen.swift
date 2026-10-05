@@ -22,6 +22,8 @@ struct InspectorScreen: View {
     @State private var workspaceExportBundle: WorkspaceBundle?
     @State private var lastSearchText: String = ""
     @State private var confirmClearTraffic = false
+    @AppStorage(WorkspaceInspectorPreferences.NoiseControl.queryKey) private var noiseQuery = ""
+    @AppStorage(WorkspaceInspectorPreferences.NoiseControl.enabledKey) private var noiseEnabled = false
 
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var settings: SettingsStore
@@ -94,6 +96,8 @@ struct InspectorScreen: View {
                 onToggleProxy: toggleProxy
             )
             .padding(.vertical, DesignSystem.Spacing.sm)
+
+            TrafficScopeBar(colors: colors, filter: $filter, noiseQuery: $noiseQuery, noiseEnabled: $noiseEnabled)
 
             Group {
                 if let flow = selectedFlow {
@@ -171,6 +175,8 @@ struct InspectorScreen: View {
         .onDisappear {
             filterUpdateTask?.cancel()
         }
+        .onChange(of: noiseQuery) { _, _ in updateFilteredFlows(debounced: true) }
+        .onChange(of: noiseEnabled) { _, _ in updateFilteredFlows() }
 
         let withOverlays = contentWithFiltering
             .overlay {
@@ -337,7 +343,7 @@ struct InspectorScreen: View {
         case .workspace:
             WorkspaceManagerView(
                 exportBundle: workspaceExportBundle,
-                onImport: viewModel.applyWorkspaceBundle
+                onImport: { try viewModel.applyWorkspaceBundle($0) }
             )
         }
     }
@@ -391,6 +397,7 @@ struct InspectorScreen: View {
         let flows = viewModel.flows
         let filter = filter
         let worker = filterWorker
+        let noise = noiseEnabled ? noiseQuery : ""
         filterUpdateTask = Task {
             if debounced {
                 do {
@@ -400,7 +407,7 @@ struct InspectorScreen: View {
                 }
             }
             guard !Task.isCancelled else { return }
-            guard let projection = try? await worker.project(flows: flows, filter: filter) else {
+            guard let projection = try? await worker.project(flows: flows, filter: filter, noiseQuery: noise) else {
                 return
             }
             await MainActor.run {
@@ -576,7 +583,7 @@ struct InspectorScreen: View {
 
     private func openComposer() {
         if let flow = selectedFlow {
-            composerViewModel.loadFromFlow(flow)
+            Task { await composerViewModel.loadFromFlow(flow) }
         }
         present(.composer)
     }

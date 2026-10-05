@@ -302,6 +302,7 @@ if [[ "$CURRENT_PUBLIC_KEY" != "$KEYCHAIN_PUBLIC_KEY" ]]; then
 fi
 
 if [[ "$BUILD_APP" -eq 1 ]]; then
+  python3 "$ROOT_DIR/scripts/install_engine.py"
   log "Building app ($SCHEME / $CONFIGURATION)..."
   xcodebuild \
     -scheme "$SCHEME" \

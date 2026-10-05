@@ -64,7 +64,10 @@ struct SessionBrowserView: View {
                     onLoadMore: loadNextPage,
                     onEditMetadata: { editingFlow = $0 },
                     onToggleBookmark: toggleBookmark,
-                    onOpenFlow: onOpenFlow
+                    onOpenFlow: onOpenFlow,
+                    onExportSession: { redacted in
+                        SessionHARExporter.export(session: selectedSession, redacted: redacted, loadPage: loadPage)
+                    }
                 )
                 .navigationTitle(selectedSession.name)
                 .toolbar {

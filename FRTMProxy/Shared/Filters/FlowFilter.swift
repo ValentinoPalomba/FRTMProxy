@@ -1,6 +1,6 @@
 import Foundation
 
-struct FlowFilter: Equatable, Sendable {
+struct FlowFilter: Codable, Equatable, Sendable {
     var searchText: String = ""
     var showMappedOnly: Bool = false
     var showErrorsOnly: Bool = false

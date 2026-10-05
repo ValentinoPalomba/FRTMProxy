@@ -9,12 +9,35 @@ struct SessionTimelineView: View {
     let onEditMetadata: (CaptureSessionFlow) -> Void
     let onToggleBookmark: (CaptureSessionFlow) -> Void
     let onOpenFlow: (MitmFlow) -> Void
+    let onExportSession: (Bool) -> Void
 
     @State private var selectedFlowID: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             SessionTimelineHeader(session: session, colors: colors)
+
+            if !model.flows.isEmpty {
+                Menu("Export HAR…", systemImage: "square.and.arrow.up") {
+                    Button("Entire Session — Redacted") { onExportSession(true) }
+                        .disabled(session.isActive)
+                    Button("Entire Session — Full Capture (includes secrets)") { onExportSession(false) }
+                        .disabled(session.isActive)
+                    Divider()
+                    Button("Loaded Flows — Redacted (bodies omitted)") {
+                        SessionHARExporter.export(flows: model.flows.map(\.flow), redacted: true)
+                    }
+                    Button("Loaded Flows — Full Capture (includes secrets)") {
+                        SessionHARExporter.export(flows: model.flows.map(\.flow), redacted: false)
+                    }
+                }
+                .menuStyle(.borderlessButton)
+                .font(DesignSystem.Fonts.label)
+                .foregroundStyle(colors.textPrimary)
+                .fixedSize()
+                .padding(.horizontal, DesignSystem.Spacing.lg)
+                .padding(.vertical, DesignSystem.Spacing.sm)
+            }
 
             if !model.corruptFlowIDs.isEmpty {
                 SessionCorruptionNotice(count: model.corruptFlowIDs.count, colors: colors)

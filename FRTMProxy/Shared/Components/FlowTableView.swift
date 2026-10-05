@@ -74,8 +74,16 @@ struct FlowTableView: View {
     let onFilterApp: (FlowClientApp) -> Void
     let onFilterDevice: (String) -> Void
 
+    @AppStorage(FlowHeaderColumn.dataKey) private var headerColumnsData = Data()
+    @State private var showsHeaderColumns = false
+    @AppStorage(FlowHeaderColumn.sortKey) private var headerSortRaw = ""
+    private var headerSortID: UUID? {
+        get { UUID(uuidString: headerSortRaw) }
+        nonmutating set { headerSortRaw = newValue?.uuidString ?? "" }
+    }
+    @State private var headerColumns: [FlowHeaderColumn] = []
     @State private var sortColumn: FlowColumn?
-    @State private var sortAscending = true
+    @AppStorage(FlowHeaderColumn.directionKey) private var sortAscending = true
     @AppStorage("inspector.hiddenFlowColumns") private var hiddenColumnsRaw = ""
 
     private var hiddenColumns: Set<String> {
@@ -87,12 +95,29 @@ struct FlowTableView: View {
     }
 
     private var sortedFlows: [MitmFlow] {
+        if let column = headerColumns.first(where: { $0.id == headerSortID }) {
+            return column.sorted(flows, ascending: sortAscending)
+        }
         guard let sortColumn else { return flows }
         let sorted = flows.sorted { compare($0, $1, by: sortColumn) }
         return sortAscending ? sorted : sorted.reversed()
     }
 
     var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                ControlButton(title: "Header Columns", systemImage: "tablecells", style: .ghost(colors)) { showsHeaderColumns = true }
+            }.padding(DesignSystem.Spacing.sm)
+            content
+        }
+        .sheet(isPresented: $showsHeaderColumns) { FlowHeaderColumnsEditor(data: $headerColumnsData, colors: colors) }
+        .task { headerColumns = (try? FlowHeaderColumn.decode(headerColumnsData)) ?? [] }
+        .onChange(of: headerColumnsData) { _, data in headerColumns = (try? FlowHeaderColumn.decode(data)) ?? [] }
+    }
+
+    @ViewBuilder
+    private var content: some View {
         if flows.isEmpty {
             StateView(
                 kind: .empty(title: emptyMessage, message: nil, systemImage: "antenna.radiowaves.left.and.right"),
@@ -100,7 +125,8 @@ struct FlowTableView: View {
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-            VStack(spacing: 0) {
+            ScrollView(.horizontal) {
+                VStack(spacing: 0) {
                 FlowTableHeader(
                     colors: colors,
                     visibleColumns: visibleColumns,
@@ -108,7 +134,14 @@ struct FlowTableView: View {
                     sortAscending: sortAscending,
                     hiddenColumns: hiddenColumns,
                     onToggleSort: toggleSort,
-                    onToggleColumn: toggleColumn
+                    onToggleColumn: toggleColumn,
+                    headerColumns: headerColumns,
+                    headerSortID: headerSortID,
+                    onHeaderSort: { id in
+                        sortColumn = nil
+                        if headerSortID == id { sortAscending.toggle() }
+                        else { headerSortID = id; sortAscending = true }
+                    }
                 )
                 ScrollView {
                     LazyVStack(spacing: 0) {
@@ -117,6 +150,8 @@ struct FlowTableView: View {
                         }
                     }
                 }
+            }
+                .frame(minWidth: visibleColumns.reduce(0) { $0 + ($1.width ?? 180) } + CGFloat(headerColumns.count) * DesignSystem.Metrics.scaled(180) + DesignSystem.Metrics.scaled(60))
             }
             .background(colors.surface)
             .background(
@@ -132,6 +167,7 @@ struct FlowTableView: View {
         return FlowTableRow(
             flow: flow,
             visibleColumns: visibleColumns,
+            headerColumns: headerColumns,
             isSelected: selection == flow.id,
             isCompareSelected: compareSelection == flow.id,
             colors: colors,
@@ -172,6 +208,7 @@ struct FlowTableView: View {
 
     private func toggleSort(_ column: FlowColumn) {
         guard column.isSortable else { return }
+        headerSortID = nil
         if sortColumn == column {
             sortAscending.toggle()
         } else {
@@ -276,12 +313,23 @@ private struct FlowTableHeader: View {
     let hiddenColumns: Set<String>
     let onToggleSort: (FlowColumn) -> Void
     let onToggleColumn: (FlowColumn) -> Void
+    let headerColumns: [FlowHeaderColumn]
+    let headerSortID: UUID?
+    let onHeaderSort: (UUID) -> Void
 
     var body: some View {
         HStack(spacing: 0) {
             ForEach(visibleColumns) { column in
                 headerCell(column)
                     .flowColumnFrame(column)
+            }
+            ForEach(headerColumns) { column in
+                Button(column.title) { onHeaderSort(column.id) }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(headerSortID == column.id ? colors.accent : colors.textSecondary)
+                    .font(DesignSystem.Fonts.mono(11, weight: .semibold))
+                    .frame(width: DesignSystem.Metrics.scaled(180), alignment: .leading)
+                    .help("Sort by this header; click again to reverse")
             }
             columnMenu
                 .frame(width: DesignSystem.Metrics.scaled(30), alignment: .center)
@@ -341,6 +389,7 @@ private struct FlowTableHeader: View {
 private struct FlowTableRow: View {
     let flow: MitmFlow
     let visibleColumns: [FlowColumn]
+    let headerColumns: [FlowHeaderColumn]
     let isSelected: Bool
     let isCompareSelected: Bool
     let colors: DesignSystem.ColorPalette
@@ -372,6 +421,16 @@ private struct FlowTableRow: View {
                 ForEach(visibleColumns) { column in
                     cell(for: column)
                         .flowColumnFrame(column)
+                }
+                ForEach(headerColumns) { column in
+                    let value = column.displayValue(in: flow)
+                    Text(value ?? "〈absent〉")
+                        .font(DesignSystem.Fonts.mono(12))
+                        .foregroundStyle(colors.textSecondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .frame(width: DesignSystem.Metrics.scaled(180), alignment: .leading)
+                        .help(value.map { column.title + "\n" + $0 } ?? column.title + ": absent")
                 }
                 Color.clear.frame(width: DesignSystem.Metrics.scaled(30))
             }
@@ -431,7 +490,8 @@ private struct FlowTableRow: View {
     private var accessibilityText: String {
         let method = flow.request?.method.uppercased() ?? ""
         let status = flow.response?.status.map { "status \($0)" } ?? "pending"
-        return "\(method) \(flow.host)\(flow.path), \(status)"
+        let headers = headerColumns.map { "\($0.title): \($0.displayValue(in: flow) ?? "absent")" }.joined(separator: ", ")
+        return "\(method) \(flow.host)\(flow.path), \(status)" + (headers.isEmpty ? "" : ", " + headers)
     }
 
     private var methodLabel: some View {

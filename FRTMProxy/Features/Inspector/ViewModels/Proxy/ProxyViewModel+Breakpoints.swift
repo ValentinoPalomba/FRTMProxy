@@ -203,9 +203,11 @@ extension ProxyViewModel {
             }
         }
 
-        breakpointQueue.removeAll { !waitingIDs.contains($0.id) }
+        // A bounded live snapshot is not a complete list of paused flows.
+        let changedIDs = Set(flows.map(\.id))
+        breakpointQueue.removeAll { changedIDs.contains($0.flowID) && !waitingIDs.contains($0.id) }
 
-        if let active = activeBreakpointHit, !waitingIDs.contains(active.id) {
+        if let active = activeBreakpointHit, changedIDs.contains(active.flowID), !waitingIDs.contains(active.id) {
             activeBreakpointHit = nil
         }
 

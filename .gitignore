@@ -22,3 +22,6 @@ buildServer.json
 
 # Launch playbook: strategia marketing interna, non va nel repo pubblico
 docs/LAUNCH.md
+
+# Pinned signed engine, restored by make engine (never edited in place)
+/FRTMProxy/Resources/mitmproxy.app/

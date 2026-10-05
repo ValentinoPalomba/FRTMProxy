@@ -12,6 +12,8 @@ struct MitmFlow: Identifiable, Codable, Equatable {
     var clientApp: FlowClientApp?
     var breakpoint: FlowBreakpointMetadata?
     var websocketMessages: [WebSocketMessage] = []
+    var captureError: String? = nil
+    var livePreviewWarning: String? = nil
 
     // MARK: Codable — websocketMessages is transient (never decoded from JSON)
 
@@ -19,6 +21,12 @@ struct MitmFlow: Identifiable, Codable, Equatable {
         case id, request, response, event, timestamp
         case requestTimestamp, responseTimestamp
         case client, clientApp, breakpoint
+        case captureError
+    }
+
+    init(id: String, event: String) {
+        self.id = id
+        self.event = event
     }
 
     init(from decoder: Decoder) throws {
@@ -33,6 +41,7 @@ struct MitmFlow: Identifiable, Codable, Equatable {
         client = try c.decodeIfPresent(Client.self, forKey: .client)
         clientApp = try c.decodeIfPresent(FlowClientApp.self, forKey: .clientApp)
         breakpoint = try c.decodeIfPresent(FlowBreakpointMetadata.self, forKey: .breakpoint)
+        captureError = try c.decodeIfPresent(String.self, forKey: .captureError)
         websocketMessages = []
     }
 
@@ -46,11 +55,21 @@ struct MitmFlow: Identifiable, Codable, Equatable {
         let url: String
         let headers: [String: String]
         let body: String?
+        var httpVersion: String? = nil
+        var headerFields: [HTTPHeaderField]? = nil
+        var byteCount: Int? = nil
+        var bodyTruncated: Bool? = nil
+        var originalBodyReference: String? = nil
     }
 
     struct Response: Codable, Equatable {
         let status: Int?
         let headers: [String: String]?
         let body: String?
+        var httpVersion: String? = nil
+        var headerFields: [HTTPHeaderField]? = nil
+        var byteCount: Int? = nil
+        var bodyTruncated: Bool? = nil
+        var originalBodyReference: String? = nil
     }
 }

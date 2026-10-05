@@ -27,7 +27,7 @@ packages:
     majorVersion: 2.8.1
   CodeMirror:
     url: https://github.com/ValentinoPalomba/CodeMirror-Swift
-    branch: master
+    revision: 8c7de3641032ee8e91ce77da4ecc5fb320fe792d
 
 targets:
   FRTMProxy:
@@ -39,7 +39,9 @@ targets:
           - "AGENTS.md"
           - "FRTMProxy.entitlements"
           - "Resources/mitmdump"
-      - path: FRTMProxy/Resources/mitmdump
+          - "Resources/mitmproxy.app"
+      - path: FRTMProxy/Resources/mitmproxy.app
+        type: folder
         buildPhase: resources
       - path: scripts/frtmproxy_mcp.py
         buildPhase: resources

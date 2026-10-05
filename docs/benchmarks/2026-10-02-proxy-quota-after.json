@@ -1,0 +1,171 @@
+{
+  "passed": true,
+  "platform": "macOS-26.7-arm64-arm-64bit",
+  "machine": "arm64",
+  "worker": "FRTMProxy.app/Contents/MacOS/FRTMProxy",
+  "engine": "12.2.3 binary",
+  "requests": 3000,
+  "largeRequests": 256,
+  "concurrency": 20,
+  "targetRate": 100,
+  "scheduled": 3256,
+  "completed": 3256,
+  "terminalEvents": 3256,
+  "duplicates": 0,
+  "clientErrorCounts": {},
+  "targetRateMet": true,
+  "elapsedSeconds": 33.731,
+  "throughput": 96.53,
+  "latencyMilliseconds": {
+    "small": {
+      "p50": 6.171874999999716,
+      "p95": 12.383832999999456
+    },
+    "large": {
+      "p50": 281.4725829999993,
+      "p95": 334.97554200000224
+    }
+  },
+  "memorySamples": [
+    {
+      "seconds": 1.08,
+      "bytes": 111493120
+    },
+    {
+      "seconds": 2.12,
+      "bytes": 111755264
+    },
+    {
+      "seconds": 3.15,
+      "bytes": 112934912
+    },
+    {
+      "seconds": 4.16,
+      "bytes": 113082368
+    },
+    {
+      "seconds": 5.18,
+      "bytes": 113213440
+    },
+    {
+      "seconds": 6.18,
+      "bytes": 113344512
+    },
+    {
+      "seconds": 7.21,
+      "bytes": 114229248
+    },
+    {
+      "seconds": 8.24,
+      "bytes": 116178944
+    },
+    {
+      "seconds": 9.25,
+      "bytes": 118325248
+    },
+    {
+      "seconds": 10.26,
+      "bytes": 120340480
+    },
+    {
+      "seconds": 11.35,
+      "bytes": 122126336
+    },
+    {
+      "seconds": 12.37,
+      "bytes": 123764736
+    },
+    {
+      "seconds": 13.38,
+      "bytes": 125403136
+    },
+    {
+      "seconds": 14.39,
+      "bytes": 126992384
+    },
+    {
+      "seconds": 15.4,
+      "bytes": 128679936
+    },
+    {
+      "seconds": 16.41,
+      "bytes": 130269184
+    },
+    {
+      "seconds": 17.44,
+      "bytes": 132481024
+    },
+    {
+      "seconds": 18.47,
+      "bytes": 134578176
+    },
+    {
+      "seconds": 19.48,
+      "bytes": 136724480
+    },
+    {
+      "seconds": 20.49,
+      "bytes": 138821632
+    },
+    {
+      "seconds": 21.52,
+      "bytes": 140967936
+    },
+    {
+      "seconds": 22.54,
+      "bytes": 142934016
+    },
+    {
+      "seconds": 23.55,
+      "bytes": 142934016
+    },
+    {
+      "seconds": 24.57,
+      "bytes": 142934016
+    },
+    {
+      "seconds": 25.59,
+      "bytes": 142934016
+    },
+    {
+      "seconds": 26.6,
+      "bytes": 142934016
+    },
+    {
+      "seconds": 27.62,
+      "bytes": 142934016
+    },
+    {
+      "seconds": 28.65,
+      "bytes": 142934016
+    },
+    {
+      "seconds": 29.67,
+      "bytes": 142934016
+    },
+    {
+      "seconds": 30.71,
+      "bytes": 271761408
+    },
+    {
+      "seconds": 31.73,
+      "bytes": 380878848
+    },
+    {
+      "seconds": 32.74,
+      "bytes": 383008768
+    },
+    {
+      "seconds": 33.74,
+      "bytes": 375734272
+    }
+  ],
+  "bridgeSamples": [],
+  "failures": [],
+  "captureWarnings": [],
+  "scope": "HTTP engine + bridge only; no app UI/session writer or TLS overhead benchmark",
+  "hardware": [
+    "Mac15,6",
+    "Apple M3 Pro"
+  ]
+}

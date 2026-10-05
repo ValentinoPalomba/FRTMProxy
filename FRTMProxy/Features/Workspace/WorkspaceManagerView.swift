@@ -16,12 +16,7 @@ struct WorkspaceManagerView: View {
     init(
         service: WorkspaceBundleService = WorkspaceBundleService(),
         exportBundle: WorkspaceBundle? = nil,
-        onImport: @escaping (WorkspaceImportPlan) throws -> WorkspaceImportResult = {
-            WorkspaceImportResult(
-                appliedResources: $0.resourcesToApply,
-                skippedResources: $0.skippedResources
-            )
-        }
+        onImport: @escaping (WorkspaceImportPlan) throws -> WorkspaceImportResult
     ) {
         _model = State(initialValue: WorkspaceManagerModel(service: service))
         self.exportBundle = exportBundle
@@ -153,7 +148,7 @@ private struct WorkspaceImportPreviewView: View {
                         title: "Apply Workspace",
                         systemImage: "checkmark.circle",
                         style: .filled(colors),
-                        disabled: isWorking || plan.resourcesToApply.isEmpty,
+                        disabled: isWorking || (plan.resourcesToApply.isEmpty && plan.bundle.manifest.inspectorPreferences == nil),
                         action: onApply
                     )
                 }
@@ -165,6 +160,9 @@ private struct WorkspaceImportPreviewView: View {
                 colors: colors
             )
 
+            if result?.inspectorPreferencesApplied == true {
+                Label("Inspector preferences applied", systemImage: "checkmark.circle").foregroundStyle(colors.success)
+            }
             Text("Resources")
                 .font(DesignSystem.Fonts.heading)
                 .foregroundStyle(colors.textPrimary)
@@ -365,6 +363,26 @@ private struct WorkspaceSummaryCard: View {
                     .foregroundStyle(colors.textSecondary)
             }
 
+            if let preferences = bundle.manifest.inspectorPreferences {
+                Text("Inspector: \(preferences.headerColumns.count) header columns; configuration and sort order will replace local preferences.")
+                    .font(.caption)
+                    .foregroundStyle(colors.textSecondary)
+                if let scopes = preferences.focusSets {
+                    Text("Focus sets: \(scopes.count); replaces local saved focus sets.").font(.caption)
+                    ForEach(scopes) { scope in
+                        Text("\(scope.name): \(scope.filter.searchText)").font(.caption).textSelection(.enabled)
+                        Text("Hosts: \(scope.filter.activePinnedHosts.sorted().joined(separator: ", ")) · Apps: \(scope.filter.activePinnedApps.sorted().joined(separator: ", ")) · Devices: \(scope.filter.activeClientIPs.sorted().joined(separator: ", ")) · mapped=\(scope.filter.showMappedOnly) · errors=\(scope.filter.showErrorsOnly)")
+                            .font(.caption).textSelection(.enabled)
+                    }
+                }
+                if let noise = preferences.noiseControl {
+                    Text("Noise: \(noise.enabled ? "enabled" : "disabled") · \(noise.query)")
+                        .font(.caption).textSelection(.enabled)
+                }
+                ForEach(preferences.headerColumns) { column in
+                    Text(column.title).font(.caption).foregroundStyle(colors.textSecondary)
+                }
+            }
             Text(bundle.manifest.summary ?? bundle.manifest.identifier)
                 .font(DesignSystem.Fonts.body)
                 .foregroundStyle(colors.textSecondary)

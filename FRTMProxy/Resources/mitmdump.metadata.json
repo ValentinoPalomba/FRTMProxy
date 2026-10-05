@@ -1,0 +1,16 @@
+{
+  "filename": "mitmproxy.app/Contents/MacOS/mitmdump",
+  "sha256": "ed2dc3ae2f1cb77b415e2083bffd20261c12421550cac02a1030de2e3e6e52f4",
+  "bundleSHA256": "d508bc5222ae8bf7fd8187278adaad1999b342ae2b6bb219ea0468dec6e3cbc9",
+  "architecture": "arm64",
+  "mitmproxyVersion": "12.2.3 binary",
+  "pythonVersion": "3.14.4",
+  "opensslVersion": "3.5.5",
+  "license": "MIT",
+  "upstream": "https://github.com/mitmproxy/mitmproxy/tree/v12.2.3",
+  "archiveURL": "https://downloads.mitmproxy.org/12.2.3/mitmproxy-12.2.3-macos-arm64.tar.gz",
+  "archiveSHA256": "0a09ee3b82569e8985aff8186e4792618b8e5d0c766098db093d09a87d4b013a",
+  "checksumSource": "https://github.com/Homebrew/homebrew-cask/blob/173dfeb664391e65c6c47162d8df601f4e60fb86/Casks/m/mitmproxy.rb",
+  "signingTeam": "S8XHQB96PW",
+  "provenance": "Unmodified upstream signed app bundle, restored from the pinned official archive. Archive digest corroborated by pinned Homebrew cask; bundle digest computed locally after signature verification."
+}

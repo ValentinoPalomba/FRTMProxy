@@ -65,8 +65,8 @@ Key mechanisms inside the bridge:
   `flow.resume()`. Flow-lookup tables (`FLOW_BY_ID`, `FLOW_BY_KEY`, `FLOW_BY_MAP_LOCAL_KEY`) are
   re-keyed when a paused request is edited.
 - **Traffic profiles**: latency/jitter/bandwidth/packet-loss/response-delay are simulated with
-  `time.sleep` and synthetic 598 responses.
-- Loopback hosts are ignored so the app's own pairing server traffic isn't captured.
+  `asyncio.sleep` and synthetic 598 responses.
+- Localhost APIs are captured; internal traffic is excluded only with `X-FRTMProxy-Internal: pairing`.
 
 When editing matching/mock logic, the Swift `MapRuleKeyBuilder` (key generation) and the Python
 key logic **must stay in sync**.
@@ -74,8 +74,9 @@ key logic **must stay in sync**.
 ### 2. The service (`FRTMProxy/Shared/Services/ProxyService/`)
 
 `MitmproxyService` (conforms to `ProxyServiceProtocol`, so it can be mocked) owns the `Process`:
-- Launches the bundled `Resources/mitmdump` (a ~37 MB Mach-O arm64 binary), prewarms it with
-  `--version` before first Start, and kills stale `mitmdump`/`mitmproxy` processes on launch.
+- Launches `Resources/mitmproxy.app/Contents/MacOS/mitmdump`, restored by `make engine` from a pinned signed archive; prewarms `--version` and manages only its owned process.
+- `make gen` restores/verifies the runtime first. Never modify the signed engine bundle in place.
+- `scripts/verify_engine.py` checks the full runtime tree, including symlinks and executable modes.
 - Parses stdout line-by-line into `MitmFlow` (or `WebSocketMessageEvent`) and publishes a
   `[String: MitmFlow]` dictionary; caps stored flows at 500.
 - Sends commands by writing JSON + `\n` to the process's stdin `FileHandle`.

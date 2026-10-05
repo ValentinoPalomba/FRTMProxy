@@ -1,6 +1,7 @@
 import Combine
 import Foundation
 
+@MainActor
 protocol ProxyServiceProtocol: AnyObject {
     var flowsPublisher: AnyPublisher<[String: MitmFlow], Never> { get }
     var flowEventsPublisher: AnyPublisher<MitmFlow, Never> { get }

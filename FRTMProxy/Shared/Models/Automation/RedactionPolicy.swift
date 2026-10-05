@@ -36,7 +36,7 @@ struct RedactionPolicy: Codable, Equatable, Sendable {
     init(
         sensitiveHeaderNames: Set<String> = [
             "authorization", "proxy-authorization", "cookie", "set-cookie",
-            "x-api-key", "x-auth-token", "x-access-token"
+            "x-api-key", "x-auth-token", "x-access-token", "payment-signature", "x-payment"
         ],
         sensitiveQueryParameterNames: Set<String> = [
             "access_token", "api_key", "apikey", "auth", "authorization",

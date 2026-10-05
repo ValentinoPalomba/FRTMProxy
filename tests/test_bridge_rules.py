@@ -1,9 +1,11 @@
 import asyncio
 import importlib.util
 import pathlib
+import tempfile
 import sys
 import types
 import unittest
+from unittest.mock import patch
 
 
 class FakeResponse:
@@ -38,7 +40,7 @@ class FakeRequest:
         self.headers = FakeHeaders({"content-type": "application/json"})
         self._body = "{}"
 
-    def get_text(self):
+    def get_text(self, strict=True):
         return self._body
 
     def set_text(self, value):
@@ -63,6 +65,7 @@ class FakeFlow:
         self.id = "flow-1"
         self.request = FakeRequest()
         self.response = None
+        self.metadata = {}
 
 
 class UnifiedRulesTests(unittest.TestCase):
@@ -71,6 +74,115 @@ class UnifiedRulesTests(unittest.TestCase):
         bridge.FLOW_BY_ID.clear()
         bridge.FLOW_BY_KEY.clear()
         bridge.FLOW_BY_MAP_LOCAL_KEY.clear()
+
+    def test_pruning_keeps_paused_flow_but_remains_bounded(self):
+        for index in range(bridge.MAX_TRACKED_FLOWS + 2):
+            flow = FakeFlow()
+            flow.id = str(index)
+            flow.intercepted = index == 0
+            bridge.FLOW_BY_ID[flow.id] = flow
+        bridge.prune_flow_maps()
+        self.assertEqual(len(bridge.FLOW_BY_ID), bridge.MAX_TRACKED_FLOWS)
+        self.assertIn("0", bridge.FLOW_BY_ID)
+
+    def test_body_budget_prunes_before_flow_count_and_preserves_paused(self):
+        original_limit = bridge.MAX_TRACKED_BODY_BYTES
+        bridge.MAX_TRACKED_BODY_BYTES = 20
+        try:
+            for index in range(4):
+                flow = FakeFlow()
+                flow.id = str(index)
+                flow.request.path = "/" + str(index)
+                flow.request.raw_content = b"x" * 10
+                flow.intercepted = index == 0
+                bridge.FLOW_BY_ID[flow.id] = flow
+                bridge.FLOW_BY_KEY[bridge.flow_key(flow)] = flow
+                bridge.FLOW_BY_MAP_LOCAL_KEY[bridge.map_local_key(flow)] = flow
+            bridge.prune_flow_maps()
+            self.assertEqual(list(bridge.FLOW_BY_ID), ["0", "3"])
+            self.assertEqual(sum(bridge.tracked_body_bytes(f) for f in bridge.FLOW_BY_ID.values()), 20)
+            self.assertEqual(len(bridge.FLOW_BY_KEY), 2)
+            self.assertEqual(len(bridge.FLOW_BY_MAP_LOCAL_KEY), 2)
+            output = []
+            original_send = bridge.send
+            bridge.send = output.append
+            try:
+                incoming = FakeFlow()
+                incoming.id = "incoming"
+                incoming.request.raw_content = b"y" * 11
+                self.assertFalse(bridge.pause_for_breakpoint(incoming, "request"))
+                self.assertIn("memory budget", output[0]["message"])
+            finally:
+                bridge.send = original_send
+        finally:
+            bridge.MAX_TRACKED_BODY_BYTES = original_limit
+
+    def test_gc_workaround_only_runs_on_affected_python_after_byte_evictions(self):
+        saved = bridge.MAX_TRACKED_BODY_BYTES, bridge.EVICTED_BODY_BYTES, bridge.sys, bridge.gc
+        calls = []
+        bridge.MAX_TRACKED_BODY_BYTES = 10
+        bridge.gc = types.SimpleNamespace(collect=lambda: calls.append(True))
+        try:
+            for version, expected_calls in [((3, 14, 4), 1), ((3, 14, 5), 1)]:
+                bridge.sys = types.SimpleNamespace(version_info=version)
+                bridge.EVICTED_BODY_BYTES = 8 * 1024 * 1024
+                flow = FakeFlow()
+                flow.request.raw_content = b"x" * 20
+                bridge.FLOW_BY_ID[flow.id] = flow
+                bridge.prune_flow_maps()
+                self.assertEqual(len(calls), expected_calls)
+                self.assertFalse(bridge.FLOW_BY_ID)
+        finally:
+            bridge.MAX_TRACKED_BODY_BYTES, bridge.EVICTED_BODY_BYTES, bridge.sys, bridge.gc = saved
+
+    def test_body_quota_scans_only_on_pressure_and_reclaims_deleted_files(self):
+        saved = bridge.BODY_STORAGE_USED, bridge.BODY_STORAGE_REFRESH_AT, bridge.BODY_DISK_LIMIT
+        try:
+            with tempfile.TemporaryDirectory() as root:
+                body = pathlib.Path(root, "saved.gcm")
+                body.write_bytes(b"x" * 90)
+                bridge.BODY_STORAGE_USED = None
+                bridge.BODY_STORAGE_REFRESH_AT = 0
+                bridge.BODY_DISK_LIMIT = 100
+                with patch.object(bridge.os, "scandir", wraps=bridge.os.scandir) as scan:
+                    with patch.object(bridge.time, "monotonic", return_value=10):
+                        bridge.check_body_storage_capacity(root, 10)
+                    with patch.object(bridge.time, "monotonic", return_value=20):
+                        for _ in range(1000):
+                            bridge.check_body_storage_capacity(root, 10)
+                    self.assertEqual(scan.call_count, 1)
+                    with patch.object(bridge.time, "monotonic", return_value=20):
+                        with self.assertRaises(ValueError):
+                            bridge.check_body_storage_capacity(root, 11)
+                        with self.assertRaises(ValueError):
+                            bridge.check_body_storage_capacity(root, 11)
+                    self.assertEqual(scan.call_count, 2)
+                    body.unlink()
+                    with patch.object(bridge.time, "monotonic", return_value=26):
+                        bridge.check_body_storage_capacity(root, 100)
+                    self.assertEqual(bridge.BODY_STORAGE_USED, 0)
+                    self.assertEqual(scan.call_count, 3)
+        finally:
+            bridge.BODY_STORAGE_USED, bridge.BODY_STORAGE_REFRESH_AT, bridge.BODY_DISK_LIMIT = saved
+
+    def test_breakpoint_capacity_forwards_without_intercept(self):
+        saved = bridge.BREAKPOINT_TIMERS.copy()
+        bridge.BREAKPOINT_TIMERS.update({str(i): None for i in range(bridge.MAX_PAUSED_FLOWS)})
+        output = []
+        original_send = bridge.send
+        bridge.send = output.append
+        try:
+            self.assertFalse(bridge.pause_for_breakpoint(FakeFlow(), "request"))
+            self.assertEqual(output[0]["event"], "capture_warning")
+        finally:
+            bridge.send = original_send
+            bridge.BREAKPOINT_TIMERS.clear()
+            bridge.BREAKPOINT_TIMERS.update(saved)
+
+    def test_binary_map_local_body_is_decoded_before_forward(self):
+        flow = FakeFlow()
+        bridge.apply_map_local_response(flow, {"body": "data:application/octet-stream;base64,AP8B", "status": 200})
+        self.assertEqual(flow.response.body, b"\x00\xff\x01")
 
     def test_invalid_regex_never_matches(self):
         pattern = {"mode": "regularExpression", "value": "[", "isCaseSensitive": True}

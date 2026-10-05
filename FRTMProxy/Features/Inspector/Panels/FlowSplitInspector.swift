@@ -23,6 +23,23 @@ struct FlowSplitInspector: View {
                 onToggleBreakpoint: onToggleBreakpoint
             )
 
+            if let warning = flow.livePreviewWarning {
+                Label(warning, systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(colors.warning)
+                    .padding(DesignSystem.Spacing.sm)
+            }
+            if let error = flow.captureError {
+                Label(error, systemImage: "exclamationmark.triangle")
+                    .font(DesignSystem.Fonts.caption)
+                    .foregroundStyle(colors.warning)
+            }
+            if flow.event == "response_headers" || flow.event == "response_stream" {
+                Label("Stream active", systemImage: "waveform")
+                    .font(DesignSystem.Fonts.caption)
+                    .foregroundStyle(colors.textSecondary)
+            }
+
             HStack(spacing: DesignSystem.Spacing.lg) {
                 FlowPanel(
                     title: "Request",
@@ -33,7 +50,12 @@ struct FlowSplitInspector: View {
                     bodyFlow: flow.request?.body,
                     emptyText: "Request unavailable",
                     isMapped: false,
-                    colors: colors
+                    colors: colors,
+                    bodyTruncated: flow.request?.bodyTruncated ?? false,
+                    originalBodyReference: flow.request?.originalBodyReference,
+                    flowID: flow.id,
+                    phase: "request",
+                    headerFields: flow.request?.headerFields
                 )
                 .id("\(flow.id)-request")
                 .frame(maxWidth: .infinity)
@@ -50,10 +72,15 @@ struct FlowSplitInspector: View {
                     colors: colors,
                     timingData: FlowTimingData(
                         duration: flow.duration,
-                        requestBodySize: flow.request?.body?.utf8.count ?? 0,
-                        responseBodySize: flow.response?.body?.utf8.count ?? 0
+                        requestBodySize: flow.request?.byteCount ?? flow.request?.body?.utf8.count ?? 0,
+                        responseBodySize: flow.response?.byteCount ?? flow.response?.body?.utf8.count ?? 0
                     ),
-                    websocketMessages: flow.websocketMessages
+                    websocketMessages: flow.websocketMessages,
+                    bodyTruncated: flow.response?.bodyTruncated ?? false,
+                    originalBodyReference: flow.response?.originalBodyReference,
+                    flowID: flow.id,
+                    phase: "response",
+                    headerFields: flow.response?.headerFields
                 )
                 .id("\(flow.id)-response")
                 .frame(maxWidth: .infinity)

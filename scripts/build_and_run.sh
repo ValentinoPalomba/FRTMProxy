@@ -9,7 +9,7 @@ DERIVED_DATA="$ROOT_DIR/.build/DerivedData"
 APP_BUNDLE="$DERIVED_DATA/Build/Products/Debug/$APP_NAME.app"
 APP_BINARY="$APP_BUNDLE/Contents/MacOS/$APP_NAME"
 
-pkill -x "$APP_NAME" >/dev/null 2>&1 || true
+python3 "$ROOT_DIR/scripts/install_engine.py"
 
 xcodebuild \
   -project "$ROOT_DIR/FRTMProxy.xcodeproj" \

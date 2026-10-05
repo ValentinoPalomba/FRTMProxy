@@ -1,7 +1,7 @@
 import Foundation
 
 extension ProxyViewModel {
-    func currentWorkspaceBundle() -> WorkspaceBundle? {
+    func currentWorkspaceBundle(defaults: UserDefaults = .standard) -> WorkspaceBundle? {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
 
@@ -43,17 +43,26 @@ extension ProxyViewModel {
             ))
         }
 
+        let preferences: WorkspaceInspectorPreferences
+        do { preferences = try .read(from: defaults) }
+        catch {
+            appendLog("[WORKSPACE] unable to export inspector preferences: \(error.localizedDescription)\n")
+            onToast?("Unable to export unreadable inspector preferences", .error)
+            return nil
+        }
         let manifest = WorkspaceManifest(
             identifier: "frtmproxy-workspace",
             displayName: "FRTMProxy Workspace",
             summary: "Traffic rules, scripts, and breakpoints",
-            resources: resources
+            resources: resources,
+            inspectorPreferences: preferences
         )
         return WorkspaceBundle(manifest: manifest, resources: payloads)
     }
 
-    func applyWorkspaceBundle(_ plan: WorkspaceImportPlan) throws -> WorkspaceImportResult {
+    func applyWorkspaceBundle(_ plan: WorkspaceImportPlan, defaults: UserDefaults = .standard) throws -> WorkspaceImportResult {
         do {
+            try plan.bundle.manifest.inspectorPreferences?.validate()
             if let document = plan.trafficRuleDocument {
                 try trafficRuleStore.save(rules: document.rules)
             }
@@ -76,6 +85,7 @@ extension ProxyViewModel {
             )
         }
 
+        try plan.bundle.manifest.inspectorPreferences?.apply(to: defaults)
         synchronizeEffectiveTrafficRules(force: true)
 
         for resource in plan.skippedResources {
@@ -85,7 +95,8 @@ extension ProxyViewModel {
         }
         let result = WorkspaceImportResult(
             appliedResources: plan.resourcesToApply,
-            skippedResources: plan.skippedResources
+            skippedResources: plan.skippedResources,
+            inspectorPreferencesApplied: plan.bundle.manifest.inspectorPreferences != nil
         )
         onToast?("Workspace imported", .success)
         return result

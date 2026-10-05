@@ -20,6 +20,7 @@ struct RequestComposerView: View {
             }
         }
         .background(colors.surface)
+        .onDisappear { viewModel.cancel() }
     }
 
     // MARK: - Two-column layout (wide)
@@ -87,6 +88,7 @@ struct RequestComposerView: View {
                 .font(DesignSystem.Fonts.sans(15, weight: .semibold))
                 .foregroundStyle(colors.textPrimary)
             Spacer()
+            ComposerLocalControls(model: viewModel, colors: colors)
             ControlButton(title: "Close", systemImage: "xmark", style: .ghost(colors)) { onClose() }
         }
         .padding(DesignSystem.Spacing.lg)
@@ -146,6 +148,10 @@ struct RequestComposerView: View {
 
     private var responseCard: some View {
         ComposerCard(title: "Response", colors: colors) {
+            if viewModel.responseTruncated {
+                Label("Preview truncated at 2 MiB — \(viewModel.responseByteCount) bytes received", systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(colors.warning)
+            }
             Group {
                 if viewModel.isLoading {
                     StateView(kind: .loading(message: "Sending request..."), palette: colors)
@@ -174,8 +180,16 @@ struct RequestComposerView: View {
 
     private var composerFooter: some View {
         HStack {
+            if let error = viewModel.persistenceError {
+                Label(error, systemImage: "exclamationmark.triangle")
+                    .font(DesignSystem.Fonts.caption)
+                    .foregroundStyle(colors.warning)
+                    .lineLimit(2)
+                    .help(error)
+            }
             Spacer()
             if viewModel.isLoading {
+                ControlButton(title: "Cancel", systemImage: "stop.circle", style: .ghost(colors)) { viewModel.cancel() }
                 ProgressView()
                     .scaleEffect(0.7)
                     .padding(.trailing, DesignSystem.Spacing.xs)
@@ -184,7 +198,7 @@ struct RequestComposerView: View {
                 title: "Send",
                 systemImage: "paperplane.fill",
                 style: .filled(colors),
-                disabled: viewModel.isLoading || viewModel.urlString.isEmpty
+                disabled: viewModel.isLoading || viewModel.isRestoring || viewModel.urlString.isEmpty
             ) {
                 sendRequest()
             }
@@ -280,6 +294,10 @@ private struct ComposerRequestBody: View {
 
             switch tab {
             case .body:
+                Toggle("Body is Base64 (send decoded bytes)", isOn: $viewModel.bodyIsBase64)
+                    .toggleStyle(.checkbox)
+                    .font(DesignSystem.Fonts.caption)
+                    .foregroundStyle(colors.textSecondary)
                 TextEditor(text: $viewModel.requestBody)
                     .proxyTextEditor(palette: colors)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -297,37 +315,46 @@ private struct ComposerHeadersEditor: View {
     @ObservedObject var viewModel: RequestComposerViewModel
     let colors: DesignSystem.ColorPalette
 
+    @FocusState private var focusedHeader: UUID?
+
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            ScrollView {
-                LazyVStack(spacing: DesignSystem.Spacing.sm) {
-                    ForEach($viewModel.requestHeaders) { $row in
-                        HStack(spacing: DesignSystem.Spacing.sm) {
-                            TextField("Key", text: $row.key)
-                                .textFieldStyle(ProxyTextFieldStyle(palette: colors))
-                                .font(DesignSystem.Fonts.mono(11))
-                                .frame(maxWidth: .infinity)
-                            TextField("Value", text: $row.value)
-                                .textFieldStyle(ProxyTextFieldStyle(palette: colors))
-                                .font(DesignSystem.Fonts.mono(11))
-                                .frame(maxWidth: .infinity)
-                            Button {
-                                viewModel.requestHeaders.removeAll { $0.id == row.id }
-                            } label: {
-                                Image(systemName: "minus.circle.fill")
-                                    .foregroundStyle(colors.danger)
+            HStack {
+                Text("\(viewModel.requestHeaders.count) headers")
+                    .font(DesignSystem.Fonts.caption)
+                    .foregroundStyle(colors.textSecondary)
+                Spacer()
+                ControlButton(title: "Add Header", systemImage: "plus", style: .ghost(colors)) {
+                    viewModel.addHeaderRow()
+                    focusedHeader = viewModel.requestHeaders.last?.id
+                }
+            }
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: DesignSystem.Spacing.sm) {
+                        ForEach($viewModel.requestHeaders) { $row in
+                            HStack(spacing: DesignSystem.Spacing.sm) {
+                                TextField("Key", text: $row.key)
+                                    .focused($focusedHeader, equals: row.id)
+                                    .frame(maxWidth: .infinity)
+                                TextField("Value", text: $row.value)
+                                    .frame(maxWidth: .infinity)
+                                ControlButton(title: "Remove", systemImage: "minus.circle", style: .ghost(colors)) {
+                                    viewModel.requestHeaders.removeAll { $0.id == row.id }
+                                }
                             }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("Remove header")
+                            .textFieldStyle(ProxyTextFieldStyle(palette: colors, size: .compact))
+                            .id(row.id)
                         }
+                    }
+                }
+                .onChange(of: viewModel.requestHeaders.count) { oldCount, newCount in
+                    if newCount > oldCount, let id = viewModel.requestHeaders.last?.id {
+                        proxy.scrollTo(id, anchor: .bottom)
                     }
                 }
             }
             .frame(maxHeight: .infinity)
-
-            ControlButton(title: "Add Header", systemImage: "plus", style: .ghost(colors)) {
-                viewModel.addHeaderRow()
-            }
         }
     }
 }
@@ -364,7 +391,7 @@ private struct ComposerResponseBody: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             case .headers:
-                if viewModel.responseHeaders.isEmpty {
+                if viewModel.responseHeaderFields.isEmpty {
                     Text("No headers")
                         .foregroundStyle(colors.textSecondary)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
@@ -372,14 +399,14 @@ private struct ComposerResponseBody: View {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                             ForEach(
-                                viewModel.responseHeaders.sorted { $0.key.lowercased() < $1.key.lowercased() },
-                                id: \.key
-                            ) { key, value in
+                                Array(viewModel.responseHeaderFields.enumerated()),
+                                id: \.offset
+                            ) { _, field in
                                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
-                                    Text(key)
+                                    Text(field.name)
                                         .font(DesignSystem.Fonts.sans(11, weight: .semibold))
                                         .foregroundStyle(colors.textSecondary)
-                                    Text(value)
+                                    Text(field.value)
                                         .font(DesignSystem.Fonts.mono(12))
                                         .foregroundStyle(colors.textPrimary)
                                         .textSelection(.enabled)

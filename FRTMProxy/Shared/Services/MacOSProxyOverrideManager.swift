@@ -1,11 +1,15 @@
 import Foundation
+import Darwin
 
 enum MacOSProxyOverrideError: LocalizedError {
+    case ownershipChanged(String)
     case commandFailed(command: String, output: String)
     case parseFailed(command: String, output: String)
 
     var errorDescription: String? {
         switch self {
+        case .ownershipChanged(let service):
+            return "Proxy settings changed outside FRTMProxy for \(service); they were preserved."
         case let .commandFailed(command, output):
             return "macOS proxy override failed: \(command)\n\(output)"
         case let .parseFailed(command, output):
@@ -15,7 +19,7 @@ enum MacOSProxyOverrideError: LocalizedError {
 }
 
 struct MacOSProxySnapshot: Codable {
-    struct ProxySettings: Codable {
+    struct ProxySettings: Codable, Equatable {
         let enabled: Bool
         let host: String?
         let port: Int?
@@ -27,72 +31,103 @@ struct MacOSProxySnapshot: Codable {
     }
 
     var services: [String: ServiceSettings]
+    var override: ProxySettings?
+    var ownerProcessID: Int32?
 }
 
 actor MacOSProxyOverrideManager {
     static let shared = MacOSProxyOverrideManager()
 
     private let snapshotKey = "settings.macosProxyOverride.snapshot"
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
+    private let journalURL: URL
+    private let commandRunner: (@Sendable ([String]) throws -> String)?
     private let networksetupPath = "/usr/sbin/networksetup"
-    private let overrideHosts: Set<String> = ["localhost", "127.0.0.1"]
+
+    init(defaults: UserDefaults = .standard, journalURL: URL = URL.applicationSupportDirectory.appending(path: "FRTMProxy/Recovery/proxy.json"), commandRunner: (@Sendable ([String]) throws -> String)? = nil) {
+        self.defaults = defaults
+        self.journalURL = journalURL
+        self.commandRunner = commandRunner
+    }
+
 
     func enableProxy(host: String, port: Int) throws {
         let services = try listEnabledNetworkServices()
-        var snapshot = loadSnapshot() ?? MacOSProxySnapshot(services: [:])
-        var snapshotUpdated = false
-
-        for service in services where snapshot.services[service] == nil {
-            snapshot.services[service] = try readServiceSettings(service)
-            snapshotUpdated = true
+        var snapshot = try loadSnapshot() ?? MacOSProxySnapshot(services: [:])
+        if let owner = snapshot.ownerProcessID,
+           owner != ProcessInfo.processInfo.processIdentifier, kill(owner, 0) == 0 {
+            throw MacOSProxyOverrideError.ownershipChanged("another running FRTMProxy instance")
         }
-
-        if snapshotUpdated {
-            persistSnapshot(snapshot)
-        }
-
+        let target = MacOSProxySnapshot.ProxySettings(enabled: true, host: host, port: port)
         for service in services {
-            try applyProxySettings(
-                .init(enabled: true, host: host, port: port),
-                service: service,
-                secure: false
-            )
-            try applyProxySettings(
-                .init(enabled: true, host: host, port: port),
-                service: service,
-                secure: true
-            )
+            let current = try readServiceSettings(service)
+            if snapshot.services[service] == nil {
+                snapshot.services[service] = current
+            } else if let owned = snapshot.override {
+                guard current.http == owned && current.https == owned else {
+                    throw MacOSProxyOverrideError.ownershipChanged(service)
+                }
+            } else {
+                // A legacy snapshot has no ownership evidence. Never guess from a loopback host.
+                throw MacOSProxyOverrideError.ownershipChanged(service)
+            }
+        }
+        if let owned = snapshot.override, owned != target {
+            // Finish the old transaction before recording a different endpoint.
+            // A failed port change can then roll back using a single ownership value.
+            try disableProxy()
+            guard try loadSnapshot() == nil else {
+                throw MacOSProxyOverrideError.ownershipChanged("unavailable network services")
+            }
+            try enableProxy(host: host, port: port)
+            return
+        }
+        // Record intent before the first mutation so a partial failure can be recovered.
+        snapshot.override = target
+        snapshot.ownerProcessID = ProcessInfo.processInfo.processIdentifier
+        try persistSnapshot(snapshot)
+        do {
+            for service in services {
+                try applyProxySettings(target, service: service, secure: false)
+                try applyProxySettings(target, service: service, secure: true)
+            }
+        } catch {
+            try? disableProxy()
+            throw error
         }
     }
 
-    func disableProxy() throws {
-        let services = Set(try listEnabledNetworkServices())
-
-        if let snapshot = loadSnapshot() {
-            for (service, serviceSnapshot) in snapshot.services where services.contains(service) {
-                try applyProxySettings(serviceSnapshot.http, service: service, secure: false)
-                try applyProxySettings(serviceSnapshot.https, service: service, secure: true)
-            }
-            clearSnapshot()
+    func disableProxy(expectedOwnerPID: Int32? = nil) throws {
+        guard var snapshot = try loadSnapshot(), let owned = snapshot.override else { return }
+        if let expectedOwnerPID, snapshot.ownerProcessID != expectedOwnerPID { return }
+        if expectedOwnerPID == nil, let owner = snapshot.ownerProcessID,
+           owner != ProcessInfo.processInfo.processIdentifier, kill(owner, 0) == 0 {
             return
         }
-
-        var didChange = false
-        for service in services {
-            let current = try readServiceSettings(service)
-            if shouldDisableOverride(current.http) {
-                try setProxyState(service: service, enabled: false, secure: false)
-                didChange = true
-            }
-            if shouldDisableOverride(current.https) {
-                try setProxyState(service: service, enabled: false, secure: true)
-                didChange = true
+        let available = Set(try listEnabledNetworkServices())
+        var firstError: Error?
+        for (service, previous) in snapshot.services where available.contains(service) {
+            do {
+                let current = try readServiceSettings(service)
+                // Restore each protocol independently, preserving user changes and partial activation.
+                if Self.owns(current.http, override: owned) {
+                    try applyProxySettings(previous.http, service: service, secure: false)
+                }
+                if Self.owns(current.https, override: owned) {
+                    try applyProxySettings(previous.https, service: service, secure: true)
+                }
+                snapshot.services.removeValue(forKey: service)
+            } catch {
+                if firstError == nil { firstError = error }
             }
         }
+        if snapshot.services.isEmpty { try clearSnapshot() } else { try persistSnapshot(snapshot) }
+        if let firstError { throw firstError }
+    }
 
-        if didChange {
-            clearSnapshot()
-        }
+    static func owns(_ current: MacOSProxySnapshot.ProxySettings, override owned: MacOSProxySnapshot.ProxySettings) -> Bool {
+        // Disabling or changing the endpoint externally relinquishes ownership.
+        current == owned
     }
 
     private func listEnabledNetworkServices() throws -> [String] {
@@ -154,16 +189,10 @@ actor MacOSProxyOverrideManager {
         service: String,
         secure: Bool
     ) throws {
-        if settings.enabled {
-            guard let host = settings.host, let port = settings.port else {
-                try setProxyState(service: service, enabled: false, secure: secure)
-                return
-            }
+        if let host = settings.host, let port = settings.port {
             try setProxyHostPort(service: service, host: host, port: port, secure: secure)
-            try setProxyState(service: service, enabled: true, secure: secure)
-        } else {
-            try setProxyState(service: service, enabled: false, secure: secure)
         }
+        try setProxyState(service: service, enabled: settings.enabled, secure: secure)
     }
 
     private func setProxyHostPort(service: String, host: String, port: Int, secure: Bool) throws {
@@ -176,14 +205,8 @@ actor MacOSProxyOverrideManager {
         _ = try runNetworksetup(arguments: [command, service, enabled ? "on" : "off"])
     }
 
-    private func shouldDisableOverride(_ settings: MacOSProxySnapshot.ProxySettings) -> Bool {
-        guard settings.enabled, let host = settings.host?.lowercased() else {
-            return false
-        }
-        return overrideHosts.contains(host)
-    }
-
     private func runNetworksetup(arguments: [String]) throws -> String {
+        if let commandRunner { return try commandRunner(arguments) }
         let process = Process()
         process.executableURL = URL(fileURLWithPath: networksetupPath)
         process.arguments = arguments
@@ -210,20 +233,28 @@ actor MacOSProxyOverrideManager {
         return stdout
     }
 
-    private func loadSnapshot() -> MacOSProxySnapshot? {
-        guard let data = defaults.data(forKey: snapshotKey),
-              let snapshot = try? JSONDecoder().decode(MacOSProxySnapshot.self, from: data) else {
-            return nil
+    private func loadSnapshot() throws -> MacOSProxySnapshot? {
+        if FileManager.default.fileExists(atPath: journalURL.path) {
+            return try JSONDecoder().decode(MacOSProxySnapshot.self, from: Data(contentsOf: journalURL))
         }
-        return snapshot
+        guard let data = defaults.data(forKey: snapshotKey) else { return nil }
+        return try JSONDecoder().decode(MacOSProxySnapshot.self, from: data)
     }
 
-    private func persistSnapshot(_ snapshot: MacOSProxySnapshot) {
-        guard let data = try? JSONEncoder().encode(snapshot) else { return }
+    private func persistSnapshot(_ snapshot: MacOSProxySnapshot) throws {
+        let data = try JSONEncoder().encode(snapshot)
+        try FileManager.default.createDirectory(at: journalURL.deletingLastPathComponent(),
+                                               withIntermediateDirectories: true,
+                                               attributes: [.posixPermissions: 0o700])
+        try data.write(to: journalURL, options: .atomic)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: journalURL.path)
         defaults.set(data, forKey: snapshotKey)
     }
 
-    private func clearSnapshot() {
+    private func clearSnapshot() throws {
+        if FileManager.default.fileExists(atPath: journalURL.path) {
+            try FileManager.default.removeItem(at: journalURL)
+        }
         defaults.removeObject(forKey: snapshotKey)
     }
 }

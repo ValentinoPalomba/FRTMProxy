@@ -6,6 +6,18 @@ enum ProtocolInspector {
         let contentType = normalizedHeaders["content-type"]?.lowercased() ?? ""
         let raw = body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
+        if normalizedHeaders["payment-required"] != nil || normalizedHeaders["x-payment-required"] != nil {
+            return .init(kind: .paymentFlow, summary: "Payment-required hint; settlement is not verified",
+                         sections: [.init(id: "body", title: "Body", content: raw)])
+        }
+        if ["application/x-ndjson", "application/ndjson", "application/jsonl", "application/x-jsonlines"].contains(contentType.components(separatedBy: ";")[0]) {
+            let lines = raw.split(separator: "\n").prefix(1000)
+            return .init(kind: .ndjson, summary: "\(lines.count) line(s) in preview",
+                         sections: lines.enumerated().map { index, line in
+                             .init(id: "line-\(index)", title: "Line \(index + 1)", content: String(line))
+                         })
+        }
+
         if contentType.contains("text/event-stream") {
             return inspectSSE(raw)
         }
@@ -42,6 +54,23 @@ enum ProtocolInspector {
               let object = try? JSONSerialization.jsonObject(with: data)
         else { return nil }
         let pretty = prettyJSON(object) ?? raw
+
+        let rpcObjects = (object as? [[String: Any]]) ?? (object as? [String: Any]).map { [$0] } ?? []
+        if !rpcObjects.isEmpty, rpcObjects.allSatisfy({ $0["jsonrpc"] as? String == "2.0" }) {
+            let methods = rpcObjects.compactMap { $0["method"] as? String }
+            return .init(kind: .jsonRPC,
+                         summary: methods.isEmpty ? "\(rpcObjects.count) response(s)" : methods.prefix(10).joined(separator: ", "),
+                         sections: [.init(id: "rpc", title: "JSON-RPC", content: pretty)])
+        }
+        if let dictionary = object as? [String: Any],
+           let model = dictionary["model"] as? String,
+           dictionary["messages"] is [Any] || dictionary["choices"] is [Any] || dictionary["input"] != nil {
+            var sections = [ProtocolInspectionSection(id: "ai", title: "Model payload", content: pretty)]
+            if let usage = dictionary["usage"], let rendered = prettyJSON(usage) {
+                sections.append(.init(id: "usage", title: "Reported usage", content: rendered))
+            }
+            return .init(kind: .aiAPI, summary: "\(model) · AI-shaped payload; provider is not verified", sections: sections)
+        }
 
         if let dictionary = object as? [String: Any],
            dictionary["query"] != nil || dictionary["mutation"] != nil || dictionary["subscription"] != nil {
@@ -112,7 +141,7 @@ enum ProtocolInspector {
     }
 
     private static func inspectSSE(_ raw: String) -> ProtocolInspectionResult {
-        let events = raw.components(separatedBy: "\n\n").filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        let events = raw.replacing("\r\n", with: "\n").components(separatedBy: "\n\n").filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.prefix(1000)
         return .init(
             kind: .serverSentEvents,
             summary: "\(events.count) event(s)",

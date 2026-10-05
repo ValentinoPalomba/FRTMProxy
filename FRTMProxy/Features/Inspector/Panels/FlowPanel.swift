@@ -36,6 +36,11 @@ struct FlowPanel: View {
     let colors: DesignSystem.ColorPalette
     var timingData: FlowTimingData? = nil
     var websocketMessages: [WebSocketMessage] = []
+    var bodyTruncated = false
+    var originalBodyReference: String? = nil
+    var flowID: String = ""
+    var phase: String = "response"
+    var headerFields: [HTTPHeaderField]? = nil
 
     @State private var detailTab: DetailTab = .body
 
@@ -67,13 +72,29 @@ struct FlowPanel: View {
                 selection: $detailTab
             )
 
+            if bodyTruncated {
+                Label("Preview truncated at 2 MB", systemImage: "exclamationmark.triangle")
+                    .font(DesignSystem.Fonts.caption)
+                    .foregroundStyle(colors.warning)
+            }
+            if let originalBodyReference {
+                ControlButton(title: "Export Original Body…", systemImage: "square.and.arrow.up", style: .ghost(colors)) {
+                    CaptureBodyExporter.export(reference: originalBodyReference, flowID: flowID, phase: phase)
+                }
+                .font(DesignSystem.Fonts.caption)
+                .help("Export captured bytes, including content encoding, from encrypted local storage.")
+            }
+
             Group {
                 switch detailTab {
                 case .headers:
-                    HeadersList(headers: headers, colors: colors)
+                    HeadersList(headers: headers, colors: colors, fields: headerFields)
                 case .query:
                     QueryParametersList(parameters: queryParameters, colors: colors)
                 case .body:
+                    if let bodyFlow {
+                        JSONBodyQueryView(payload: bodyFlow, isTruncated: bodyTruncated, colors: colors)
+                    }
                     BodyInspector(payload: bodyFlow, headers: headers, emptyText: emptyText, colors: colors)
                 case .messages:
                     WebSocketMessagesPanel(messages: websocketMessages, colors: colors)
@@ -203,20 +224,29 @@ private struct FlowPanelInlineTabs: View {
 private struct HeadersList: View {
     let headers: [String: String]
     let colors: DesignSystem.ColorPalette
+    var fields: [HTTPHeaderField]? = nil
+    @State private var query = ""
 
     var body: some View {
-        if headers.isEmpty {
-            Text("No headers available")
-                .foregroundStyle(colors.textSecondary)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        } else {
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                    ForEach(headers.sorted(by: { $0.key.lowercased() < $1.key.lowercased() }), id: \.key) { key, value in
-                        HeaderRow(key: key, value: value, colors: colors)
+        let all = fields ?? headers.sorted(by: { $0.key.lowercased() < $1.key.lowercased() }).map {
+            HTTPHeaderField(name: $0.key, value: $0.value)
+        }
+        let rows = all.filter { query.isEmpty || $0.name.localizedStandardContains(query) || $0.value.localizedStandardContains(query) }
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            SearchField(text: $query, placeholder: "Search header name or value", colors: colors)
+                .accessibilityLabel("Search header name or value")
+            if rows.isEmpty {
+                Text(all.isEmpty ? "No headers available" : "No matching headers")
+                    .foregroundStyle(colors.textSecondary)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                        ForEach(rows.indices, id: \.self) { index in
+                            HeaderRow(key: rows[index].name, value: rows[index].value, colors: colors)
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }

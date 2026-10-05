@@ -130,10 +130,7 @@ extension ProxyViewModel {
         overrideMacOSProxy = settings.overrideMacOSProxy
         alertsEnabled = settings.alertsEnabled
         applyAlertRules(settings.alertRules)
-        if overrideMacOSProxy {
-            applyMacOSProxyOverride(port: activePort)
-        }
-        updateProxySelfHealingState()
+        syncMacOSProxyOverride()
 
     }
 
@@ -146,7 +143,7 @@ extension ProxyViewModel {
     }
 
     func syncMacOSProxyOverride() {
-        if overrideMacOSProxy {
+        if overrideMacOSProxy && isRunning {
             applyMacOSProxyOverride(port: activePort)
         } else {
             clearMacOSProxyOverride()
@@ -155,16 +152,17 @@ extension ProxyViewModel {
     }
 
     func updateMacOSProxyOverridePort() {
-        guard overrideMacOSProxy else { return }
+        guard overrideMacOSProxy, isRunning else { return }
         applyMacOSProxyOverride(port: activePort)
     }
 
     func applyMacOSProxyOverride(port: Int) {
         Task { @MainActor [weak self] in
+            guard let self, self.overrideMacOSProxy, self.isRunning, self.activePort == port else { return }
             do {
                 try await MacOSProxyOverrideManager.shared.enableProxy(host: "localhost", port: port)
             } catch {
-                self?.appendLog("\n[SYSTEM] \(error.localizedDescription)")
+                self.appendLog("\n[SYSTEM] \(error.localizedDescription)")
             }
         }
     }

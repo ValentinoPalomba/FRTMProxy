@@ -5,10 +5,16 @@ actor InspectorFlowFilterWorker {
 
     func project(
         flows: [MitmFlow],
-        filter: FlowFilter
+        filter: FlowFilter,
+        noiseQuery: String = ""
     ) throws -> (flows: [MitmFlow], clientIPs: [String]) {
         try Task.checkCancellation()
-        let filteredFlows = try filter.applyCancellable(to: flows, using: cache)
+        var filteredFlows = try filter.applyCancellable(to: flows, using: cache)
+        if !noiseQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            let hidden = try FlowFilter(searchText: noiseQuery).applyCancellable(to: flows, using: cache)
+            let ids = Set(hidden.map(\.id))
+            filteredFlows.removeAll { ids.contains($0.id) }
+        }
         try Task.checkCancellation()
 
         let clientIPs = Array(

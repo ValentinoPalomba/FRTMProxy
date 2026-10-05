@@ -11,6 +11,7 @@ extension MitmFlow {
         if incoming.request != nil { merged.request = incoming.request }
         if incoming.response != nil { merged.response = incoming.response }
         merged.event = incoming.event
+        merged.captureError = incoming.captureError ?? captureError
         merged.timestamp = timestamp ?? incoming.timestamp
         merged.requestTimestamp = incoming.requestTimestamp ?? requestTimestamp
         merged.responseTimestamp = incoming.responseTimestamp ?? responseTimestamp

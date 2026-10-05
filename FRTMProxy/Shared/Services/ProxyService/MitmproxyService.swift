@@ -39,6 +39,9 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     private var process: Process?
     private var commandHandle: FileHandle?
     private let maxFlowsStored = 500
+    private var flowWeights: [String: Int] = [:]
+    private var retainedPayloadBytes = 0
+    private var lastCacheNotice: ContinuousClock.Instant?
     private var appTerminationObserver: NSObjectProtocol?
     private var workspaceTerminationObserver: NSObjectProtocol?
     private var warmupState: MitmdumpWarmupState = .idle
@@ -46,16 +49,20 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     private var prewarmTask: Task<Void, Never>?
     private var cachedMitmdumpURL: URL?
     private var rulesRevision = 0
+    private var rulesAckTask: Task<Void, Never>?
+    private var startupID = UUID()
+    private var bridgeReady = false
+    private var isStarting = false
     /// Serializza le scritture su stdin del bridge fuori dal MainActor: una
     /// pipe piena bloccherebbe la UI, e la write può fallire (EPIPE) se il
     /// processo è morto — qui viene gestita senza bloccare né crashare.
     private let commandWriteQueue = DispatchQueue(label: "com.frtmproxy.command-write", qos: .userInitiated)
     
-    nonisolated(unsafe) var onLog: ((String) -> Void)?
+    var onLog: ((String) -> Void)?
     
     /// Proxy running?
     @Published private(set) var isRunning: Bool = false
-    @Published var flows: [String: MitmFlow] = [:]
+    @Published private(set) var flows: [String: MitmFlow] = [:]
     private let flowEventsSubject = PassthroughSubject<MitmFlow, Never>()
 
     var flowsPublisher: AnyPublisher<[String: MitmFlow], Never> { $flows.eraseToAnyPublisher() }
@@ -88,41 +95,72 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     }
     
     func startProxy(port: Int? = nil, restrictToHosts: Bool = false, hosts: [String] = []) async throws {
-        if isRunning {
-            return
+        guard !isRunning, !isStarting else { return }
+        let selectedPort = port ?? config.port
+        guard (1024...65535).contains(selectedPort) else {
+            throw MitmproxyServiceError.failedToRun("Port must be between 1024 and 65535")
         }
-        
         let executableURL = try bundledMitmdumpExecutableURL()
         let scriptURL = try bridgeScriptURL()
-        let selectedPort = port ?? config.port
-        let logger = onLog
+        let bodyEnvironment = try CaptureBodyStore.environment()
+        let launchID = UUID()
+        startupID = launchID
+        bridgeReady = false
+        isStarting = true
+        defer { if startupID == launchID { isStarting = false } }
 
-        let result = try await MitmproxyService.launchProcess(
+        let result = try await Self.launchProcess(
             executableURL: executableURL,
             scriptURL: scriptURL,
             selectedPort: selectedPort,
             restrictToHosts: restrictToHosts,
             hosts: hosts,
+            launchID: launchID,
+            bodyEnvironment: bodyEnvironment,
             onLine: { [weak self] line in
-                self?.handleIncomingLine(line)
+                self?.handleIncomingLine(line, launchID: launchID)
             },
             onError: { [weak self] text in
-                self?.onLog?("[ERR] " + text)
-            },
-            onTermination: { [weak self] in
-                DispatchQueue.main.async {
-                    self?.isRunning = false
+                Task { @MainActor [weak self] in
+                    guard let self, self.startupID == launchID else { return }
+                    self.onLog?("[ERR] " + text)
                 }
             },
-            logger: logger
+            onTermination: { [weak self] in
+                Task { @MainActor in
+                    guard let self, self.startupID == launchID else { return }
+                    self.isRunning = false
+                    self.bridgeReady = false
+                }
+            }
         )
-
-        self.process = result.process
-        self.commandHandle = result.commandHandle
-        self.isRunning = true
-        onLog?("mitmdump started on port \(selectedPort)\n")
+        guard startupID == launchID else {
+            if result.process.isRunning { result.process.terminate() }
+            throw CancellationError()
+        }
+        process = result.process
+        commandHandle = result.commandHandle
+        do {
+            let deadline = ContinuousClock.now + .seconds(30)
+            while !bridgeReady {
+                try Task.checkCancellation()
+                guard startupID == launchID, result.process.isRunning else {
+                    throw MitmproxyServiceError.failedToRun("Proxy exited before becoming ready")
+                }
+                guard ContinuousClock.now < deadline else {
+                    throw MitmproxyServiceError.failedToRun("Proxy startup timed out")
+                }
+                try await Task.sleep(for: .milliseconds(50))
+            }
+            guard startupID == launchID, result.process.isRunning else { throw CancellationError() }
+            isRunning = true
+            onLog?("[PROXY] ready on port \(selectedPort)\n")
+        } catch {
+            if startupID == launchID { stopProxy() }
+            throw error
+        }
     }
-    
+
     private struct LaunchResult {
         let process: Process
         let commandHandle: FileHandle
@@ -134,17 +172,24 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         selectedPort: Int,
         restrictToHosts: Bool,
         hosts: [String],
+        launchID: UUID,
+        bodyEnvironment: [String: String],
         onLine: @escaping (String) -> Void,
         onError: @escaping (String) -> Void,
-        onTermination: @escaping () -> Void,
-        logger: ((String) -> Void)?
+        onTermination: @escaping () -> Void
     ) async throws -> LaunchResult {
         try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
-                MitmproxyService.terminateStaleMitmProcesses(logger: logger)
-
                 let process = Process()
                 process.executableURL = executableURL
+                var environment = ProcessInfo.processInfo.environment
+                environment.merge(bodyEnvironment) { _, value in value }
+                environment["FRTMPROXY_STARTUP_ID"] = launchID.uuidString
+                environment["FRTMPROXY_PARENT_PID"] = String(ProcessInfo.processInfo.processIdentifier)
+                if let workerURL = Bundle.main.executableURL {
+                    environment["FRTMPROXY_SCRIPT_WORKER"] = workerURL.path
+                }
+                process.environment = environment
                 process.arguments = MitmproxyService.buildArguments(
                     scriptURL: scriptURL,
                     selectedPort: selectedPort,
@@ -155,7 +200,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
                 let pipe = Pipe()
                 let errorPipe = Pipe()
                 let inputPipe = Pipe()
-                let stdoutLineBuffer = LineBuffer(onLine: onLine)
+                let stdoutLineBuffer = LineBuffer(onOverflow: { onError("Bridge frame exceeded 16 MB and was discarded\n") }, onLine: onLine)
 
                 process.standardOutput = pipe
                 process.standardError = errorPipe
@@ -198,7 +243,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         }
     }
 
-    private static func buildArguments(
+    nonisolated static func buildArguments(
         scriptURL: URL,
         selectedPort: Int,
         restrictToHosts: Bool,
@@ -207,7 +252,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         var args: [String] = [
             "-p", "\(selectedPort)",
             "-s", scriptURL.path,
-            "--set", "ssl_insecure=true",
+            "--set", "ssl_insecure=false",
             "--set", "connection_strategy=lazy"
         ]
 
@@ -225,40 +270,13 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         return args
     }
 
-    private static func terminateStaleMitmProcesses(logger: ((String) -> Void)?) {
-        let commands: [(path: String, args: [String])] = [
-            ("/usr/bin/pkill", ["-TERM", "-f", "mitmdump"]),
-            ("/usr/bin/pkill", ["-TERM", "-f", "mitmproxy"]),
-            ("/usr/bin/killall", ["mitmdump"])
-        ]
-
-        for command in commands {
-            guard FileManager.default.isExecutableFile(atPath: command.path) else { continue }
-            let killer = Process()
-            killer.executableURL = URL(fileURLWithPath: command.path)
-            killer.arguments = command.args
-            killer.standardOutput = Pipe()
-            killer.standardError = Pipe()
-            do {
-                try killer.run()
-                killer.waitUntilExit()
-                if killer.terminationStatus == 0 {
-                    logger?("[PROXY] terminated stale mitm processes via \(command.path)\n")
-                    break
-                }
-            } catch {
-                continue
-            }
-        }
-    }
-    
     private func bundledMitmdumpExecutableURL() throws -> URL {
         if let cachedMitmdumpURL {
             return cachedMitmdumpURL
         }
         
-        guard let url = Bundle.main.url(forResource: "mitmdump", withExtension: nil) else {
-            throw MitmproxyServiceError.executableNotFound("Resources/mitmdump")
+        guard let url = Bundle.main.resourceURL?.appending(path: "mitmproxy.app/Contents/MacOS/mitmdump") else {
+            throw MitmproxyServiceError.executableNotFound("Resources/mitmproxy.app/Contents/MacOS/mitmdump")
         }
         
         try ensureExecutablePermission(for: url)
@@ -332,7 +350,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         return url
     }
 
-    private static func hostAllowRegex(for host: String) -> String {
+    private nonisolated static func hostAllowRegex(for host: String) -> String {
         // Matches the host itself and any subdomain of it.
         // NB: the leading group must reach mitmproxy as the regex `(^|\.)` —
         // i.e. start-of-string OR a literal dot. In a Swift literal that is
@@ -341,118 +359,113 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         "(^|\\.)" + NSRegularExpression.escapedPattern(for: host) + "$"
     }
     
-    private nonisolated func handleIncomingLine(_ line: String) {
+    private nonisolated func handleIncomingLine(_ line: String, launchID: UUID) {
+        Task { @MainActor [weak self] in
+            guard let self, self.startupID == launchID else { return }
+            self.handleCurrentLine(line)
+        }
+    }
+
+    private func handleCurrentLine(_ line: String) {
         guard let data = line.data(using: .utf8) else { return }
 
-        if let rulesEvent = try? JSONDecoder().decode(RulesSyncEvent.self, from: data) {
-            DispatchQueue.main.async {
-                switch rulesEvent.event {
-                case .acknowledged:
-                    self.onLog?("[RULES] revision \(rulesEvent.revision) applied (\(rulesEvent.count ?? 0) rules)\n")
-                case .failed:
-                    self.onLog?("[RULES] revision \(rulesEvent.revision) rejected: \(rulesEvent.message ?? "unknown error")\n")
-                }
-            }
+        if let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           object["event"] as? String == "proxy_ready",
+           object["startup_id"] as? String == startupID.uuidString {
+            bridgeReady = true
             return
         }
 
-        // WebSocket message events are decoded separately to avoid polluting MitmFlow.
+        if let rulesEvent = try? JSONDecoder().decode(RulesSyncEvent.self, from: data) {
+            if rulesEvent.revision == rulesRevision { rulesAckTask?.cancel(); rulesAckTask = nil }
+            switch rulesEvent.event {
+            case .acknowledged:
+                onLog?("[RULES] revision \(rulesEvent.revision) applied (\(rulesEvent.count ?? 0) rules)\n")
+            case .failed:
+                onLog?("[RULES] revision \(rulesEvent.revision) rejected: \(rulesEvent.message ?? "unknown error")\n")
+            }
+            return
+        }
         if let wsEvent = try? JSONDecoder().decode(WebSocketMessageEvent.self, from: data),
            wsEvent.event == "websocket_message" {
-            DispatchQueue.main.async {
-                self.appendWebSocketMessage(wsEvent)
-            }
+            appendWebSocketMessage(wsEvent)
             return
         }
-
+        if let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           ["capture_warning", "script_error"].contains(object["event"] as? String ?? "") {
+            onLog?("[CAPTURE] \(object["message"] as? String ?? "Unknown error")\n")
+            return
+        }
         if let flow = try? JSONDecoder().decode(MitmFlow.self, from: data) {
-            DispatchQueue.main.async {
-                self.mergeFlow(flow)
-            }
+            mergeFlow(flow)
         } else {
-            DispatchQueue.main.async {
-                self.onLog?(line)
-            }
+            onLog?(line)
         }
     }
 
     @MainActor
     private func appendWebSocketMessage(_ event: WebSocketMessageEvent) {
-        guard var existing = flows[event.id] else { return }
+        var existing = flows[event.id] ?? MitmFlow(id: event.id, event: "websocket_message")
+        if existing.request == nil {
+            existing.livePreviewWarning = "This flow was evicted; its live preview may omit metadata or earlier frames. Use recorded sessions for the captured history."
+        }
         existing.websocketMessages.append(event.websocketMessage)
-        flows[event.id] = existing
         flowEventsSubject.send(existing)
+        _ = LiveFlowMemoryBudget.trimWebSocket(&existing)
+        cache(existing)
+
     }
     
     @MainActor
     private func mergeFlow(_ incoming: MitmFlow) {
-        if var existing = flows[incoming.id] {
-            if incoming.event == "request" {
-                existing.request = incoming.request
-                if let timestamp = incoming.timestamp {
-                    existing.requestTimestamp = timestamp
-                }
-            }
-            if incoming.event == "response" {
-                existing.response = incoming.response
-                if let timestamp = incoming.timestamp {
-                    existing.responseTimestamp = timestamp
-                }
-            }
-            if let breakpoint = incoming.breakpoint {
-                existing.breakpoint = breakpoint
-            } else if existing.breakpoint != nil && incoming.breakpoint == nil {
-                existing.breakpoint = nil
-            }
-            if existing.timestamp == nil {
-                existing.timestamp = incoming.timestamp
-            }
-            flows[incoming.id] = existing
-        } else {
-            var created = incoming
-            if created.requestTimestamp == nil, created.event == "request" {
-                created.requestTimestamp = created.timestamp
-            }
-            if created.responseTimestamp == nil, created.event == "response" {
-                created.responseTimestamp = created.timestamp
-            }
-            flows[incoming.id] = created
+        var updated = flows[incoming.id]?.mergingSessionSnapshot(with: incoming) ?? incoming
+        if updated.requestTimestamp == nil, incoming.event == "request" {
+            updated.requestTimestamp = incoming.timestamp
         }
-
-        if flows.count > maxFlowsStored {
-            trimOldFlows()
+        if updated.responseTimestamp == nil, incoming.event == "response" || incoming.event == "error" {
+            updated.responseTimestamp = incoming.timestamp
         }
-        if let merged = flows[incoming.id] {
-            flowEventsSubject.send(merged)
-        }
+        cache(updated)
+        // Persistence observes every event even when the flow cannot fit in the live cache.
+        flowEventsSubject.send(updated)
     }
 
-    private func trimOldFlows() {
-        // Ordina per attività più recente: il merge aggiorna request/response
-        // timestamp ma non `timestamp` (che resta quello della prima comparsa),
-        // quindi usarlo qui poterebbe flussi con attività recente.
-        func lastActivity(_ flow: MitmFlow) -> TimeInterval {
-            flow.responseTimestamp ?? flow.requestTimestamp ?? flow.timestamp ?? 0
+    private func cache(_ flow: MitmFlow) {
+        let weight = LiveFlowMemoryBudget.cost(flow)
+        retainedPayloadBytes += weight - (flowWeights[flow.id] ?? 0)
+        flowWeights[flow.id] = weight
+        flows[flow.id] = flow
+        if flows.count > maxFlowsStored || retainedPayloadBytes > LiveFlowMemoryBudget.maximumBytes {
+            flows = LiveFlowMemoryBudget.retain(flows, weights: flowWeights, maximumCount: maxFlowsStored)
+            flowWeights = flowWeights.filter { flows[$0.key] != nil }
+            retainedPayloadBytes = flowWeights.values.reduce(0, +)
+            let now = ContinuousClock.now
+            if lastCacheNotice == nil || now > (lastCacheNotice ?? now) + .seconds(5) {
+                lastCacheNotice = now
+                onLog?("[PERF] Live cache limited to 500 flows / 64 MiB payload; use recorded sessions for older flows\n")
+            }
         }
-        let ordered = flows.values.sorted { lastActivity($0) > lastActivity($1) }
-        let trimmed = ordered.prefix(maxFlowsStored)
-        var newDict: [String: MitmFlow] = [:]
-        trimmed.forEach { newDict[$0.id] = $0 }
-        flows = newDict
-        onLog?("[PERF] Flussi limitati a \(maxFlowsStored) per evitare uso eccessivo di memoria/cpu\n")
     }
 
     func clearFlows() {
         flows.removeAll()
+        flowWeights.removeAll()
+        retainedPayloadBytes = 0
+        lastCacheNotice = nil
         onLog?("[PROXY] Flussi puliti\n")
     }
 
     func stopProxy() {
-        guard let proc = process else { return }
-        proc.terminate()
+        rulesAckTask?.cancel()
+        rulesAckTask = nil
+        startupID = UUID()
+        bridgeReady = false
+        isStarting = false
+        if let proc = process, proc.isRunning { proc.terminate() }
         process = nil
         isRunning = false
         onLog?("mitmdump stopped\n")
+        try? commandHandle?.close()
         commandHandle = nil
     }
     
@@ -462,7 +475,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             object: nil,
             queue: nil
         ) { [weak self] _ in
-            self?.stopProxy()
+            Task { @MainActor [weak self] in self?.stopProxy() }
         }
         
         workspaceTerminationObserver = NSWorkspace.shared.notificationCenter.addObserver(
@@ -470,7 +483,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             object: nil,
             queue: nil
         ) { [weak self] _ in
-            self?.stopProxy()
+            Task { @MainActor [weak self] in self?.stopProxy() }
         }
     }
     
@@ -545,6 +558,12 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             "document": documentObject
         ]
         sendCommand(payload, successLog: "[RULES] revision \(rulesRevision) sent\n")
+        rulesAckTask?.cancel()
+        let revision = rulesRevision
+        rulesAckTask = Task { [weak self] in
+            do { try await Task.sleep(for: .seconds(5)) } catch { return }
+            self?.onLog?("[RULES] revision \(revision) was not acknowledged; rules may not be active\n")
+        }
     }
 
     func deleteRule(forKey key: String) {
@@ -588,7 +607,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             do {
                 try handle.write(contentsOf: data)
             } catch {
-                DispatchQueue.main.async {
+                Task { @MainActor [weak self] in
                     self?.onLog?("[PROXY CMD] write failed: \(error.localizedDescription)\n")
                 }
             }

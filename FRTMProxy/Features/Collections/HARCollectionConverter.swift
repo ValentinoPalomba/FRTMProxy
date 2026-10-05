@@ -72,7 +72,13 @@ enum HARCollectionConverter {
             let requestMethod = entry.request.method?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() ?? "GET"
             let requestURL = entry.request.url
             let requestHeaders = dictionary(from: entry.request.headers)
-            let requestBody = entry.request.postData?.text
+            var requestBody = entry.request.postData?.text
+            if entry.request.postData?.encoding == "base64", let encoded = requestBody {
+                guard let bytes = Data(base64Encoded: encoded), let text = String(data: bytes, encoding: .utf8) else {
+                    throw CocoaError(.fileReadInapplicableStringEncoding)
+                }
+                requestBody = text
+            }
 
             guard let url = URL(string: requestURL),
                   let host = url.host else { continue }

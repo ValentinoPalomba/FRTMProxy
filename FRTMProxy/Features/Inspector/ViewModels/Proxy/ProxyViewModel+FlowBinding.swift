@@ -22,23 +22,16 @@ extension ProxyViewModel {
                 self.enqueueBreakpointHits(from: enriched)
                 self.resolveClientAppsIfNeeded(in: enriched)
                 self.processAlerts(in: enriched)
-                for flow in enriched where flow.event == "response" && !self.processedScriptFlowIDs.contains(flow.id) {
-                    self.processedScriptFlowIDs.insert(flow.id)
-                    self.processScripts(for: flow)
-                }
-                // Evita la crescita illimitata del set (resettato solo in clear()):
-                // oltre soglia conserva solo gli id dei flussi ancora presenti.
-                if self.processedScriptFlowIDs.count > 2000 {
-                    self.processedScriptFlowIDs.formIntersection(Set(enriched.map(\.id)))
-                }
+
             }
             .store(in: &cancellables)
 
         service.flowEventsPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] flow in
-                guard let self,
-                      let writer = self.sessionCaptureWriter,
+                guard let self else { return }
+                self.enqueueBreakpointHits(from: [flow])
+                guard let writer = self.sessionCaptureWriter,
                       let sessionID = self.activeCaptureSessionID else { return }
                 writer.enqueue(flow, sessionID: sessionID)
             }
@@ -67,7 +60,11 @@ extension ProxyViewModel {
             .sink { [weak self] running in
                 guard let self else { return }
                 self.isRunning = running
-                self.updateProxySelfHealingState()
+                if !running {
+                    self.breakpointQueue.removeAll()
+                    self.activeBreakpointHit = nil
+                }
+                self.syncMacOSProxyOverride()
                 if running {
                     self.service.applyTrafficProfile(self.activeTrafficProfile)
                 }
@@ -75,9 +72,7 @@ extension ProxyViewModel {
             .store(in: &cancellables)
 
         service.onLog = { [weak self] text in
-            DispatchQueue.main.async {
-                self?.appendLog(text)
-            }
+            Task { @MainActor [weak self] in self?.appendLog(text) }
         }
     }
 

@@ -224,6 +224,7 @@ struct WorkspaceImportPlan {
 struct WorkspaceImportResult: Equatable {
     let appliedResources: [WorkspaceImportResource]
     let skippedResources: [WorkspaceImportResource]
+    var inspectorPreferencesApplied = false
 }
 
 enum WorkspaceImportPlanError: Error, Equatable, LocalizedError {

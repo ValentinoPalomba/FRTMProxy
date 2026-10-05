@@ -50,8 +50,10 @@ enum AutomationRedactor {
 
     private static func redactURL(_ rawURL: String, using policy: RedactionPolicy) -> String {
         guard var components = URLComponents(string: rawURL) else { return policy.replacement }
-        guard let items = components.queryItems else { return rawURL }
-        components.queryItems = items.map { item in
+        components.user = nil
+        components.password = nil
+        let items = components.queryItems ?? []
+        components.queryItems = items.isEmpty ? nil : items.map { item in
             guard policy.matchesSensitiveQueryParameter(item.name), item.value != nil else { return item }
             return URLQueryItem(name: item.name, value: policy.replacement)
         }

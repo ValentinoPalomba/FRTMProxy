@@ -132,7 +132,7 @@ accessible only to the current macOS user.
 ## Contributing
 
 FRTMProxy is public domain and contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) to
-get started (`make bootstrap`, `make build`, `make test`). Maintainer release notes live in
+get started (`make bootstrap`, `make build`, `make test`). Run `make bootstrap` before opening Xcode on a fresh clone: it restores the pinned, verified upstream mitmproxy runtime into the project; no system installation is performed. Maintainer release notes live in
 [docs/RELEASING.md](docs/RELEASING.md).
 
 ## Support

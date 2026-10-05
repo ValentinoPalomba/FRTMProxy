@@ -3,6 +3,7 @@ import Foundation
 import AppKit
 import Network
 
+@MainActor
 final class ProxyViewModel: ObservableObject {
     @Published var flows: [MitmFlow] = []
     @Published var selectedFlowID: String?
@@ -132,6 +133,7 @@ final class ProxyViewModel: ObservableObject {
                 hosts: interceptionHosts
             )
             activePort = selectedPort
+            isRunning = true
             updateMacOSProxyOverridePort()
             reapplyStoredRules()
         } catch {
@@ -143,6 +145,8 @@ final class ProxyViewModel: ObservableObject {
     @MainActor
     func stopProxy() {
         service.stopProxy()
+        isRunning = false
+        syncMacOSProxyOverride()
         closeActiveCaptureSession()
     }
 
@@ -235,6 +239,7 @@ final class ProxyViewModel: ObservableObject {
         private let updatesSubject = PassthroughSubject<Update, Never>()
         private var consumerTask: Task<Void, Never>?
         private var pendingErrorsBySession: [UUID: any Error] = [:]
+        private var failedFlowIDsBySession: [UUID: Set<String>] = [:]
 
         var updatesPublisher: AnyPublisher<Update, Never> {
             updatesSubject.eraseToAnyPublisher()
@@ -300,27 +305,29 @@ final class ProxyViewModel: ObservableObject {
                 case let .flows(pending):
                     for sessionID in pending.sessionIDs {
                         let flows = pending.flows(for: sessionID)
-                        do {
-                            let summary = try await store.upsert(flows: flows, in: sessionID)
-                            pendingErrorsBySession[sessionID] = nil
-                            updatesSubject.send(Update(
-                                sessionID: sessionID,
-                                insertedFlowCount: summary.insertedFlowCount,
-                                updatedAt: summary.latestFlowDate
-                                    ?? flows.compactMap(Self.sortTimestamp).max()
-                                    ?? .now,
-                                errorDescription: nil
-                            ))
-                        } catch {
-                            pendingErrorsBySession[sessionID] = error
-                            requeue(flows: flows, sessionID: sessionID)
-                            updatesSubject.send(Update(
-                                sessionID: sessionID,
-                                insertedFlowCount: 0,
-                                updatedAt: .now,
-                                errorDescription: error.localizedDescription
-                            ))
+                        for batch in Self.batches(flows) {
+                            do {
+                                let summary = try await store.upsert(flows: batch, in: sessionID)
+                                failedFlowIDsBySession[sessionID]?.subtract(batch.map(\.id))
+                                if failedFlowIDsBySession[sessionID]?.isEmpty != false {
+                                    failedFlowIDsBySession[sessionID] = nil
+                                    pendingErrorsBySession[sessionID] = nil
+                                }
+                                updatesSubject.send(Update(
+                                    sessionID: sessionID,
+                                    insertedFlowCount: summary.insertedFlowCount,
+                                    updatedAt: summary.latestFlowDate ?? batch.compactMap(Self.sortTimestamp).max() ?? .now,
+                                    errorDescription: nil
+                                ))
+                            } catch {
+                                pendingErrorsBySession[sessionID] = error
+                                failedFlowIDsBySession[sessionID, default: []].formUnion(batch.map(\.id))
+                                requeue(flows: batch, sessionID: sessionID)
+                                updatesSubject.send(Update(sessionID: sessionID, insertedFlowCount: 0,
+                                    updatedAt: .now, errorDescription: error.localizedDescription))
+                            }
                         }
+
                     }
                     index += 1
 
@@ -333,6 +340,23 @@ final class ProxyViewModel: ObservableObject {
                     index += 1
                 }
             }
+        }
+
+        static func batches(_ flows: [MitmFlow]) -> [[MitmFlow]] {
+            var result: [[MitmFlow]] = [], batch: [MitmFlow] = []
+            var bytes = 0
+            for flow in flows {
+                let cost = LiveFlowMemoryBudget.cost(flow)
+                if !batch.isEmpty, batch.count >= 128 || bytes + cost > 16 * 1024 * 1024 {
+                    result.append(batch)
+                    batch = []
+                    bytes = 0
+                }
+                batch.append(flow)
+                bytes += cost
+            }
+            if !batch.isEmpty { result.append(batch) }
+            return result
         }
 
         private func requeue(flows: [MitmFlow], sessionID: UUID) {

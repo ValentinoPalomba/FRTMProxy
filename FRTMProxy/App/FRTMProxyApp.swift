@@ -13,13 +13,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     weak var proxyViewModel: ProxyViewModel?
     var mcpServer: LocalMCPServer?
 
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        Task { @MainActor in
+            proxyViewModel?.stopProxy()
+            await proxyViewModel?.captureSessionCloseTask?.value
+            do {
+                try await MacOSProxyOverrideManager.shared.disableProxy()
+                sender.reply(toApplicationShouldTerminate: true)
+            } catch {
+                let alert = NSAlert()
+                alert.messageText = "Unable to restore proxy settings"
+                alert.informativeText = error.localizedDescription
+                alert.runModal()
+                sender.reply(toApplicationShouldTerminate: false)
+            }
+        }
+        return .terminateLater
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         proxyViewModel?.stopProxy()
         mcpServer?.stop()
     }
 }
 
-@main
 struct FRTMProxyApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var proxyViewModel = ProxyViewModel()
@@ -253,6 +270,7 @@ struct FRTMProxyApp: App {
     private func startMCPServerIfNeeded() {
         guard appDelegate.mcpServer == nil else { return }
         let router = MCPAutomationRouter(
+            sessionStore: proxyViewModel.sessionStore,
             flowProvider: { proxyViewModel.flows },
             ruleUpdater: { try proxyViewModel.saveUnifiedTrafficRulesNow($0) }
         )

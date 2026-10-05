@@ -1,17 +1,17 @@
 import SwiftUI
 
 struct UnifiedTrafficRuleMatcherEditor: View {
-    let draft: UnifiedTrafficRuleDraft
+    @Bindable var draft: UnifiedTrafficRuleDraft
+    let colors: DesignSystem.ColorPalette
+    @FocusState private var focusedHeader: UUID?
 
     var body: some View {
-        @Bindable var draft = draft
-
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
             Label("Request matcher", systemImage: "scope")
-                .font(.headline)
+                .font(DesignSystem.Fonts.title)
             Text("Unset fields match any value. Query and body values use canonical request formatting.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(DesignSystem.Fonts.caption)
+                .foregroundStyle(colors.textSecondary)
 
             Grid(alignment: .leading, horizontalSpacing: DesignSystem.Spacing.lg) {
                 GridRow {
@@ -30,22 +30,23 @@ struct UnifiedTrafficRuleMatcherEditor: View {
 
             HStack {
                 Text("Header matchers")
-                    .font(.headline)
+                    .font(DesignSystem.Fonts.title)
                 Spacer()
-                Button("Add Header", systemImage: "plus") {
+                ControlButton(title: "Add Header", systemImage: "plus", style: .ghost(colors)) {
                     draft.addHeaderMatcher()
+                    focusedHeader = draft.headerMatchers.last?.id
                 }
                 .accessibilityHint("Adds a request header matcher")
             }
 
             if draft.headerMatchers.isEmpty {
                 Text("No header constraints")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(DesignSystem.Fonts.caption)
+                    .foregroundStyle(colors.textSecondary)
             } else {
                 VStack(spacing: DesignSystem.Spacing.sm) {
                     ForEach(draft.headerMatchers) { header in
-                        UnifiedTrafficRuleHeaderMatcherRow(draft: draft, headerID: header.id)
+                        UnifiedTrafficRuleHeaderMatcherRow(draft: draft, headerID: header.id, colors: colors, focusedHeader: $focusedHeader)
                     }
                 }
             }
@@ -54,28 +55,40 @@ struct UnifiedTrafficRuleMatcherEditor: View {
 }
 
 private struct UnifiedTrafficRuleHeaderMatcherRow: View {
-    let draft: UnifiedTrafficRuleDraft
+    @Bindable var draft: UnifiedTrafficRuleDraft
     let headerID: UUID
+    let colors: DesignSystem.ColorPalette
+    var focusedHeader: FocusState<UUID?>.Binding
 
     var body: some View {
-        HStack(spacing: DesignSystem.Spacing.sm) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
             TextField("Header name", text: headerName)
-                .frame(minWidth: 140)
+                .focused(focusedHeader, equals: headerID)
+                .frame(minWidth: DesignSystem.Metrics.scaled(140))
             TextField("Value pattern", text: headerValue)
+            }
+            HStack(spacing: DesignSystem.Spacing.sm) {
             Picker("Mode", selection: headerMode) {
                 ForEach(TrafficRuleTextPattern.Mode.allCases, id: \.self) { mode in
                     Text(mode.rawValue).tag(mode)
                 }
             }
             .labelsHidden()
-            .frame(width: 145)
+            .frame(width: DesignSystem.Metrics.scaled(145))
             Toggle("Case sensitive", isOn: headerCaseSensitivity)
-            Button("Remove Header", systemImage: "trash", role: .destructive) {
+            Spacer()
+            ControlButton(title: "Remove Header", systemImage: "trash", style: .ghost(colors)) {
                 draft.removeHeaderMatcher(id: headerID)
             }
-            .labelStyle(.iconOnly)
             .accessibilityHint("Removes this header matcher")
         }
+            }
+        .textFieldStyle(ProxyTextFieldStyle(palette: colors, size: .compact))
+        .font(DesignSystem.Fonts.body)
+        .foregroundStyle(colors.textPrimary)
+        .padding(DesignSystem.Spacing.md)
+        .surfaceCard(palette: colors, shadowOpacity: 0)
         .accessibilityElement(children: .contain)
     }
 

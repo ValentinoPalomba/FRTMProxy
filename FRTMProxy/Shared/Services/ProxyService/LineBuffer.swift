@@ -12,28 +12,48 @@ final class LineBuffer {
     private var buffer = Data()
     private let lock = NSLock()
     private let onLine: (String) -> Void
+    private let maximumLineBytes: Int
+    private let onOverflow: () -> Void
+    private var discarding = false
 
     private static let newline: UInt8 = 0x0A
 
-    init(onLine: @escaping (String) -> Void) {
+    init(maximumLineBytes: Int = 16 * 1024 * 1024, onOverflow: @escaping () -> Void = {}, onLine: @escaping (String) -> Void) {
+        self.maximumLineBytes = max(1, maximumLineBytes)
+        self.onOverflow = onOverflow
         self.onLine = onLine
     }
 
     /// Aggiunge un chunk e consegna ogni riga UTF-8 non vuota completata.
     func append(_ chunk: Data) {
         var completedLines: [String] = []
+        var overflowCount = 0
 
         lock.lock()
-        buffer.append(chunk)
-        while let range = buffer.firstRange(of: Data([Self.newline])) {
-            let lineData = buffer.subdata(in: buffer.startIndex..<range.lowerBound)
-            buffer.removeSubrange(buffer.startIndex...range.lowerBound)
-            if let text = String(data: lineData, encoding: .utf8), !text.isEmpty {
+        var start = chunk.startIndex
+        while start < chunk.endIndex {
+            let newline = chunk[start...].firstIndex(of: Self.newline)
+            let end = newline ?? chunk.endIndex
+            if !discarding {
+                if buffer.count + end - start > maximumLineBytes {
+                    buffer.removeAll(keepingCapacity: false)
+                    discarding = true
+                    overflowCount += 1
+                } else {
+                    buffer.append(contentsOf: chunk[start..<end])
+                }
+            }
+            guard let newline else { break }
+            if !discarding, let text = String(data: buffer, encoding: .utf8), !text.isEmpty {
                 completedLines.append(text)
             }
+            buffer.removeAll(keepingCapacity: true)
+            discarding = false
+            start = newline + 1
         }
         lock.unlock()
 
+        for _ in 0..<overflowCount { onOverflow() }
         // onLine fuori dal lock: evita reentrancy e riduce la contesa.
         for line in completedLines {
             onLine(line)

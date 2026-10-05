@@ -27,6 +27,7 @@ protocol SessionStoreProtocol: Actor {
     func session(id: UUID) throws -> CaptureSession?
     func closeSession(id: UUID, at date: Date) throws
     func deleteSession(id: UUID) throws
+    func cleanupDeletedBodies() throws
 
     @discardableResult
     func upsert(flow: sending MitmFlow, in sessionID: UUID) throws -> SessionFlowUpsertSummary
@@ -50,6 +51,8 @@ protocol SessionStoreProtocol: Actor {
 }
 
 extension SessionStoreProtocol {
+    func cleanupDeletedBodies() throws {}
+
     func createSession(name: String) throws -> CaptureSession {
         try createSession(name: name, at: .now)
     }

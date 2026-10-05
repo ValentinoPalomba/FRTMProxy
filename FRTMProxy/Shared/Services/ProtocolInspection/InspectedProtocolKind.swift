@@ -9,6 +9,10 @@ enum InspectedProtocolKind: String, Codable, CaseIterable, Sendable {
     case formURLEncoded
     case multipart
     case serverSentEvents
+    case ndjson
+    case aiAPI
+    case jsonRPC
+    case paymentFlow
     case xml
     case html
     case text
@@ -24,6 +28,10 @@ enum InspectedProtocolKind: String, Codable, CaseIterable, Sendable {
         case .formURLEncoded: "Form"
         case .multipart: "Multipart"
         case .serverSentEvents: "SSE"
+        case .ndjson: "NDJSON"
+        case .aiAPI: "AI API"
+        case .jsonRPC: "JSON-RPC"
+        case .paymentFlow: "Payment flow"
         case .xml: "XML"
         case .html: "HTML"
         case .text: "Text"

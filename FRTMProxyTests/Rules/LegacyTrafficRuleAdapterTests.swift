@@ -21,6 +21,7 @@ struct LegacyTrafficRuleAdapterTests {
     }
 
     @Test("Legacy mutations replace stale migrated content without changing unified order")
+    @MainActor
     func effectiveDocumentSync() throws {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "EffectiveRuleSync-\(UUID().uuidString)", directoryHint: .isDirectory)

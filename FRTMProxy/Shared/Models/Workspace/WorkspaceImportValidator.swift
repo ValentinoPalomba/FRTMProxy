@@ -36,6 +36,7 @@ enum WorkspaceImportValidator {
             throw WorkspaceValidationError.tooManyReferences(limit: limits.maximumReferences)
         }
 
+        try manifest.inspectorPreferences?.validate()
         var seenPaths: Set<String> = []
         try validate(manifest.resources.rules, kind: .rule, limits: limits, seenPaths: &seenPaths)
         try validate(manifest.resources.scripts, kind: .script, limits: limits, seenPaths: &seenPaths)

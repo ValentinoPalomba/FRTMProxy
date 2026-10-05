@@ -151,6 +151,7 @@ struct WorkspaceImportValidationTests {
     }
 
     @Test("Applying a prepared workspace replaces effective rules once")
+    @MainActor
     func appliesWithOneEffectiveRuleSync() throws {
         let reference = WorkspaceResourceReference(
             identifier: "rules",
@@ -185,12 +186,52 @@ struct WorkspaceImportValidationTests {
         )
         let syncCountBeforeImport = service.replacedDocuments.count
 
-        let result = try viewModel.applyWorkspaceBundle(plan)
+        let suiteName = "workspace-preferences-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let column = FlowHeaderColumn(phase: .response, name: "X-Request-ID")
+        let preferences = WorkspaceInspectorPreferences(
+            focusSets: [.init(name: "API errors", filter: FlowFilter(searchText: "host:example.com", showErrorsOnly: true))],
+            noiseControl: .init(query: "host:telemetry.example", enabled: true),
+            headerColumns: [column], headerSortID: column.id, sortAscending: false)
+        var manifest = plan.bundle.manifest
+        manifest.inspectorPreferences = preferences
+        let enhanced = try WorkspaceImportPlan.prepare(.init(manifest: manifest, resources: plan.bundle.resources))
+        let result = try viewModel.applyWorkspaceBundle(enhanced, defaults: defaults)
+        #expect(result.inspectorPreferencesApplied)
+        #expect(try WorkspaceInspectorPreferences.read(from: defaults) == preferences)
+        #expect(viewModel.currentWorkspaceBundle(defaults: defaults)?.manifest.inspectorPreferences == preferences)
 
         #expect(service.replacedDocuments.count == syncCountBeforeImport + 1)
         #expect(result.appliedResources.count == 1)
         #expect(result.skippedResources.isEmpty)
+        let legacyResult = try viewModel.applyWorkspaceBundle(plan, defaults: defaults)
+        #expect(!legacyResult.inspectorPreferencesApplied)
+        #expect(try WorkspaceInspectorPreferences.read(from: defaults) == preferences)
     }
+    @Test @MainActor func partialLiveSnapshotsDoNotDiscardOtherPausedFlows() {
+        let model = ProxyViewModel(
+            service: WorkspaceProxyServiceSpy(), ruleStore: WorkspaceMapRuleStoreStub(),
+            collectionStore: MapCollectionStore(filename: "workspace-\(UUID().uuidString).json"),
+            breakpointStore: WorkspaceBreakpointStoreStub(), scriptStore: ScriptStore(filename: "workspace-\(UUID().uuidString).json"),
+            sessionStore: WorkspaceSessionStoreStub(), trafficRuleStore: WorkspaceTrafficRuleStoreStub())
+        var first = MitmFlow(id: "first", event: "request")
+        first.breakpoint = .init(phase: .request, state: .waiting, key: "first")
+        var second = MitmFlow(id: "second", event: "request")
+        second.breakpoint = .init(phase: .request, state: .waiting, key: "second")
+        model.enqueueBreakpointHits(from: [first])
+        model.enqueueBreakpointHits(from: [MitmFlow(id: "unrelated", event: "response")])
+        #expect(model.breakpointQueue.map(\.flowID) == ["first"])
+        model.enqueueBreakpointHits(from: [second])
+        #expect(model.breakpointQueue.map(\.flowID) == ["first", "second"])
+        first.breakpoint = .init(phase: .request, state: .released, key: "first")
+        model.enqueueBreakpointHits(from: [first])
+        #expect(model.breakpointQueue.map(\.flowID) == ["second"])
+        #expect(model.activeBreakpointHit?.flowID == "second")
+        model.enqueueBreakpointHits(from: [])
+        #expect(model.breakpointQueue.map(\.flowID) == ["second"])
+    }
+
 }
 
 private final class WorkspaceProxyServiceSpy: ProxyServiceProtocol {

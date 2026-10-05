@@ -28,6 +28,79 @@ final class SessionStoreTests: XCTestCase {
         )
     }
 
+    func testBodyRetentionPreservesSharedReferencesAndRecoversCleanupQueue() async throws {
+        let databaseURL = try temporaryDatabaseURL()
+        let bodyDirectory = databaseURL.deletingLastPathComponent().appending(path: "Bodies")
+        try FileManager.default.createDirectory(at: bodyDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: databaseURL.deletingLastPathComponent()) }
+        let store = try SQLiteSessionStore(databaseURL: databaseURL,
+            keyProvider: FixedKeyProvider(data: Data(repeating: 0x2A, count: 32)), bodyDirectory: bodyDirectory)
+        let reference = String(repeating: "a", count: 32) + ".gcm"
+        let bodyURL = bodyDirectory.appending(path: reference)
+        try Data("encrypted fixture".utf8).write(to: bodyURL)
+        let first = try await store.createSession(name: "first")
+        let second = try await store.createSession(name: "second")
+        var captured = flow(id: "shared", timestamp: 10)
+        captured.request?.originalBodyReference = reference
+        try await store.upsert(flow: captured, in: first.id)
+        try await store.upsert(flow: captured, in: second.id)
+        // Recreate a v1 database with encrypted legacy references, then migrate it.
+        try executeSQL("DROP TABLE body_references; DROP TABLE body_cleanup; DROP TABLE body_reference_state; PRAGMA user_version = 1", at: databaseURL)
+        let migrated = try SQLiteSessionStore(databaseURL: databaseURL,
+            keyProvider: FixedKeyProvider(data: Data(repeating: 0x2A, count: 32)), bodyDirectory: bodyDirectory)
+        try await migrated.deleteSession(id: first.id)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: bodyURL.path))
+        try await migrated.deleteSession(id: second.id)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: bodyURL.path))
+        // Simulate a committed deletion interrupted before its queued file was removed.
+        try Data("orphan".utf8).write(to: bodyURL)
+        try executeSQL("INSERT INTO body_cleanup(reference) VALUES('\(reference)')", at: databaseURL)
+        let reopened = try SQLiteSessionStore(databaseURL: databaseURL,
+            keyProvider: FixedKeyProvider(data: Data(repeating: 0x2A, count: 32)), bodyDirectory: bodyDirectory)
+        try await reopened.cleanupDeletedBodies()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: bodyURL.path))
+    }
+
+    private func executeSQL(_ sql: String, at url: URL) throws {
+        var database: OpaquePointer?
+        guard sqlite3_open(url.path, &database) == SQLITE_OK, let database else {
+            throw CocoaError(.fileReadUnknown)
+        }
+        defer { sqlite3_close(database) }
+        guard sqlite3_exec(database, sql, nil, nil, nil) == SQLITE_OK else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+    }
+
+    func testEntireSessionHARIsPagedAndFailurePreservesDestination() async throws {
+        let url = try temporaryDatabaseURL()
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let store = try makeStore(at: url)
+        let session = try await store.createSession(name: "Export")
+        for index in 0..<205 {
+            try await store.upsert(flow: flow(id: "flow-\(index)", timestamp: Double(index)), in: session.id)
+        }
+        try await store.closeSession(id: session.id)
+        let storedSession = try await store.session(id: session.id)
+        let closed = try XCTUnwrap(storedSession)
+        let destination = url.deletingLastPathComponent().appending(path: "session.har")
+        try await SessionHARExporter.writeSession(closed, to: destination, redacted: true) { id, cursor, limit in
+            try await store.page(in: id, after: cursor, limit: limit)
+        }
+        let exported = try Data(contentsOf: destination)
+        let har = try HARCollectionConverter.harDecoder.decode(HARFile.self, from: exported)
+        XCTAssertEqual(har.log.entries.count, 205)
+        XCTAssertFalse(String(decoding: exported, as: UTF8.self).contains("sensitive-token"))
+        var wrongCount = closed
+        wrongCount.flowCount += 1
+        do {
+            try await SessionHARExporter.writeSession(wrongCount, to: destination, redacted: true) { id, cursor, limit in
+                try await store.page(in: id, after: cursor, limit: limit)
+            }
+            XCTFail("An inconsistent export must fail")
+        } catch { XCTAssertEqual(try Data(contentsOf: destination), exported) }
+    }
+
     private func flow(
         id: String,
         event: String = "request",
@@ -179,6 +252,32 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertEqual(snapshot.batchSizes, [2, 2])
         XCTAssertEqual(snapshot.flows.count, 2)
         XCTAssertEqual(snapshot.flows["repeated"]?.response?.body, "response-100")
+    }
+
+    func testCaptureWriterBatchesAndDoesNotHideEarlierFailure() async throws {
+        let store = FailingSessionStore()
+        let writer = ProxyViewModel.SessionCaptureWriter(store: store)
+        let sessionID = UUID()
+        for index in 0..<129 { writer.enqueue(flow(id: "split-\(index)", timestamp: Double(index)), sessionID: sessionID) }
+        do {
+            try await writer.flush(sessionID: sessionID)
+            XCTFail("The successful final batch must not hide the failed first batch")
+        } catch { }
+        try await writer.flush(sessionID: sessionID)
+        let snapshot = await store.snapshot()
+        XCTAssertEqual(snapshot.batchSizes, [128, 1, 128])
+        XCTAssertEqual(snapshot.flows.count, 129)
+    }
+
+    func testCaptureWriterByteBatchesPreserveOrderAndOversizedRecord() {
+        let small = (0..<300).map { flow(id: "batch-\($0)", timestamp: Double($0)) }
+        let batches = ProxyViewModel.SessionCaptureWriter.batches(small)
+        XCTAssertEqual(batches.map(\.count), [128, 128, 44])
+        XCTAssertEqual(batches.flatMap { $0 }.map(\.id), small.map(\.id))
+        let bodies = (0..<3).map { flow(id: "body-\($0)", timestamp: Double($0), responseBody: String(repeating: "x", count: 8 * 1024 * 1024)) }
+        XCTAssertEqual(ProxyViewModel.SessionCaptureWriter.batches(bodies).map(\.count), [1, 1, 1])
+        let oversized = flow(id: "oversized", timestamp: 0, responseBody: String(repeating: "x", count: 17 * 1024 * 1024))
+        XCTAssertEqual(ProxyViewModel.SessionCaptureWriter.batches([oversized]).first?.first?.id, "oversized")
     }
 
     func testBatchUpsertPreservesInputOrderingForRepeatedFlow() async throws {

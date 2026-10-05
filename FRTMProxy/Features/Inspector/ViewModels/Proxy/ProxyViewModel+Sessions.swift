@@ -5,6 +5,7 @@ extension ProxyViewModel {
         guard let sessionStore, captureSessionLoadTask == nil else { return }
         captureSessionLoadTask = Task { [weak self] in
             do {
+                try await sessionStore.cleanupDeletedBodies()
                 let stored = try await sessionStore.sessions()
                 await MainActor.run {
                     guard let self else { return }

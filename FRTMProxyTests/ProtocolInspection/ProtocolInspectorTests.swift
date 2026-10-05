@@ -4,6 +4,13 @@ import Testing
 
 @Suite("ProtocolInspector")
 struct ProtocolInspectorTests {
+    @Test func modernProtocolFixturesAndFalsePositiveBoundary() {
+        #expect(ProtocolInspector.inspect(body: "{\"index\":1}\n{\"index\":2}\n", headers: ["Content-Type": "application/x-ndjson"])?.kind == .ndjson)
+        #expect(ProtocolInspector.inspect(body: #"[{"jsonrpc":"2.0","id":1,"method":"eth_chainId"},{"jsonrpc":"2.0","id":2,"method":"eth_call"}]"#, headers: [:])?.kind == .jsonRPC)
+        #expect(ProtocolInspector.inspect(body: #"{"model":"test-model","messages":[{"role":"user","content":"Hello"}]}"#, headers: [:])?.kind == .aiAPI)
+        #expect(ProtocolInspector.inspect(body: #"{"model":"car"}"#, headers: [:])?.kind == .json)
+        #expect(ProtocolInspector.inspect(body: nil, headers: ["Payment-Required": "opaque-proof"])?.kind == .paymentFlow)
+    }
     @Test("GraphQL espone operationName e variables")
     func graphQL() {
         let result = ProtocolInspector.inspect(

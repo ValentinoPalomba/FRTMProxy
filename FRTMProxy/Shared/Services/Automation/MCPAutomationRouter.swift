@@ -1,4 +1,5 @@
 import Foundation
+import CoreFoundation
 
 final class MCPAutomationRouter: @unchecked Sendable {
     typealias FlowProvider = @MainActor @Sendable () -> [MitmFlow]
@@ -8,15 +9,18 @@ final class MCPAutomationRouter: @unchecked Sendable {
     private let ruleUpdater: RuleUpdater
     private let redactionPolicy: RedactionPolicy
     private let limits: AutomationLimits
+    private let sessionStore: (any SessionStoreProtocol)?
 
     init(
         redactionPolicy: RedactionPolicy = .defaults,
         limits: AutomationLimits = .defaults,
+        sessionStore: (any SessionStoreProtocol)? = nil,
         flowProvider: @escaping FlowProvider,
         ruleUpdater: @escaping RuleUpdater
     ) {
         self.redactionPolicy = redactionPolicy
         self.limits = limits
+        self.sessionStore = sessionStore
         self.flowProvider = flowProvider
         self.ruleUpdater = ruleUpdater
     }
@@ -65,12 +69,90 @@ final class MCPAutomationRouter: @unchecked Sendable {
                 let limit = max(1, min(requestedLimit, limits.maximumBatchItems))
                 let flows = await flowProvider()
                 result = Array(flows.prefix(limit)).map(flowObject)
+            case "query_flows":
+                let query = arguments["query"] as? String ?? ""
+                guard query.utf8.count <= 4096 else { throw RouterFailure.invalidArguments("Query exceeds 4096 bytes") }
+                let offset = max(0, arguments["offset"] as? Int ?? 0)
+                let limit = max(1, min(arguments["limit"] as? Int ?? 100, limits.maximumBatchItems))
+                let flows = await flowProvider()
+                let matching = try FlowFilter(searchText: query).applyCancellable(to: flows, using: FlowFilter.Cache())
+                result = ["flows": Array(matching.dropFirst(offset).prefix(limit)).map(flowObject),
+                          "total": matching.count, "nextOffset": offset + limit < matching.count ? offset + limit : NSNull()]
+            case "analyze_flows":
+                guard let ids = arguments["ids"] as? [String], !ids.isEmpty, ids.count <= 20 else {
+                    throw RouterFailure.invalidArguments("Provide between 1 and 20 flow ids")
+                }
+                let flows = await flowProvider()
+                result = try ids.map { id -> [String: Any] in
+                    guard let flow = flows.first(where: { $0.id == id }) else {
+                        throw RouterFailure.invalidArguments("Unknown flow id")
+                    }
+                    let status = flow.response?.status
+                    let finding: String
+                    if flow.captureError != nil { finding = "Transport error recorded" }
+                    else if let status, status >= 500 { finding = "Server error: HTTP \(status)" }
+                    else if let status, status >= 400 { finding = "Request failed: HTTP \(status)" }
+                    else if ["response_headers", "response_stream"].contains(flow.event) { finding = "Response stream is active" }
+                    else { finding = "No HTTP error recorded; inspect the redacted evidence" }
+                    return ["sourceFlowID": id, "finding": finding, "evidence": flowObject(flow)]
+                }
             case "get_flow":
                 guard let flowID = arguments["id"] as? String,
                       let flow = await flowProvider().first(where: { $0.id == flowID }) else {
                     throw RouterFailure.invalidArguments("Unknown flow id")
                 }
                 result = flowObject(flow)
+            case "list_sessions":
+                guard let sessionStore else { throw RouterFailure.invalidArguments("Session history is unavailable") }
+                let offset = try integerArgument("offset", default: 0, arguments: arguments)
+                let limit = try integerArgument("limit", default: 100, arguments: arguments)
+                guard offset >= 0, (1...limits.maximumBatchItems).contains(limit) else {
+                    throw RouterFailure.invalidArguments("Invalid offset or limit")
+                }
+                let sessions = try await sessionStore.sessions()
+                let page = sessions.dropFirst(offset).prefix(limit)
+                result = ["sessions": page.map { session in
+                    ["id": session.id.uuidString, "name": session.name,
+                     "createdAt": session.createdAt.timeIntervalSince1970,
+                     "updatedAt": session.updatedAt.timeIntervalSince1970,
+                     "isActive": session.isActive, "flowCount": session.flowCount] as [String: Any]
+                }, "nextOffset": page.count < sessions.count - min(offset, sessions.count) ? (offset + page.count) as Any : NSNull()]
+            case "query_session_flows":
+                guard let sessionStore else { throw RouterFailure.invalidArguments("Session history is unavailable") }
+                let sessionID = try sessionID(arguments)
+                guard (arguments["query"] == nil || arguments["query"] is String),
+                      (arguments["cursor"] == nil || arguments["cursor"] is String) else {
+                    throw RouterFailure.invalidArguments("Query and cursor must be strings")
+                }
+                let query = arguments["query"] as? String ?? ""
+                let limit = try integerArgument("limit", default: 200, arguments: arguments)
+                guard query.utf8.count <= 4096, (1...min(1000, limits.maximumBatchItems)).contains(limit) else {
+                    throw RouterFailure.invalidArguments("Invalid query or page limit")
+                }
+                let cursor: CaptureSessionPageCursor?
+                if let encoded = arguments["cursor"] as? String {
+                    guard encoded.utf8.count <= 2048, let data = Data(base64Encoded: encoded),
+                          let decoded = try? JSONDecoder().decode(CaptureSessionPageCursor.self, from: data),
+                          decoded.timestamp.isFinite, !decoded.flowID.isEmpty else {
+                        throw RouterFailure.invalidArguments("Invalid session cursor")
+                    }
+                    cursor = decoded
+                } else { cursor = nil }
+                try Task.checkCancellation()
+                let page = try await sessionStore.page(in: sessionID, after: cursor, limit: limit)
+                let matching = try FlowFilter(searchText: query).applyCancellable(to: page.flows.map(\.flow), using: FlowFilter.Cache())
+                let next: Any = try page.nextCursor.map { try JSONEncoder().encode($0).base64EncodedString() } ?? NSNull()
+                result = ["flows": matching.map(flowObject), "nextCursor": next,
+                          "scannedReadableFlows": page.flows.count, "corruptFlowCount": page.corruptFlowIDs.count,
+                          "sessionID": sessionID.uuidString]
+            case "get_session_flow":
+                guard let sessionStore, let id = arguments["id"] as? String, !id.isEmpty else {
+                    throw RouterFailure.invalidArguments("Session history and flow id are required")
+                }
+                guard let stored = try await sessionStore.flow(id: id, in: sessionID(arguments)) else {
+                    throw RouterFailure.invalidArguments("Unknown session flow id")
+                }
+                result = flowObject(stored.flow)
             case "replace_rules":
                 guard let documentObject = arguments["document"] else {
                     throw RouterFailure.invalidArguments("Missing document")
@@ -101,6 +183,22 @@ final class MCPAutomationRouter: @unchecked Sendable {
         }
     }
 
+    private func integerArgument(_ name: String, default defaultValue: Int, arguments: [String: Any]) throws -> Int {
+        guard let value = arguments[name] else { return defaultValue }
+        guard let number = value as? NSNumber, CFGetTypeID(number) != CFBooleanGetTypeID(),
+              let integer = value as? Int, number.doubleValue == Double(integer) else {
+            throw RouterFailure.invalidArguments("\(name) must be an integer")
+        }
+        return integer
+    }
+
+    private func sessionID(_ arguments: [String: Any]) throws -> UUID {
+        guard let raw = arguments["sessionID"] as? String, let id = UUID(uuidString: raw) else {
+            throw RouterFailure.invalidArguments("A valid sessionID is required")
+        }
+        return id
+    }
+
     private func flowObject(_ flow: MitmFlow) -> [String: Any] {
         var result: [String: Any] = [
             "id": flow.id,
@@ -109,6 +207,13 @@ final class MCPAutomationRouter: @unchecked Sendable {
             "path": flow.path
         ]
         if let timestamp = flow.timestamp { result["timestamp"] = timestamp }
+        if let duration = flow.duration { result["durationSeconds"] = duration }
+        if let response = flow.response {
+            result["responsePreviewTruncated"] = response.bodyTruncated ?? false
+            if let inspection = ProtocolInspector.inspect(body: response.body, headers: response.headers ?? [:]) {
+                result["responseProtocol"] = inspection.kind.displayName
+            }
+        }
         if let request = flow.request {
             let redacted = try? AutomationRedactor.redact(
                 .init(url: request.url, headers: request.headers, body: request.body),
@@ -143,11 +248,23 @@ final class MCPAutomationRouter: @unchecked Sendable {
     }
 
     private var tools: [[String: Any]] {
-        [
+        var result: [[String: Any]] = [
             [
                 "name": "list_flows",
                 "description": "List recent FRTMProxy flows with sensitive data redacted.",
                 "inputSchema": ["type": "object", "properties": ["limit": ["type": "integer", "minimum": 1, "maximum": limits.maximumBatchItems]]]
+            ],
+            [
+                "name": "query_flows",
+                "description": "Search the bounded live capture with FRTMProxy filters; results are redacted and paginated.",
+                "inputSchema": ["type": "object", "properties": ["query": ["type": "string"], "offset": ["type": "integer", "minimum": 0], "limit": ["type": "integer", "minimum": 1, "maximum": limits.maximumBatchItems]]],
+                "annotations": ["readOnlyHint": true]
+            ],
+            [
+                "name": "analyze_flows",
+                "description": "Local deterministic diagnosis of selected flows, with redacted source evidence; performs no actions.",
+                "inputSchema": ["type": "object", "properties": ["ids": ["type": "array", "items": ["type": "string"], "minItems": 1, "maxItems": 20]], "required": ["ids"]],
+                "annotations": ["readOnlyHint": true]
             ],
             [
                 "name": "get_flow",
@@ -160,6 +277,20 @@ final class MCPAutomationRouter: @unchecked Sendable {
                 "inputSchema": ["type": "object", "properties": ["document": ["type": "object"]], "required": ["document"]]
             ]
         ]
+        if sessionStore != nil {
+            result += [
+                ["name": "list_sessions", "description": "List captured sessions with paginated metadata; returns no flow bodies or notes.",
+                 "inputSchema": ["type": "object", "properties": ["offset": ["type": "integer", "minimum": 0], "limit": ["type": "integer", "minimum": 1, "maximum": limits.maximumBatchItems]]],
+                 "annotations": ["readOnlyHint": true]],
+                ["name": "query_session_flows", "description": "Search one page of encrypted session history using FRTMProxy filters. Limit bounds examined stored rows. Results are redacted. Continue with nextCursor even if the current page has no matches; null means the scan is finished. Corrupt rows are counted, never silently treated as matching data.",
+                 "inputSchema": ["type": "object", "properties": ["sessionID": ["type": "string"], "query": ["type": "string"], "cursor": ["type": "string"], "limit": ["type": "integer", "minimum": 1, "maximum": min(1000, limits.maximumBatchItems)]], "required": ["sessionID"]],
+                 "annotations": ["readOnlyHint": true]],
+                ["name": "get_session_flow", "description": "Read a flow from encrypted session history by session and flow id; sensitive data is redacted and bodies are omitted by default.",
+                 "inputSchema": ["type": "object", "properties": ["sessionID": ["type": "string"], "id": ["type": "string"]], "required": ["sessionID", "id"]],
+                 "annotations": ["readOnlyHint": true]]
+            ]
+        }
+        return result
     }
 
     private func success(id: Any?, result: Any) -> [String: Any] {
