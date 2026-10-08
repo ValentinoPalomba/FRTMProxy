@@ -514,8 +514,11 @@ def breakpoint_rule_for(flow: http.HTTPFlow):
     return BREAKPOINT_RULES.get(flow_key(flow))
 
 def should_break(flow: http.HTTPFlow, phase: str) -> bool:
+    # Method-scoped and legacy host/path breakpoints can coexist.
     rule = breakpoint_rule_for(flow)
-    return bool(rule and rule.get(phase))
+    method = (flow.request.method or "GET").strip().upper()
+    scoped = BREAKPOINT_RULES.get(f"{flow_key(flow)}#method={method}")
+    return bool((rule and rule.get(phase)) or (scoped and scoped.get(phase)))
 
 def apply_request_updates(flow: http.HTTPFlow, payload):
     if not payload:

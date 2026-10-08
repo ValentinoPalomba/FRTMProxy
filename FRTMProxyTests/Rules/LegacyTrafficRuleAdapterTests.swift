@@ -20,6 +20,36 @@ struct LegacyTrafficRuleAdapterTests {
         }
     }
 
+    @Test("Method-scoped breakpoints retain legacy compatibility and unique rule identities")
+    func methodScopedBreakpoints() throws {
+        let host = "api.example.com"
+        let path = "/users"
+        let baseKey = FlowBreakpointRule.key(host: host, path: path, method: nil)
+        let getKey = FlowBreakpointRule.key(host: host, path: path, method: "get")
+        let postKey = FlowBreakpointRule.key(host: host, path: path, method: "POST")
+        #expect(baseKey == "api.example.com/users")
+        #expect(getKey == "api.example.com/users#method=GET")
+        #expect(postKey != getKey)
+
+        let legacyData = Data(#"{"key":"api.example.com/users","host":"api.example.com","path":"/users","scheme":"https","interceptRequest":true,"interceptResponse":false}"#.utf8)
+        let legacy = try JSONDecoder().decode(FlowBreakpointRule.self, from: legacyData)
+        #expect(legacy.method == nil)
+        #expect(legacy.key == baseKey)
+
+        let post = FlowBreakpointRule(key: postKey, host: host, path: path, scheme: "https", interceptRequest: true, interceptResponse: false, method: "post")
+        let get = FlowBreakpointRule(key: getKey, host: host, path: path, scheme: "https", interceptRequest: true, interceptResponse: false, method: "GET")
+        #expect(post.method == "POST")
+        let restored = try JSONDecoder().decode(FlowBreakpointRule.self, from: JSONEncoder().encode(post))
+        #expect(restored == post)
+
+        let document = LegacyTrafficRuleAdapter.document(mapRules: [], breakpoints: [legacy, post, get], scripts: [])
+        #expect(document.rules.count == 3)
+        #expect(Set(document.rules.map(\.id)).count == 3)
+        #expect(document.rules.first { $0.name.contains("POST") }?.matcher.method?.value == "POST")
+        #expect(document.rules.first { $0.name.contains("GET") }?.matcher.method?.value == "GET")
+        #expect(document.rules.first { $0.name == "Breakpoint · api.example.com/users" }?.matcher.method == nil)
+    }
+
     @Test("Legacy mutations replace stale migrated content without changing unified order")
     func effectiveDocumentSync() throws {
         let directory = FileManager.default.temporaryDirectory

@@ -48,12 +48,16 @@ enum LegacyTrafficRuleAdapter {
     }
 
     private static func breakpoint(_ rule: FlowBreakpointRule, priority: Int) -> TrafficRule {
-        TrafficRule(
+        var ruleMatcher = matcher(host: rule.host, path: rule.path, scheme: rule.scheme)
+        if let method = rule.method {
+            ruleMatcher.method = .init(value: method, isCaseSensitive: false)
+        }
+        return TrafficRule(
             id: TrafficRuleCanonicalizer.legacyIdentifier(for: "breakpoint:\(rule.key)"),
-            name: "Breakpoint · \(rule.host)\(rule.path)",
+            name: rule.method.map { "Breakpoint · \($0) \(rule.host)\(rule.path)" } ?? "Breakpoint · \(rule.host)\(rule.path)",
             isEnabled: rule.isEnabled,
             priority: priority,
-            matcher: matcher(host: rule.host, path: rule.path, scheme: rule.scheme),
+            matcher: ruleMatcher,
             actions: [.breakpoint(.init(
                 id: TrafficRuleCanonicalizer.legacyIdentifier(for: "breakpoint-action:\(rule.key)"),
                 request: rule.interceptRequest,
