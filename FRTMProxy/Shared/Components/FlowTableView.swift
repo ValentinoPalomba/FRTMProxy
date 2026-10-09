@@ -486,15 +486,7 @@ private struct FlowTableRow: View {
                         .flowColumnFrame(column)
                 }
                 ForEach(headerColumns) { column in
-                    let value = column.displayValue(in: flow)
-                    Text(value ?? String(localized: "〈absent〉", bundle: AppLocalization.bundle))
-                        .font(DesignSystem.Fonts.mono(12))
-                        .foregroundStyle(colors.textSecondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .padding(.horizontal, DesignSystem.Spacing.sm)
-                        .frame(width: DesignSystem.Metrics.scaled(180), alignment: .leading)
-                        .help(value.map { column.localizedDisplayTitle + "\n" + $0 } ?? column.localizedDisplayTitle + ": " + String(localized: "absent", bundle: AppLocalization.bundle))
+                    headerCell(for: column)
                 }
                 Color.clear.frame(width: DesignSystem.Metrics.scaled(30))
             }
@@ -534,6 +526,25 @@ private struct FlowTableRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityText)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+    }
+
+    private func headerCell(for column: FlowHeaderColumn) -> some View {
+        let value = column.displayValue(in: flow)
+        let label = value ?? String(localized: "〈absent〉", bundle: AppLocalization.bundle)
+        let tooltip: String
+        if let value {
+            tooltip = column.localizedDisplayTitle + "\n" + value
+        } else {
+            tooltip = column.localizedDisplayTitle + ": " + String(localized: "absent", bundle: AppLocalization.bundle)
+        }
+        return Text(label)
+            .font(DesignSystem.Fonts.mono(12))
+            .foregroundStyle(colors.textSecondary)
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .padding(.horizontal, DesignSystem.Spacing.sm)
+            .frame(width: DesignSystem.Metrics.scaled(180), alignment: .leading)
+            .help(tooltip)
     }
 
     @ViewBuilder
