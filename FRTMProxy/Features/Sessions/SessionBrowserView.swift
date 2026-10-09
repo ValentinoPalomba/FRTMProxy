@@ -14,8 +14,12 @@ struct SessionBrowserView: View {
     let deleteSession: DeleteSession
     let setMetadata: SetMetadata
     let closeSession: CloseSession
+    let importSession: (SessionHARImporter.Prepared, String) async throws -> CaptureSession
     let onOpenFlow: (MitmFlow) -> Void
 
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var showsImport = false
     @State private var timelineModel = SessionTimelineModel()
     @State private var pendingDeletion: CaptureSession?
     @State private var editingFlow: CaptureSessionFlow?
@@ -31,6 +35,7 @@ struct SessionBrowserView: View {
         deleteSession: @escaping DeleteSession,
         setMetadata: @escaping SetMetadata,
         closeSession: @escaping CloseSession,
+        importSession: @escaping (SessionHARImporter.Prepared, String) async throws -> CaptureSession,
         onOpenFlow: @escaping (MitmFlow) -> Void = { _ in }
     ) {
         self.sessions = sessions
@@ -41,6 +46,7 @@ struct SessionBrowserView: View {
         self.deleteSession = deleteSession
         self.setMetadata = setMetadata
         self.closeSession = closeSession
+        self.importSession = importSession
         self.onOpenFlow = onOpenFlow
     }
 
@@ -54,6 +60,7 @@ struct SessionBrowserView: View {
                 onDelete: requestDeletion
             )
             .navigationTitle("Sessions")
+            .navigationSplitViewColumnWidth(min: DesignSystem.Metrics.scaled(200), ideal: DesignSystem.Metrics.scaled(240), max: DesignSystem.Metrics.scaled(320))
         } detail: {
             if let selectedSession {
                 SessionTimelineView(
@@ -73,18 +80,15 @@ struct SessionBrowserView: View {
                 .toolbar {
                     if selectedSession.isActive {
                         ToolbarItem {
-                            Button("Close Session", systemImage: "stop.circle") {
+                            ControlButton(title: "Close Session", systemImage: "stop.circle", style: .ghost(colors), disabled: isPerformingSessionAction) {
                                 close(selectedSession)
                             }
-                            .buttonStyle(.borderedProminent)
-                            .disabled(isPerformingSessionAction)
                         }
                     }
                     ToolbarItem {
-                        Button("Delete Session", systemImage: "trash", role: .destructive) {
+                        ControlButton(title: "Delete Session", systemImage: "trash", style: .ghost(colors), disabled: selectedSession.isActive || isPerformingSessionAction) {
                             requestDeletion(selectedSession)
                         }
-                        .disabled(selectedSession.isActive || isPerformingSessionAction)
                         .help(
                             selectedSession.isActive
                                 ? "Close the active session before deleting it."
@@ -93,16 +97,29 @@ struct SessionBrowserView: View {
                     }
                 }
             } else {
-                ContentUnavailableView(
-                    "Select a Session",
-                    systemImage: "clock.arrow.circlepath",
-                    description: Text("Choose a capture from the sidebar to inspect its timeline.")
-                )
+                StateView(kind: .empty(title: "Select a Session", message: "Choose a capture from the sidebar to inspect its timeline.", systemImage: "clock.arrow.circlepath"), palette: colors)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(colors.background)
             }
         }
-        .frame(minWidth: 860, minHeight: 560)
+        .toolbar {
+            ToolbarItem {
+                ControlButton(title: "Import HAR…", systemImage: "square.and.arrow.down", style: .ghost(colors)) { showsImport = true }
+            }
+            ToolbarItem {
+                ControlButton(title: "Close", systemImage: "xmark", style: .ghost(colors)) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+            }
+        }
+        .frame(minWidth: DesignSystem.Metrics.scaled(860), minHeight: DesignSystem.Metrics.scaled(560))
         .task(id: selectedSessionID) {
             await loadSelectedSession()
+        }
+        .sheet(isPresented: $showsImport) {
+            SessionHARImportView(colors: colors) { prepared, name in
+                let imported = try await importSession(prepared, name)
+                selectedSessionID = imported.id
+            }
         }
         .sheet(item: $editingFlow) { flow in
             SessionFlowMetadataSheet(
@@ -156,17 +173,17 @@ struct SessionBrowserView: View {
     private func loadSelectedSession() async {
         guard let selectedSessionID else { return }
         timelineModel.reset(for: selectedSessionID)
-        timelineModel.startLoading()
+        let generation = timelineModel.startLoading()
         do {
             let page = try await loadPage(selectedSessionID, nil, pageSize)
             guard !Task.isCancelled else { return }
-            timelineModel.receive(page, for: selectedSessionID)
+            timelineModel.receive(page, for: selectedSessionID, generation: generation)
         } catch is CancellationError {
-            if timelineModel.sessionID == selectedSessionID {
+            if timelineModel.sessionID == selectedSessionID, timelineModel.loadingGeneration == generation {
                 timelineModel.isLoading = false
             }
         } catch {
-            timelineModel.fail(error, for: selectedSessionID)
+            timelineModel.fail(error, for: selectedSessionID, generation: generation)
         }
     }
 
@@ -174,13 +191,13 @@ struct SessionBrowserView: View {
         guard let selectedSessionID,
               let cursor = timelineModel.nextCursor,
               timelineModel.canLoadMore else { return }
-        timelineModel.startLoading()
+        let generation = timelineModel.startLoading()
         Task {
             do {
                 let page = try await loadPage(selectedSessionID, cursor, pageSize)
-                timelineModel.receive(page, for: selectedSessionID)
+                timelineModel.receive(page, for: selectedSessionID, generation: generation)
             } catch {
-                timelineModel.fail(error, for: selectedSessionID)
+                timelineModel.fail(error, for: selectedSessionID, generation: generation)
             }
         }
     }

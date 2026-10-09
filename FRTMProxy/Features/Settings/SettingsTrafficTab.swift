@@ -19,7 +19,7 @@ struct SettingsTrafficTab: View {
                         Spacer()
                         Picker("", selection: $settings.selectedTrafficProfileID) {
                             ForEach(settings.availableTrafficProfiles) { profile in
-                                Text(profile.name).tag(profile.id)
+                                Text(LocalizedStringKey(profile.name)).tag(profile.id)
                             }
                         }
                         .pickerStyle(.menu)
@@ -70,7 +70,7 @@ struct SettingsTrafficTab: View {
 
     private func manualIntField(_ title: String, value: Binding<Int>) -> some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(DesignSystem.Fonts.sans(11, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)
             TextField("", value: value, formatter: integerFormatter)
@@ -81,7 +81,7 @@ struct SettingsTrafficTab: View {
 
     private func manualDoubleField(_ title: String, value: Binding<Double>) -> some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(DesignSystem.Fonts.sans(11, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)
             TextField("", value: value, formatter: decimalFormatter)

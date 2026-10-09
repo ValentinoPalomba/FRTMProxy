@@ -20,14 +20,24 @@ struct InspectorBottomBar: View {
     let onClearCompare: () -> Void
 
     var body: some View {
-        HStack(spacing: DesignSystem.Spacing.md) {
-            statusSection
-
-            Spacer(minLength: DesignSystem.Spacing.md)
-
-            modifiersSection
-
-            actionsSection
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: DesignSystem.Spacing.md) {
+                statusSection
+                Spacer(minLength: DesignSystem.Spacing.md)
+                modifiersSection.fixedSize()
+                actionsSection.fixedSize()
+            }
+            VStack(spacing: DesignSystem.Spacing.sm) {
+                HStack(spacing: DesignSystem.Spacing.md) {
+                    statusSection
+                    Spacer(minLength: DesignSystem.Spacing.md)
+                    actionsSection
+                }
+                ScrollView(.horizontal) {
+                    modifiersSection
+                }
+                .scrollIndicators(.hidden)
+            }
         }
         .padding(.horizontal, DesignSystem.Spacing.md)
         .padding(.vertical, DesignSystem.Spacing.xs)
@@ -72,15 +82,18 @@ struct InspectorBottomBar: View {
     }
 
     private var statusHelp: String {
-        var text = isRunning ? "Proxy listening on port \(String(activePort))" : "Proxy stopped"
+        var text = isRunning ? String(localized: "Proxy listening on port \(String(activePort))", bundle: AppLocalization.bundle) : String(localized: "Proxy stopped", bundle: AppLocalization.bundle)
         if isMacProxyActive {
-            text += " · Also routing this Mac"
+            text += " · " + String(localized: "Also routing this Mac", bundle: AppLocalization.bundle)
         }
         return text
     }
 
     private var flowCountText: String {
-        shownFlowCount == totalFlowCount ? "\(totalFlowCount) flows" : "\(shownFlowCount) / \(totalFlowCount) flows"
+        if shownFlowCount == 1 && totalFlowCount == 1 {
+            return String(localized: "1 flow", bundle: AppLocalization.bundle)
+        }
+        return shownFlowCount == totalFlowCount ? String(localized: "\(totalFlowCount) flows", bundle: AppLocalization.bundle) : String(localized: "\(shownFlowCount) / \(totalFlowCount) flows", bundle: AppLocalization.bundle)
     }
 
     private var statusDivider: some View {
@@ -166,7 +179,8 @@ struct InspectorBottomBar: View {
                 )
                 .foregroundStyle(colors.textPrimary)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
+        .hoverHighlight(colors)
         .help("Command Palette (⌘K)")
         .accessibilityLabel(Text("Command Palette"))
     }

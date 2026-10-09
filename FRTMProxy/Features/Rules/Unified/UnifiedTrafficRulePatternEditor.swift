@@ -2,6 +2,7 @@ import SwiftUI
 
 struct UnifiedTrafficRulePatternEditor: View {
     let title: String
+    let colors: DesignSystem.ColorPalette
     @Binding var pattern: TrafficRuleTextPattern?
 
     var body: some View {
@@ -16,7 +17,7 @@ struct UnifiedTrafficRulePatternEditor: View {
                 )
             )
             if pattern != nil {
-                HStack(spacing: DesignSystem.Spacing.sm) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                     TextField(
                         "Pattern",
                         text: Binding(
@@ -24,31 +25,37 @@ struct UnifiedTrafficRulePatternEditor: View {
                             set: { pattern?.value = $0 }
                         )
                     )
-                    Picker(
-                        "Mode",
-                        selection: Binding(
-                            get: { pattern?.mode ?? .exact },
-                            set: { pattern?.mode = $0 }
-                        )
-                    ) {
-                        ForEach(TrafficRuleTextPattern.Mode.allCases, id: \.self) { mode in
-                            Text(modeLabel(mode)).tag(mode)
+                    .accessibilityLabel("\(title) pattern")
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        Picker(
+                            "Mode",
+                            selection: Binding(
+                                get: { pattern?.mode ?? .exact },
+                                set: { pattern?.mode = $0 }
+                            )
+                        ) {
+                            ForEach(TrafficRuleTextPattern.Mode.allCases, id: \.self) { mode in
+                                Text(modeLabel(mode)).tag(mode)
+                            }
                         }
-                    }
-                    .labelsHidden()
-                    .frame(width: 150)
-                    Toggle(
-                        "Case sensitive",
-                        isOn: Binding(
-                            get: { pattern?.isCaseSensitive ?? true },
-                            set: { pattern?.isCaseSensitive = $0 }
+                        .labelsHidden()
+                        .accessibilityLabel("\(title) matcher mode")
+                        .frame(width: DesignSystem.Metrics.scaled(150))
+                        Toggle(
+                            "Case sensitive",
+                            isOn: Binding(
+                                get: { pattern?.isCaseSensitive ?? true },
+                                set: { pattern?.isCaseSensitive = $0 }
+                            )
                         )
-                    )
+                    }
                 }
                 if let error = pattern?.validationError {
                     Label(error, systemImage: "exclamationmark.triangle")
-                        .font(.caption)
-                        .foregroundStyle(.red)
+                        .font(DesignSystem.Fonts.caption)
+                        .foregroundStyle(colors.danger)
+                        .lineLimit(3)
+                        .help(error)
                         .accessibilityLabel("Invalid regular expression: \(error)")
                 }
             }

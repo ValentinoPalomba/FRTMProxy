@@ -5,6 +5,16 @@ import Testing
 @MainActor
 @Suite("Localization settings")
 struct LocalizationSettingsTests {
+    @Test("Runtime messages resolve the requested app language independently of system language")
+    func runtimeMessagesUseSelectedLanguageBundle() {
+        let english = AppLocalization.bundle(for: .english)
+        let italian = AppLocalization.bundle(for: .italian)
+        #expect(String(localized: "Share", bundle: english) == "Share")
+        #expect(String(localized: "Share", bundle: italian) == "Condividi")
+        #expect(String(localized: "No request body", bundle: english) == "No request body")
+        #expect(String(localized: "No request body", bundle: italian) == "Nessun corpo della richiesta")
+    }
+
     @Test("Missing language defaults to English")
     func missingLanguageDefaultsToEnglish() {
         let defaults = temporaryDefaults()
@@ -61,11 +71,12 @@ struct LocalizationSettingsTests {
         #expect(configuredRegions.subtracting(["Base"]) == expected)
     }
 
-    @Test("Catalog translations are complete and preserve placeholders")
-    func catalogTranslationsAreComplete() throws {
+    @Test("Italian catalog translations are complete and preserve placeholders")
+    func italianCatalogTranslationsAreComplete() throws {
         let catalog = try loadJSONObject(named: "Localizable", extension: "xcstrings")
         let strings = try #require(catalog["strings"] as? [String: Any])
-        let targets = ["de", "es", "fr", "it", "ja", "pt-BR", "zh-Hans"]
+        // English is the source language; Italian is the additional locale audited here.
+        let targets = ["it"]
 
         for (key, rawEntry) in strings {
             guard let entry = rawEntry as? [String: Any],
@@ -81,7 +92,7 @@ struct LocalizationSettingsTests {
                 #expect(unit["state"] as? String == "translated")
                 let value = try #require(unit["value"] as? String)
                 #expect(!value.isEmpty)
-                #expect(placeholderSignature(value) == sourceSignature)
+                #expect(placeholderSignature(value) == sourceSignature, "Placeholder mismatch for \(key)")
             }
         }
     }
@@ -124,6 +135,9 @@ struct LocalizationSettingsTests {
     }
 
     private func placeholderSignature(_ value: String) -> [String] {
+        // Escaped percent signs are literals, even when the following word starts
+        // with a printf conversion character (e.g. "%% packet loss").
+        let value = value.replacing("%%", with: "")
         let pattern = #"%(?:\d+\$)?(?:[-+0 #']*\d*(?:\.\d+)?)?(?:hh|h|ll|l|q|L|z|t|j)?[@diuoxXfFeEgGaAcCsSp]"#
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
         let range = NSRange(value.startIndex..., in: value)

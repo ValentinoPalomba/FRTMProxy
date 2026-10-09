@@ -6,6 +6,8 @@ struct FlowExplorerSection: View {
     @Binding var compareSelection: String?
     let colors: DesignSystem.ColorPalette
     let emptyMessage: String
+    let showsThinkingOrb: Bool
+    let isCapturing: Bool
     let pinnedHosts: [PinnedHost]
     let pinnedApps: [PinnedApp]
     let onTogglePinnedHost: (PinnedHost) -> Void
@@ -28,6 +30,8 @@ struct FlowExplorerSection: View {
             compareSelection: $compareSelection,
             emptyMessage: emptyMessage,
             colors: colors,
+            showsThinkingOrb: showsThinkingOrb,
+            isCapturing: isCapturing,
             pinnedHostnames: Set(pinnedHosts.map(\.host)),
             pinnedAppIDs: Set(pinnedApps.map(\.appID)),
             onMapLocal: onMapLocal,

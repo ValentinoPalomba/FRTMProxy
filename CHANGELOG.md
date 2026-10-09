@@ -6,6 +6,32 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Use Xcode Light as the default appearance for new installations; preserve saved theme selections.
+
+### Added
+- Named capture profiles in Manage, with request, host and app membership, persistent selection,
+  and creation or membership changes from a traffic row.
+- Captured-session HAR import with review, encrypted binary originals and atomic rollback.
+- Centered empty-traffic orb respecting Reduce Motion and inactive windows.
+- Reproducible isolated demo traffic and whole-app stress runners.
+
+### Changed
+- Shared palette, typography, field and button styles across Inspector, editors, managers,
+  Settings, device setup and embedded CodeMirror content.
+- Header columns are configured through Add Field in the table's final slider menu.
+- Removed Noise Control, inspector body/header search and expansion, Workspace and Selective
+  Capture screens and commands. Legacy data remains readable.
+- Audited English source text and Italian translations, including runtime errors.
+
+### Fixed
+- Parse bridge events outside the main actor and reuse profile membership and table sort keys.
+- Avoid repeated writer-buffer copies and full sorting when evicting one live flow.
+- Keep the selected Inspector preview after live-window eviction, with explicit memory limits.
+- Drain accepted writes and mark interrupted sessions incomplete after an unexpected engine exit.
+- Resolve asynchronously initialized session storage for MCP history tools.
+- Reject stale proxy-start completion after Stop.
+- Reject Development/ad hoc bundles and accidental Sparkle key rotation during publication.
+
 ## [1.8.0] - 2026-07-21
 
 ### Added

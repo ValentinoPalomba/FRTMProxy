@@ -39,5 +39,6 @@ struct ThemeOptionRow: View {
             )
         }
         .buttonStyle(.pressable)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }

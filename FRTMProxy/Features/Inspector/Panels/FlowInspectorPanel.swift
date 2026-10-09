@@ -12,6 +12,7 @@ struct FlowInspectorPanel: View {
     let onToggleBreakpoint: ((FlowBreakpointPhase, Bool) -> Void)?
 
     var body: some View {
+        GeometryReader { geometry in
         FlowSplitInspector(
             flow: flow,
             colors: colors,
@@ -26,6 +27,8 @@ struct FlowInspectorPanel: View {
         .padding(.horizontal, DesignSystem.Spacing.md)
         .padding(.vertical, DesignSystem.Spacing.md)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(width: geometry.size.width, height: geometry.size.height)
         .background(colors.surface)
+        }
     }
 }

@@ -113,6 +113,25 @@ struct SessionBrowserStateTests {
         #expect(model.isLoading)
     }
 
+    @Test("Reloading the same session rejects stale pagination responses and errors")
+    func sameSessionReloadRejectsOldGeneration() {
+        let model = SessionTimelineModel()
+        let sessionID = UUID()
+        model.reset(for: sessionID)
+        let oldGeneration = model.startLoading()
+        model.reset(for: sessionID)
+        let currentGeneration = model.startLoading()
+        model.receive(page(flows: [flow(id: "fresh", timestamp: 2)]), for: sessionID, generation: currentGeneration)
+        model.receive(page(flows: [flow(id: "stale", timestamp: 1)]), for: sessionID, generation: oldGeneration)
+        model.fail(CocoaError(.fileReadUnknown), for: sessionID, generation: oldGeneration)
+        #expect(model.flows.map(\.id) == ["fresh"])
+        #expect(model.errorMessage == nil)
+        #expect(!model.isLoading)
+        model.updateMetadata(flowID: "fresh", note: "Retained", isBookmarked: true)
+        #expect(model.flows.first?.note == "Retained")
+        #expect(model.flows.first?.isBookmarked == true)
+    }
+
     private func page(
         flows: [CaptureSessionFlow] = [],
         cursor: CaptureSessionPageCursor? = nil,

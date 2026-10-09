@@ -11,7 +11,7 @@ final class MapRuleStore: MapRuleStoreProtocol {
     private let decoder = JSONDecoder()
 
     init(filename: String = "rules.json") {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first ?? URL(fileURLWithPath: NSTemporaryDirectory())
+        let base = CaptureStorageConfiguration.root
         let directory = base.appendingPathComponent("FRTMProxy", isDirectory: true)
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         self.fileURL = directory.appendingPathComponent(filename)

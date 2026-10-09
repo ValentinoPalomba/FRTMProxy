@@ -30,10 +30,11 @@ struct OnboardingOverlay: View {
     @ObservedObject var manager: OnboardingManager
     let anchors: [OnboardingTarget: Anchor<CGRect>]
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @EnvironmentObject private var settings: SettingsStore
-    @State private var tooltipScale: CGFloat = 0.9
+    @State private var tooltipScale: CGFloat = 0.98
     @State private var tooltipOpacity: Double = 0
-    @State private var highlightScale: CGFloat = 0.9
+    @State private var highlightScale: CGFloat = 0.98
     @State private var highlightOpacity: Double = 0
     @State private var tooltipSize: CGSize = .zero
 
@@ -45,30 +46,29 @@ struct OnboardingOverlay: View {
     var body: some View {
         GeometryReader { proxy in
             let focusRect = highlightRect(in: proxy)
-            let tooltipMaxWidth = min(360, proxy.size.width - 48)
+            let tooltipMaxWidth = max(0, min(DesignSystem.Metrics.scaled(420), proxy.size.width - DesignSystem.Spacing.xxl * 2))
             let tooltipPosition = tooltipPosition(for: focusRect, in: proxy.size)
 
             ZStack {
-                spotlightLayer(for: focusRect)
-                    .onTapGesture {
-                        manager.nextStep()
-                    }
+                Button {
+                    manager.nextStep()
+                } label: {
+                    spotlightLayer(for: focusRect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Next onboarding step")
 
                 highlightView(for: focusRect)
                     .scaleEffect(highlightScale)
                     .opacity(highlightOpacity)
-                    .animation(.spring(response: 0.55, dampingFraction: 0.82), value: step)
+                    .allowsHitTesting(false)
+                    .animation(DesignSystem.Motion.adaptive(DesignSystem.Motion.base, reduceMotion: reduceMotion), value: step)
 
                 tooltipView(maxWidth: tooltipMaxWidth)
                     .scaleEffect(tooltipScale)
                     .opacity(tooltipOpacity)
                     .position(tooltipPosition)
-                    .animation(.spring(response: 0.55, dampingFraction: 0.82), value: step)
-                    .background(
-                        GeometryReader { tooltipProxy in
-                            Color.clear.preference(key: TooltipSizePreferenceKey.self, value: tooltipProxy.size)
-                        }
-                    )
+                    .animation(DesignSystem.Motion.adaptive(DesignSystem.Motion.base, reduceMotion: reduceMotion), value: step)
             }
             .onPreferenceChange(TooltipSizePreferenceKey.self) { tooltipSize = $0 }
             .onAppear {
@@ -95,28 +95,22 @@ struct OnboardingOverlay: View {
     }
 
     private func highlightView(for rect: CGRect) -> some View {
-        let gradient = LinearGradient(
-            colors: [colors.accent, colors.accentSecondary],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-
         return RoundedRectangle(cornerRadius: step.cornerRadius, style: .continuous)
             .fill(colors.accent.opacity(colorScheme == .dark ? 0.12 : 0.08))
             .overlay(
                 RoundedRectangle(cornerRadius: step.cornerRadius, style: .continuous)
-                    .stroke(gradient, lineWidth: 2)
+                    .stroke(colors.accent, lineWidth: 1.5)
             )
             .frame(width: rect.width, height: rect.height)
             .position(x: rect.midX, y: rect.midY)
-            .shadow(color: colors.accent.opacity(colorScheme == .dark ? 0.45 : 0.35), radius: 18)
+            .shadow(color: colors.accent.opacity(0.16), radius: DesignSystem.Spacing.sm)
     }
 
     private func tooltipView(maxWidth: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             HStack(alignment: .center, spacing: DesignSystem.Spacing.md) {
                 Image(systemName: stepIcon)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(DesignSystem.Fonts.title)
                     .foregroundStyle(colors.accent)
                     .padding(DesignSystem.Spacing.sm)
                     .background(
@@ -124,44 +118,46 @@ struct OnboardingOverlay: View {
                     )
 
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
-                    Text(step.title)
-                        .font(DesignSystem.Fonts.sans(15, weight: .semibold))
+                    Text(LocalizedStringKey(step.title))
+                        .font(DesignSystem.Fonts.heading)
                         .foregroundStyle(colors.textPrimary)
                     Text("\(currentStepIndex + 1) / \(OnboardingStep.allCases.count)")
-                        .font(DesignSystem.Fonts.mono(11, weight: .semibold))
+                        .font(DesignSystem.Fonts.caption)
+                        .monospacedDigit()
                         .foregroundStyle(colors.textSecondary)
                 }
 
                 Spacer()
             }
 
-            Text(step.description)
-                .font(DesignSystem.Fonts.sans(13))
+            Text(LocalizedStringKey(step.description))
+                .font(DesignSystem.Fonts.body)
                 .foregroundStyle(colors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            HStack(spacing: DesignSystem.Spacing.md) {
-                secondaryButton(title: "Skip") {
-                    manager.skipOnboarding()
-                }
-
-                Spacer()
-
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                 progressDots
-
-                if isLastStep {
-                    primaryButton(title: "Get started", color: colors.success) {
-                        manager.completeOnboarding()
+                HStack(spacing: DesignSystem.Spacing.md) {
+                    ControlButton(title: "Skip", systemImage: "xmark", style: .ghost(colors)) {
+                        manager.skipOnboarding()
                     }
-                } else {
-                    primaryButton(title: "Next", color: colors.accent) {
-                        manager.nextStep()
+                    .keyboardShortcut(.cancelAction)
+                    Spacer()
+                    ControlButton(title: isLastStep ? "Get started" : "Next", systemImage: isLastStep ? "checkmark" : "arrow.right", style: .filled(colors)) {
+                        if isLastStep { manager.completeOnboarding() }
+                        else { manager.nextStep() }
                     }
+                    .keyboardShortcut(.defaultAction)
                 }
             }
         }
         .padding(DesignSystem.Spacing.lg)
         .frame(maxWidth: maxWidth, alignment: .leading)
+        .background {
+            GeometryReader { tooltipProxy in
+                Color.clear.preference(key: TooltipSizePreferenceKey.self, value: tooltipProxy.size)
+            }
+        }
         .background(
             RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(colors.surface)
@@ -169,7 +165,7 @@ struct OnboardingOverlay: View {
                     RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                         .stroke(colors.border.opacity(0.9), lineWidth: 1)
                 )
-                .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.18), radius: 20, y: 10)
+                .shadow(color: colors.background.opacity(colorScheme == .dark ? 0.3 : 0.18), radius: DesignSystem.Spacing.md, y: DesignSystem.Spacing.xs)
         )
     }
 
@@ -178,45 +174,9 @@ struct OnboardingOverlay: View {
             ForEach(0..<OnboardingStep.allCases.count, id: \.self) { index in
                 Circle()
                     .fill(index <= currentStepIndex ? colors.accent : colors.border.opacity(0.8))
-                    .frame(width: 7, height: 7)
+                    .frame(width: DesignSystem.Metrics.scaled(6), height: DesignSystem.Metrics.scaled(6))
             }
         }
-    }
-
-    private func primaryButton(title: String, color: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(DesignSystem.Fonts.mono(12, weight: .semibold))
-                .foregroundStyle(Color.black.opacity(0.9))
-                .padding(.horizontal, DesignSystem.Spacing.lg)
-                .padding(.vertical, DesignSystem.Spacing.sm)
-                .frame(minHeight: 32)
-                .background(color)
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
-                        .stroke(color.opacity(0.85), lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous))
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func secondaryButton(title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(DesignSystem.Fonts.mono(12, weight: .semibold))
-                .foregroundStyle(colors.textSecondary)
-                .padding(.horizontal, DesignSystem.Spacing.md)
-                .padding(.vertical, DesignSystem.Spacing.sm)
-                .frame(minHeight: 32)
-                .background(colors.surfaceElevated)
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
-                        .stroke(colors.border.opacity(0.9), lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous))
-        }
-        .buttonStyle(.plain)
     }
 
     private var stepIcon: String {
@@ -267,9 +227,9 @@ struct OnboardingOverlay: View {
     }
 
     private func tooltipPosition(for rect: CGRect, in size: CGSize) -> CGPoint {
-        let fallbackSize = CGSize(width: 300, height: 160)
+        let fallbackSize = CGSize(width: DesignSystem.Metrics.scaled(420), height: DesignSystem.Metrics.scaled(220))
         let resolvedSize = tooltipSize == .zero ? fallbackSize : tooltipSize
-        let spacing: CGFloat = 16
+        let spacing = DesignSystem.Spacing.lg
         let preferAbove = rect.midY > size.height * 0.6
 
         var x = rect.midX + step.tooltipOffset.x
@@ -278,7 +238,7 @@ struct OnboardingOverlay: View {
             : rect.maxY + spacing + resolvedSize.height / 2
         y += step.tooltipOffset.y
 
-        let safePadding: CGFloat = 16
+        let safePadding = DesignSystem.Spacing.lg
         let halfWidth = resolvedSize.width / 2
         let halfHeight = resolvedSize.height / 2
         x = min(max(x, safePadding + halfWidth), size.width - safePadding - halfWidth)
@@ -320,30 +280,18 @@ struct OnboardingOverlay: View {
     }
 
     private func animateIn() {
-        let animation = Animation.spring(response: 0.6, dampingFraction: 0.82).delay(0.1)
-        withAnimation(animation) {
-            tooltipScale = 1.0
-            tooltipOpacity = 1.0
-            highlightScale = 1.0
-            highlightOpacity = 1.0
+        withAnimation(DesignSystem.Motion.adaptive(DesignSystem.Motion.base, reduceMotion: reduceMotion)) {
+            tooltipScale = 1
+            tooltipOpacity = 1
+            highlightScale = 1
+            highlightOpacity = 1
         }
     }
 
     private func animateStepChange() {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
-            tooltipScale = 0.9
-            tooltipOpacity = 0
-            highlightScale = 0.9
-            highlightOpacity = 0
-        }
-
-        withAnimation(.spring(response: 0.6, dampingFraction: 0.82).delay(0.1)) {
-            tooltipScale = 1.0
-            tooltipOpacity = 1.0
-            highlightScale = 1.0
-            highlightOpacity = 1.0
-        }
+        animateIn()
     }
+
 }
 
 struct OnboardingContainer<Content: View>: View {

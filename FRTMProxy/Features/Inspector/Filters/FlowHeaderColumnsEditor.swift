@@ -7,10 +7,11 @@ struct FlowHeaderColumnsEditor: View {
     @State private var columns: [FlowHeaderColumn] = []
     @State private var name = ""
     @State private var phase: FlowHeaderColumn.Phase = .response
-    @State private var search = ""
     @State private var error: String?
     @State private var unreadable = false
     @State private var showsReset = false
+    @State private var addedColumn: UUID?
+    @FocusState private var nameFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
@@ -18,31 +19,46 @@ struct FlowHeaderColumnsEditor: View {
             Text("Up to eight local columns. Repeated values remain separate. Configuration is saved on this Mac; captured values are not stored in preferences.")
                 .font(DesignSystem.Fonts.caption)
                 .foregroundStyle(colors.textSecondary)
-            SearchField(text: $search, placeholder: "Find configured headers", colors: colors)
+            ScrollViewReader { proxy in
             List {
-                ForEach(columns.filter { search.isEmpty || $0.title.localizedStandardContains(search) }) { column in
+                ForEach(columns) { column in
                     HStack {
-                        Text(column.title)
+                        Text(column.localizedDisplayTitle)
                         Spacer()
                         ControlButton(title: "Move Up", systemImage: "arrow.up", style: .ghost(colors), disabled: columns.first?.id == column.id) { moveUp(column.id) }
                         ControlButton(title: "Remove", systemImage: "minus.circle", style: .ghost(colors)) { columns.removeAll { $0.id == column.id } }
                     }
+                    .id(column.id)
                 }
             }
             .scrollContentBackground(.hidden)
+            .task(id: addedColumn) {
+                guard let id = addedColumn else { return }
+                proxy.scrollTo(id, anchor: .bottom)
+                await Task.yield()
+                if !Task.isCancelled { nameFocused = true }
+            }
+            }
             HStack(spacing: DesignSystem.Spacing.sm) {
                 Picker("Phase", selection: $phase) {
-                    ForEach(FlowHeaderColumn.Phase.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                    ForEach(FlowHeaderColumn.Phase.allCases, id: \.self) { Text(LocalizedStringKey($0.rawValue)).tag($0) }
                 }
                 TextField("Header name, e.g. X-Request-ID", text: $name)
+                    .focused($nameFocused)
                 ControlButton(title: "Add", systemImage: "plus", style: .ghost(colors), disabled: unreadable || columns.count >= 8) {
                     let candidate = columns + [FlowHeaderColumn(phase: phase, name: name.trimmingCharacters(in: .whitespacesAndNewlines))]
-                    do { try FlowHeaderColumn.validate(candidate); columns = candidate; name = ""; error = nil }
+                    do {
+                        try FlowHeaderColumn.validate(candidate)
+                        columns = candidate
+                        addedColumn = candidate.last?.id
+                        name = ""
+                        error = nil
+                    }
                     catch { self.error = "Use a valid, distinct HTTP header name (128 bytes); maximum eight columns." }
                 }
             }
             .textFieldStyle(ProxyTextFieldStyle(palette: colors, size: .compact))
-            if let error { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(colors.warning) }
+            if let error { Label(LocalizedStringKey(error), systemImage: "exclamationmark.triangle").foregroundStyle(colors.warning).lineLimit(3).help(LocalizedStringKey(error)) }
             if unreadable { ControlButton(title: "Reset Configuration", systemImage: "arrow.counterclockwise", style: .ghost(colors)) { showsReset = true } }
             HStack {
                 ControlButton(title: "Cancel", systemImage: "xmark", style: .ghost(colors)) { dismiss() }
@@ -59,7 +75,7 @@ struct FlowHeaderColumnsEditor: View {
         .foregroundStyle(colors.textPrimary)
         .padding(DesignSystem.Spacing.lg)
         .background(colors.background)
-        .frame(minWidth: DesignSystem.Metrics.scaled(560), minHeight: DesignSystem.Metrics.scaled(380))
+        .frame(width: DesignSystem.Metrics.scaled(640), height: DesignSystem.Metrics.scaled(440))
         .alert("Reset header column configuration?", isPresented: $showsReset) {
             Button("Reset") { columns = []; unreadable = false; error = nil }
             Button("Cancel", role: .cancel) { }

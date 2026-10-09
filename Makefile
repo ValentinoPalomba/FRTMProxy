@@ -8,7 +8,7 @@ DERIVED     ?= .build
 
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap gen build test test-bridge test-integration test-stress verify-engine run clean screenshots engine
+.PHONY: help bootstrap gen build test test-bridge test-integration test-stress test-app-stress verify-engine run clean screenshots engine
 
 help: ## Mostra questo aiuto
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -53,3 +53,6 @@ test-integration: ## Verifica il proxy reale (richiede app compilata in DERIVED)
 
 test-stress: ## Carico locale sul motore embedded; genera artifacts/proxy-stress.json
 	python3 tests/stress_proxy.py --worker $(DERIVED)/Build/Products/Debug/$(SCHEME).app/Contents/MacOS/$(SCHEME)
+
+test-app-stress: ## Carico sulla app GUI, SQLite e motore con dati temporanei isolati
+	python3 tests/stress_app.py --app $(DERIVED)/Build/Products/Debug/$(SCHEME).app --maximum-app-rss-mib 300

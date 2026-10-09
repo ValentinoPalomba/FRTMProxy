@@ -30,6 +30,7 @@ RELEASE_NOTES_URL_PREFIX="${RELEASE_NOTES_URL_PREFIX:-}"
 DOWNLOAD_URL_PREFIX="${DOWNLOAD_URL_PREFIX:-}"
 
 PUBLISH=1
+DIAGNOSTIC_LOCAL=0
 APP_PATH=""
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -50,7 +51,8 @@ Options:
   --sparkle-account <name>      Keychain account for Sparkle signing key (default: ed25519)
   --remote <name>               Git remote (default: origin)
   --pages-branch <name>         Branch used for GitHub Pages (default: gh-pages)
-  --no-publish                  Generate zip + appcast locally only, skip gh-pages push
+  --no-publish                  Generate verified release zip + appcast locally, skip push
+  --diagnostic-local            Local diagnostic zip only; no appcast, keys, or publication
   -h, --help                    Show this help
 
 Environment overrides:
@@ -86,6 +88,7 @@ while [[ $# -gt 0 ]]; do
     --sparkle-account)     SPARKLE_ACCOUNT="$2";          shift 2 ;;
     --remote)              REMOTE_NAME="$2";              shift 2 ;;
     --pages-branch)        PAGES_BRANCH="$2";             shift 2 ;;
+    --diagnostic-local)    DIAGNOSTIC_LOCAL=1; PUBLISH=0; shift ;;
     --no-publish)          PUBLISH=0;                     shift   ;;
     -h|--help)             usage; exit 0 ;;
     *) fail "Unknown option: $1" ;;
@@ -97,6 +100,7 @@ done
 [[ -d "$APP_PATH" ]]        || fail ".app not found: $APP_PATH"
 [[ "$APP_PATH" == *.app ]]  || fail "Path does not look like a .app bundle: $APP_PATH"
 
+command -v python3 >/dev/null || fail "python3 not found"
 command -v ditto  >/dev/null || fail "ditto not found"
 command -v git    >/dev/null || fail "git not found"
 command -v rsync  >/dev/null || fail "rsync not found"
@@ -112,6 +116,22 @@ BUILD_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP_INFO_
 
 log "App     : $APP_PATH"
 log "Version : $SHORT_VERSION (build $BUILD_VERSION)"
+
+if [[ "$DIAGNOSTIC_LOCAL" -eq 1 ]]; then
+  python3 "$ROOT_DIR/scripts/verify_release_bundle.py" "$APP_PATH" --diagnostic-local
+  mkdir -p "$RELEASE_DIR"
+  LOCAL_ARCHIVE="$RELEASE_DIR/$APP_NAME-$SHORT_VERSION-local.zip"
+  ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$LOCAL_ARCHIVE"
+  log "Local diagnostic archive: $LOCAL_ARCHIVE"
+  log "NOT approved for distribution; no appcast generated or published."
+  exit 0
+fi
+
+if [[ "$PUBLISH" -eq 1 ]]; then
+  python3 "$ROOT_DIR/scripts/verify_release_bundle.py" "$APP_PATH" --require-notarization
+else
+  python3 "$ROOT_DIR/scripts/verify_release_bundle.py" "$APP_PATH"
+fi
 
 # ── Infer GH_REPO from remote ─────────────────────────────────────────────────
 if [[ -z "$GH_REPO" ]]; then
@@ -163,6 +183,15 @@ SPARKLE_BIN="$(find_sparkle_bin)" || \
   fail "Unable to locate Sparkle tools. Build the project once or set SPARKLE_BIN."
 log "Sparkle : $SPARKLE_BIN"
 
+KEYCHAIN_PUBLIC_KEY="$("$SPARKLE_BIN/generate_keys" --account "$SPARKLE_ACCOUNT" -p)" || \
+  fail "Existing Sparkle key for account '$SPARKLE_ACCOUNT' is unavailable; no key will be created."
+if [[ "$PUBLISH" -eq 1 ]]; then
+  python3 "$ROOT_DIR/scripts/verify_release_bundle.py" "$APP_PATH" \
+    --expected-public-key "$KEYCHAIN_PUBLIC_KEY" --require-notarization
+else
+  python3 "$ROOT_DIR/scripts/verify_release_bundle.py" "$APP_PATH" --expected-public-key "$KEYCHAIN_PUBLIC_KEY"
+fi
+
 # ── Create archive ────────────────────────────────────────────────────────────
 ARCHIVE_NAME="$APP_NAME-$SHORT_VERSION.zip"
 ARCHIVE_PATH="$RELEASE_DIR/$ARCHIVE_NAME"
@@ -174,6 +203,9 @@ rm -f "$ARCHIVE_PATH"
 ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ARCHIVE_PATH"
 
 # ── Generate appcast ──────────────────────────────────────────────────────────
+TEMP_GENERATE_DIR="$(mktemp -d -t "${APP_NAME}-appcast-XXXX")"
+trap 'rm -rf "$TEMP_GENERATE_DIR"' EXIT
+cp "$ARCHIVE_PATH" "$TEMP_GENERATE_DIR/$ARCHIVE_NAME"
 log "Generating appcast..."
 "$SPARKLE_BIN/generate_appcast" \
   --account "$SPARKLE_ACCOUNT" \
@@ -181,7 +213,9 @@ log "Generating appcast..."
   --release-notes-url-prefix "$RELEASE_NOTES_URL_PREFIX" \
   --link "$PRODUCT_LINK" \
   -o "$APPCAST_PATH" \
-  "$RELEASE_DIR"
+  "$TEMP_GENERATE_DIR"
+rm -rf "$TEMP_GENERATE_DIR"
+trap - EXIT
 log "Appcast : $APPCAST_PATH"
 
 # ── Push appcast to gh-pages (zip stays local — upload to GH Release manually) ──
@@ -198,12 +232,7 @@ else
   log "Publishing appcast to $REMOTE_NAME/$PAGES_BRANCH..."
   git clone --branch "$PAGES_BRANCH" --single-branch "$REMOTE_URL" "$TEMP_PUBLISH_DIR" >/dev/null
 
-  rsync -a \
-    --include='*/' \
-    --include='*.xml' \
-    --exclude='*' \
-    "$RELEASE_DIR/" \
-    "$TEMP_PUBLISH_DIR/"
+  rsync -a "$APPCAST_PATH" "$TEMP_PUBLISH_DIR/"
 
   pushd "$TEMP_PUBLISH_DIR" >/dev/null
   git add -A

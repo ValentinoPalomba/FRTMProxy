@@ -5,6 +5,48 @@ import Testing
 
 @Suite("Composer templates and encrypted history")
 struct ComposerWorkflowTests {
+    @Test func headerPlaceholdersPreserveOrderAndRejectPartialRows() throws {
+        var draft = ComposerDraft(method: "GET", url: "http://example.com", headers: [
+            .init(key: "", value: ""), .init(key: "X-Repeated", value: "one"),
+            .init(key: "X-Empty", value: ""), .init(key: "X-Repeated", value: "two")
+        ], body: "")
+        #expect(try ComposerTemplate.request(draft, variables: []).headers == [
+            .init(name: "X-Repeated", value: "one"), .init(name: "X-Empty", value: ""), .init(name: "X-Repeated", value: "two")
+        ])
+        draft.headers[0].value = "must not disappear"
+        #expect(throws: (any Error).self) { try ComposerTemplate.request(draft, variables: []) }
+    }
+
+    @Test @MainActor func headerLimitAndVariableSaveAreExplicit() async throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = ComposerStateStore(url: directory.appending(path: "state"), keyProvider: KeyProvider(byte: 1))
+        let model = RequestComposerViewModel(store: store)
+        while model.isRestoring { try await Task.sleep(for: .milliseconds(10)) }
+        model.requestHeaders = (0..<128).map { .init(key: "X-\($0)", value: "") }
+        #expect(model.addHeaderRow() == nil)
+        #expect(model.requestHeaders.count == 128)
+        #expect(model.errorMessage?.contains("128") == true)
+        model.requestHeaders.removeLast()
+        let added = model.addHeaderRow()
+        #expect(added == model.requestHeaders.last?.id)
+        let original = [ComposerHeaderRow(key: "TOKEN", value: "old")]
+        try await model.saveVariables(original)
+        do {
+            try await model.saveVariables([.init(key: "", value: "invalid")])
+            Issue.record("Partial variables must fail validation")
+        } catch { }
+        #expect(model.variables == original)
+        #expect(try await store.load().variables == original)
+        // An unwritable destination must leave the accepted variables unchanged.
+        try FileManager.default.removeItem(at: directory)
+        try Data("file, not directory".utf8).write(to: directory)
+        do {
+            try await model.saveVariables([.init(key: "TOKEN", value: "new")])
+            Issue.record("Saving through a file path must fail")
+        } catch { }
+        #expect(model.variables == original)
+    }
     private struct KeyProvider: SessionEncryptionKeyProviding {
         let byte: UInt8
         func loadOrCreateKey() throws -> SymmetricKey { SymmetricKey(data: Data(repeating: byte, count: 32)) }

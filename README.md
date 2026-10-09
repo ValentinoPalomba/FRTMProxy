@@ -78,11 +78,10 @@ page. The app is signed with a Developer ID, notarized, and auto-updates via
   breakpoint, or script it with ordered actions.
 - **Return to earlier captures**: encrypted persistent sessions keep a paged timeline with notes
   and bookmarks.
-- **Launch selective targets**: route one app, Chromium/Electron profile, or CLI process through
-  FRTMProxy without changing the system proxy.
+- **Keep capture profiles**: group calls, hosts, and apps into named profiles from a call’s context
+  menu; switch or manage profiles inside **Manage → Advanced Tools**.
 - **Inspect structured protocols**: GraphQL, JWT, cookies, forms, multipart, SSE, XML/HTML, gRPC,
   and generic Protobuf wire payloads.
-- **Share a workspace**: import or export versioned, Git-friendly rules, scripts, and breakpoints.
 - **Automate locally**: expose redacted flows and atomic rule replacement through a local MCP
   server bound to a user-only Unix socket.
 

@@ -28,7 +28,7 @@ final class MapCollectionStore: MapCollectionStoreProtocol {
     private let gitRepositoriesDirectory: URL
 
     init(filename: String = "collections.json") {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first ?? URL(fileURLWithPath: NSTemporaryDirectory())
+        let base = CaptureStorageConfiguration.root
         let directory = base.appendingPathComponent("FRTMProxy", isDirectory: true)
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let collectionsDir = directory.appendingPathComponent("Collections", isDirectory: true)

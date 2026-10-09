@@ -8,8 +8,8 @@ actor ComposerStateStore {
     }
     let url: URL
     let keyProvider: any SessionEncryptionKeyProviding
-    init(url: URL = URL.applicationSupportDirectory.appending(path: "FRTMProxy/Composer/state.gcm"),
-         keyProvider: any SessionEncryptionKeyProviding = KeychainSessionEncryptionKeyProvider()) {
+    init(url: URL = CaptureStorageConfiguration.root.appending(path: "FRTMProxy/Composer/state.gcm"),
+         keyProvider: any SessionEncryptionKeyProviding = CaptureStorageConfiguration.keyProvider) {
         self.url = url; self.keyProvider = keyProvider
     }
     func load() throws -> State {

@@ -47,6 +47,7 @@ private struct ToastBanner: View {
                 .font(DesignSystem.Fonts.body)
                 .foregroundStyle(palette.textPrimary)
                 .lineLimit(2)
+                .help(message.text)
         }
         .padding(.horizontal, DesignSystem.Spacing.md)
         .padding(.vertical, DesignSystem.Spacing.sm)
@@ -90,11 +91,13 @@ private struct ToastLayer: ViewModifier {
         content
             .overlay(alignment: .bottom) {
                 if let toast = center.current {
-                    ToastBanner(message: toast, palette: palette)
+                    Button { center.dismiss() } label: {
+                        ToastBanner(message: toast, palette: palette)
+                    }
+                    .buttonStyle(.plain)
                         .padding(.bottom, DesignSystem.Spacing.xl)
                         .padding(.horizontal, DesignSystem.Spacing.lg)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
-                        .onTapGesture { center.dismiss() }
                 }
             }
             .animation(

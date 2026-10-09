@@ -16,12 +16,20 @@ struct GitCollectionsSheet: View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
             header
 
-            addSection
-            sourcesSection
+            ScrollView {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
+                    addSection
+                    sourcesSection
+                }
+            }
         }
         .padding(DesignSystem.Spacing.lg)
-        .frame(minWidth: 820, minHeight: 520)
+        .frame(minWidth: DesignSystem.Metrics.scaled(760), minHeight: DesignSystem.Metrics.scaled(620))
+        .font(DesignSystem.Fonts.body)
+        .foregroundStyle(colors.textPrimary)
+        .tint(colors.accent)
         .background(colors.background)
+        .interactiveDismissDisabled(isWorking)
         .alert(
             "Operation failed",
             isPresented: Binding(
@@ -59,10 +67,10 @@ struct GitCollectionsSheet: View {
         HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                 Text("Git Collections")
-                    .font(DesignSystem.Fonts.mono(22, weight: .semibold))
+                    .font(DesignSystem.Fonts.title)
                     .foregroundStyle(colors.textPrimary)
                 Text("Import and sync collections from a Git repository (branch/tag/commit). Collections are read from `.har` files in the repo.")
-                    .font(DesignSystem.Fonts.mono(12))
+                    .font(DesignSystem.Fonts.caption)
                     .foregroundStyle(colors.textSecondary)
             }
 
@@ -80,6 +88,7 @@ struct GitCollectionsSheet: View {
             ControlButton(title: "Close", systemImage: "xmark", style: .ghost(colors), disabled: isWorking) {
                 dismiss()
             }
+            .keyboardShortcut(.cancelAction)
         }
         .padding(DesignSystem.Spacing.lg)
         .surfaceCard(fill: colors.surface, stroke: colors.border.opacity(0.9), shadowOpacity: 0.08)
@@ -88,7 +97,7 @@ struct GitCollectionsSheet: View {
     private var addSection: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             Text("Add Repository")
-                .font(DesignSystem.Fonts.sans(16, weight: .semibold))
+                .font(DesignSystem.Fonts.heading)
                 .foregroundStyle(colors.textPrimary)
 
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
@@ -102,7 +111,7 @@ struct GitCollectionsSheet: View {
                     .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "folder"))
 
                 Text("Example: `main`, `v1.2.3`, or a commit SHA. The subdirectory limits the `.har` scan (e.g. `collections/`).")
-                    .font(DesignSystem.Fonts.mono(11))
+                    .font(DesignSystem.Fonts.caption)
                     .foregroundStyle(colors.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -133,7 +142,7 @@ struct GitCollectionsSheet: View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             HStack(alignment: .center, spacing: DesignSystem.Spacing.sm) {
                 Text("Repositories")
-                    .font(DesignSystem.Fonts.sans(16, weight: .semibold))
+                    .font(DesignSystem.Fonts.heading)
                     .foregroundStyle(colors.textPrimary)
                 Spacer()
                 Text("\(viewModel.gitCollectionSources.count)")
@@ -157,12 +166,12 @@ struct GitCollectionsSheet: View {
                 StateView(
                     kind: .empty(
                         title: "No repository configured.",
-                        message: "Add a repo on the left to import collections collaboratively via Git.",
+                        message: "Add a repository above to import collections collaboratively via Git.",
                         systemImage: "arrow.triangle.branch"
                     ),
                     palette: colors
                 )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(maxWidth: .infinity, minHeight: DesignSystem.Metrics.scaled(160))
             } else {
                 ScrollView {
                     LazyVStack(spacing: DesignSystem.Spacing.sm) {
@@ -179,6 +188,7 @@ struct GitCollectionsSheet: View {
                     .padding(.vertical, DesignSystem.Spacing.xs)
                 }
                 .scrollIndicators(.hidden)
+                .frame(minHeight: DesignSystem.Metrics.scaled(180), maxHeight: DesignSystem.Metrics.scaled(300))
             }
         }
         .padding(DesignSystem.Spacing.lg)
@@ -246,6 +256,7 @@ private struct GitSourceRow: View {
                         .foregroundStyle(colors.textPrimary)
                         .lineLimit(1)
                         .truncationMode(.middle)
+                        .help(source.remoteURL)
 
                     HStack(spacing: DesignSystem.Spacing.sm) {
                         Label("ref: \(source.reference)", systemImage: "arrow.triangle.branch")
@@ -255,7 +266,7 @@ private struct GitSourceRow: View {
                                 .labelStyle(.titleAndIcon)
                         }
                     }
-                    .font(DesignSystem.Fonts.mono(11))
+                    .font(DesignSystem.Fonts.caption)
                     .foregroundStyle(colors.textSecondary)
                 }
 
@@ -326,7 +337,7 @@ private struct InlineActionButton: View {
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: systemImage)
-                .font(DesignSystem.Fonts.mono(11, weight: .semibold))
+                .font(DesignSystem.Fonts.label)
                 .foregroundStyle(foreground)
                 .padding(.horizontal, DesignSystem.Spacing.sm)
                 .padding(.vertical, DesignSystem.Spacing.sm)
@@ -340,7 +351,8 @@ private struct InlineActionButton: View {
                 )
                 .clipShape(.rect(cornerRadius: DesignSystem.Radius.md))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
+        .hoverHighlight(palette)
         .disabled(disabled)
         .opacity(disabled ? 0.6 : 1)
     }

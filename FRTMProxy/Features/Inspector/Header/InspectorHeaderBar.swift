@@ -4,6 +4,8 @@ struct InspectorHeaderBar: View {
     let colors: DesignSystem.ColorPalette
     let isRunning: Bool
     @Binding var filter: FlowFilter
+    @ObservedObject var profileStore: CaptureProfileStore
+    let onCreateProfile: () -> Void
     let pinnedApps: [PinnedApp]
     let pinnedHosts: [PinnedHost]
     let clientIPs: [String]
@@ -19,8 +21,6 @@ struct InspectorHeaderBar: View {
     let onShowComposer: () -> Void
     let onShowScripts: () -> Void
     let onShowSessions: () -> Void
-    let onShowSelectiveCapture: () -> Void
-    let onShowWorkspace: () -> Void
     let trafficProfiles: [TrafficProfile]
     let activeTrafficProfile: TrafficProfile
     let onSelectTrafficProfile: (TrafficProfile) -> Void
@@ -43,8 +43,8 @@ struct InspectorHeaderBar: View {
             FlowFiltersView(
                 filter: $filter,
                 colors: colors,
-                pinnedApps: pinnedApps,
-                pinnedHosts: pinnedHosts,
+                pinnedApps: profileStore.activeProfileID == nil ? pinnedApps : [],
+                pinnedHosts: profileStore.activeProfileID == nil ? pinnedHosts : [],
                 clientIPs: clientIPs,
                 onTogglePinnedHost: onTogglePinnedHost,
                 onRemovePinnedHost: onRemovePinnedHost,
@@ -56,6 +56,8 @@ struct InspectorHeaderBar: View {
             HStack(spacing: DesignSystem.Spacing.sm) {
                 ManageMenuButton(
                     colors: colors,
+                    profileStore: profileStore,
+                    onCreateProfile: onCreateProfile,
                     trafficProfiles: trafficProfiles,
                     activeTrafficProfile: activeTrafficProfile,
                     onSelectTrafficProfile: onSelectTrafficProfile,
@@ -66,9 +68,7 @@ struct InspectorHeaderBar: View {
                     onShowDeviceConnect: onShowDeviceConnect,
                     onShowComposer: onShowComposer,
                     onShowScripts: onShowScripts,
-                    onShowSessions: onShowSessions,
-                    onShowSelectiveCapture: onShowSelectiveCapture,
-                    onShowWorkspace: onShowWorkspace
+                    onShowSessions: onShowSessions
                 )
                 ControlButton(
                     title: toggleTitle,
@@ -88,6 +88,8 @@ struct InspectorHeaderBar: View {
 
 private struct ManageMenuButton: View {
     let colors: DesignSystem.ColorPalette
+    @ObservedObject var profileStore: CaptureProfileStore
+    let onCreateProfile: () -> Void
     let trafficProfiles: [TrafficProfile]
     let activeTrafficProfile: TrafficProfile
     let onSelectTrafficProfile: (TrafficProfile) -> Void
@@ -99,9 +101,9 @@ private struct ManageMenuButton: View {
     let onShowComposer: () -> Void
     let onShowScripts: () -> Void
     let onShowSessions: () -> Void
-    let onShowSelectiveCapture: () -> Void
-    let onShowWorkspace: () -> Void
     @State private var isPresented = false
+    @State private var showsProfilesManager = false
+    @State private var showsAdvancedTools = false
 
     var body: some View {
         ControlButton(
@@ -121,9 +123,6 @@ private struct ManageMenuButton: View {
                 })
                 menuButton(title: "Collections", icon: "folder", action: {
                     isPresented = false; onShowCollections()
-                })
-                menuButton(title: "Sessions", icon: "clock.arrow.circlepath", action: {
-                    isPresented = false; onShowSessions()
                 })
                 menuButton(title: "Device", icon: "qrcode", action: {
                     isPresented = false; onShowDeviceConnect()
@@ -155,58 +154,71 @@ private struct ManageMenuButton: View {
                     .shadow(color: Color.black.opacity(0.18), radius: 18, y: 8)
             )
         }
+        .sheet(isPresented: $showsProfilesManager) {
+            CaptureProfilesManagerView(store: profileStore, colors: colors)
+        }
+        .onChange(of: isPresented) { _, presented in
+            if !presented { showsAdvancedTools = false }
+        }
     }
 
     private var advancedToolsSection: some View {
-        Menu {
-            Button("Traffic Rules", systemImage: "point.3.connected.trianglepath.dotted") {
-                isPresented = false
-                onShowUnifiedRules()
-            }
-            Button("Workspace", systemImage: "shippingbox") {
-                isPresented = false
-                onShowWorkspace()
-            }
-            Button("Selective Capture", systemImage: "scope") {
-                isPresented = false
-                onShowSelectiveCapture()
-            }
-            Divider()
-            Button("Scripts", systemImage: "curlybraces") {
-                isPresented = false
-                onShowScripts()
-            }
-            Button("Compose", systemImage: "paperplane.fill") {
-                isPresented = false
-                onShowComposer()
-            }
-        } label: {
-            HStack(spacing: DesignSystem.Spacing.sm) {
-                Image(systemName: "wrench.and.screwdriver")
-                    .frame(width: DesignSystem.Metrics.scaled(18))
-                    .foregroundStyle(colors.textSecondary)
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+            Button { showsAdvancedTools.toggle() } label: {
+                HStack(spacing: DesignSystem.Spacing.sm) {
+                    Image(systemName: "wrench.and.screwdriver")
+                        .frame(width: DesignSystem.Metrics.scaled(18))
+                        .foregroundStyle(colors.textSecondary)
                     Text("Advanced Tools")
-                        .font(DesignSystem.Fonts.body.weight(.semibold))
-                        .foregroundStyle(colors.textPrimary)
-                    Text("Automation, scripting, and custom routing")
+                        .font(DesignSystem.Fonts.body.weight(.medium))
+                    Spacer()
+                    Image(systemName: showsAdvancedTools ? "chevron.down" : "chevron.right")
                         .font(DesignSystem.Fonts.caption)
                         .foregroundStyle(colors.textSecondary)
                 }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(DesignSystem.Fonts.caption.weight(.semibold))
-                    .foregroundStyle(colors.textSecondary)
+                .foregroundStyle(colors.textPrimary)
+                .padding(.horizontal, DesignSystem.Spacing.sm)
+                .padding(.vertical, DesignSystem.Spacing.sm)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(.horizontal, DesignSystem.Spacing.sm)
-            .padding(.vertical, DesignSystem.Spacing.sm)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .buttonStyle(.pressable)
+            .hoverHighlight(colors, cornerRadius: DesignSystem.Radius.sm)
+            .accessibilityIdentifier("inspector.advancedTools")
+            .accessibilityValue(showsAdvancedTools ? Text("Expanded") : Text("Collapsed"))
+
+            if showsAdvancedTools {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                    Text("Capture profiles")
+                        .font(DesignSystem.Fonts.caption)
+                        .foregroundStyle(colors.textSecondary)
+                        .padding(.horizontal, DesignSystem.Spacing.sm)
+                    CaptureProfilesControl(
+                        store: profileStore, colors: colors,
+                        onCreate: {
+                            isPresented = false
+                            onCreateProfile()
+                        },
+                        onManage: {
+                            isPresented = false
+                            showsProfilesManager = true
+                        }
+                    )
+                    menuButton(title: "Sessions", icon: "clock.arrow.circlepath") {
+                        isPresented = false; onShowSessions()
+                    }
+                    menuButton(title: "Traffic Rules", icon: "point.3.connected.trianglepath.dotted") {
+                        isPresented = false; onShowUnifiedRules()
+                    }
+                    menuButton(title: "Scripts", icon: "curlybraces") {
+                        isPresented = false; onShowScripts()
+                    }
+                    menuButton(title: "Compose", icon: "paperplane.fill") {
+                        isPresented = false; onShowComposer()
+                    }
+                }
+                .padding(.leading, DesignSystem.Spacing.md)
+            }
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize(horizontal: false, vertical: true)
-        .hoverHighlight(colors, cornerRadius: DesignSystem.Radius.md)
-        .accessibilityHint("Opens advanced debugging and automation tools")
     }
 
     private func menuButton(title: String, icon: String, action: @escaping () -> Void) -> some View {
@@ -215,7 +227,7 @@ private struct ManageMenuButton: View {
                 Image(systemName: icon)
                     .frame(width: DesignSystem.Metrics.scaled(18))
                     .foregroundStyle(colors.textSecondary)
-                Text(title)
+                Text(LocalizedStringKey(title))
                     .font(DesignSystem.Fonts.body.weight(.medium))
                 Spacer()
             }
@@ -265,7 +277,7 @@ private struct TrafficProfileSection: View {
                     .foregroundStyle(isActive ? colors.accent : colors.textSecondary)
                     .font(.title3)
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
-                    Text(profile.name)
+                    Text(LocalizedStringKey(profile.name))
                         .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                         .foregroundStyle(colors.textPrimary)
                     Text(profileSubtitle(for: profile))
@@ -295,7 +307,7 @@ private struct TrafficProfileSection: View {
 
     private func profileSubtitle(for profile: TrafficProfile) -> String {
         if profile.id == TrafficProfileLibrary.manualID {
-            return profile.summary + " · Customize in Settings > Traffic"
+            return profile.summary + " · " + String(localized: "Customize in Settings > Traffic", bundle: AppLocalization.bundle)
         }
         return profile.summary
     }

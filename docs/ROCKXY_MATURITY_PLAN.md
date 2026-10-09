@@ -1,5 +1,7 @@
 # FRTMProxy: piano per raggiungere la maturità di Rockxy
 
+Aggiornamento di perimetro del 6 ottobre 2026: Workspace e Acquisizione mirata non fanno più parte delle funzionalità esposte. I relativi formati e servizi rimangono per compatibilità dei dati. La UI usa profili nominati per chiamate, host e app dentro Manage, e Add Field nel menu slider finale della tabella; i riferimenti storici a focus/noise/workspace sotto non ampliano questo perimetro.
+
 Data: 1 ottobre 2026. Approccio: Ponytail, livello full.
 
 Obiettivo: raggiungere la potenza del workflow pubblico di Rockxy con meno codice da mantenere. La complessità utile è gestire traffico, errori e sessioni reali; aumentare file, dipendenze o livelli architetturali non è un obiettivo.
@@ -257,3 +259,17 @@ Scritture suddivise per count/byte, preservando ordine e record singoli grandi; 
 ### Cattura sostenuta: primo fallimento e verifica della quota
 
 Primo tentativo 180.000 richieste: 179.600 client completati, 180.000 eventi terminali, 64,90/s, timeout finali. Gate non superato. Eliminata la scansione completa della directory dei body ogni cinque secondi in append: ora contatore delle scritture e scansione iniziale/su pressione di quota, mantenendo quota e recupero dopo cancellazioni. Verificati 11 test Python e 12 end-to-end. Report precedente conservato in `docs/benchmarks/2026-10-02-proxy-sustained-before.json`; la replica deve confermare l’effetto sotto carico. Il runner verifica anche il raggiungimento del rate target e conta tutti gli errori client. Scansione su quota/startup e budget globale del writer restano da verificare.
+
+### 5 October: UI recovery and bounded writer
+
+Work continues on `codex/rockxy-maturity-plan`. Composer header validation/limit/focus, variable draft cancellation and save failure, rule matcher validation/palette/scrolling, column visibility and diff overflow have been revised. XCTest captured a missing composer footer; correction and full visual acceptance are tracked in [UI_RECOVERY_LOG.md](UI_RECOVERY_LOG.md), separately from passing logic tests.
+
+The writer now reserves count/estimated payload for pending, in-flight and retry snapshots. Saturation stops capture visibly, preserves accepted retry data and marks the session incomplete using SQLite schema 3. Native tests cover byte/count limits, failed writes and migration. No whole-app RSS or UI latency claim is made. The 180,000-request engine replication is running; the roadmap and parity gates remain open until their required evidence is complete.
+
+### Verified recovery increment
+
+186 native, 11 Python and 13 real-proxy integration tests pass. Composer workflows pass across dark/light S/M/L; matcher Save/reopen passes in both themes. A 30-minute engine replication achieves 180,000 terminal IDs without errors or duplicates at 100 req/s. The [recovery register](UI_RECOVERY_LOG.md) records remaining visual coverage and explicitly separates the engine measurement from whole-app performance. P3/P4/P5 exit criteria and comparative Rockxy parity are still open.
+
+### Captured HAR import
+
+Implemented review/confirmation and atomic import into closed captured sessions, separate from mock Collections. Binary originals are encrypted and referenced; duplicate headers and timing are retained. Native tests pass in the first 190-test run. Final timestamp refinements and the complete GUI import sequence still require acceptance; the roadmap remains active.

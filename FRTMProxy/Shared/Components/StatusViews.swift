@@ -5,7 +5,7 @@ struct StatusBadge: View {
     let colors: DesignSystem.ColorPalette
     
     private var color: Color {
-        guard let status else { return .gray }
+        guard let status else { return colors.textSecondary }
         switch status {
         case 200..<300: return colors.success
         case 300..<400: return colors.accentSecondary

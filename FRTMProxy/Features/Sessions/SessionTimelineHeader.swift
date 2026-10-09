@@ -11,6 +11,8 @@ struct SessionTimelineHeader: View {
                     Text(session.name)
                         .font(DesignSystem.Fonts.title)
                         .foregroundStyle(colors.textPrimary)
+                        .lineLimit(2)
+                        .help(session.name)
                     if session.isActive {
                         Label("Active", systemImage: "record.circle.fill")
                             .font(DesignSystem.Fonts.label)
@@ -24,6 +26,13 @@ struct SessionTimelineHeader: View {
                     Text("Close this session before deleting it.")
                         .font(DesignSystem.Fonts.caption)
                         .foregroundStyle(colors.textSecondary)
+                }
+                if let reason = session.incompleteReason {
+                    Label(reason, systemImage: "exclamationmark.triangle")
+                        .font(DesignSystem.Fonts.caption)
+                        .foregroundStyle(colors.warning)
+                        .lineLimit(3)
+                        .help(reason)
                 }
             }
             Spacer()

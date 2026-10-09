@@ -25,7 +25,9 @@ APPLE_PASSWORD="${APPLE_PASSWORD:-}"
 
 PUBLISH=1
 BUILD_APP=1
-ALLOW_KEY_CREATE=1
+ALLOW_KEY_CREATE=0
+ALLOW_KEY_ROTATION=0
+DIAGNOSTIC_LOCAL=0
 NOTARIZE=0
 
 log() {
@@ -55,7 +57,10 @@ Options:
   --sparkle-account <name>      Keychain account for Sparkle keys (default: ed25519)
   --skip-build                  Reuse existing Release build product
   --no-publish                  Do not push artifacts to gh-pages
-  --no-key-create               Fail if Sparkle private key is missing
+  --no-key-create               Fail if Sparkle private key is missing (default)
+  --allow-key-create            Explicitly allow creation of a missing Sparkle key
+  --allow-key-rotation          Explicitly allow changing the source public key (requires build)
+  --diagnostic-local            Local diagnostic zip only; no appcast, keys, or publication
 
 Notarization:
   --notarize                    Submit app for notarization and staple ticket (default: off)
@@ -131,6 +136,19 @@ while [[ $# -gt 0 ]]; do
       PUBLISH=0
       shift
       ;;
+    --allow-key-create)
+      ALLOW_KEY_CREATE=1
+      shift
+      ;;
+    --allow-key-rotation)
+      ALLOW_KEY_ROTATION=1
+      shift
+      ;;
+    --diagnostic-local)
+      DIAGNOSTIC_LOCAL=1
+      PUBLISH=0
+      shift
+      ;;
     --no-key-create)
       ALLOW_KEY_CREATE=0
       shift
@@ -166,6 +184,9 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+[[ "$DIAGNOSTIC_LOCAL" -eq 0 || "$NOTARIZE" -eq 0 ]] || fail "--diagnostic-local cannot submit notarization"
+command -v python3 >/dev/null || fail "python3 not found"
 
 command -v xcodebuild >/dev/null || fail "xcodebuild not found"
 command -v git >/dev/null || fail "git not found"
@@ -251,6 +272,8 @@ notarize_and_staple() {
   log "Notarization and stapling complete."
 }
 
+KEY_UPDATED=0
+if [[ "$DIAGNOSTIC_LOCAL" -eq 0 ]]; then
 SPARKLE_BIN="$(find_sparkle_bin)" || fail "Unable to locate Sparkle tools (generate_appcast/sign_update)"
 log "Using Sparkle tools from: $SPARKLE_BIN"
 
@@ -296,9 +319,13 @@ if [[ -z "$KEYCHAIN_PUBLIC_KEY" ]]; then
 fi
 
 if [[ "$CURRENT_PUBLIC_KEY" != "$KEYCHAIN_PUBLIC_KEY" ]]; then
+  [[ "$ALLOW_KEY_ROTATION" -eq 1 ]] || fail "Sparkle account key differs from SUPublicEDKey; refusing implicit key rotation. Use --allow-key-rotation only for an intentional migration."
+  [[ "$BUILD_APP" -eq 1 ]] || fail "Key rotation requires rebuilding; --skip-build would retain the old bundled key."
   log "Updating SUPublicEDKey in $INFO_PLIST_PATH"
   plist_set_string "SUPublicEDKey" "$KEYCHAIN_PUBLIC_KEY"
   KEY_UPDATED=1
+fi
+
 fi
 
 if [[ "$BUILD_APP" -eq 1 ]]; then
@@ -327,11 +354,29 @@ FULL_PRODUCT_NAME="$(printf '%s\n' "$BUILD_SETTINGS" | awk -F' = ' '/FULL_PRODUC
 APP_PATH="$TARGET_BUILD_DIR/$FULL_PRODUCT_NAME"
 [[ -d "$APP_PATH" ]] || fail "Built app not found at $APP_PATH"
 
+if [[ "$DIAGNOSTIC_LOCAL" -eq 1 ]]; then
+  python3 "$ROOT_DIR/scripts/verify_release_bundle.py" "$APP_PATH" --diagnostic-local
+  LOCAL_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_PATH/Contents/Info.plist")"
+  mkdir -p "$RELEASE_DIR"
+  LOCAL_ARCHIVE="$RELEASE_DIR/$APP_NAME-$LOCAL_VERSION-local.zip"
+  ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$LOCAL_ARCHIVE"
+  log "Local diagnostic archive: $LOCAL_ARCHIVE"
+  log "NOT approved for distribution; no appcast generated or published."
+  exit 0
+fi
+
+python3 "$ROOT_DIR/scripts/verify_release_bundle.py" "$APP_PATH" --expected-public-key "$KEYCHAIN_PUBLIC_KEY"
+
 # Notarize before packaging so the stapled ticket is included in the archive
 if [[ "$NOTARIZE" -eq 1 ]]; then
   notarize_and_staple "$APP_PATH"
 else
   log "Skipping notarization (pass --notarize to enable)"
+fi
+
+if [[ "$PUBLISH" -eq 1 ]]; then
+  python3 "$ROOT_DIR/scripts/verify_release_bundle.py" "$APP_PATH" \
+    --expected-public-key "$KEYCHAIN_PUBLIC_KEY" --require-notarization
 fi
 
 APP_INFO_PLIST="$APP_PATH/Contents/Info.plist"
@@ -346,6 +391,9 @@ log "Creating archive: $ARCHIVE_PATH"
 rm -f "$ARCHIVE_PATH"
 ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ARCHIVE_PATH"
 
+TEMP_GENERATE_DIR="$(mktemp -d -t "${APP_NAME}-appcast-XXXX")"
+trap 'rm -rf "$TEMP_GENERATE_DIR"' EXIT
+cp "$ARCHIVE_PATH" "$TEMP_GENERATE_DIR/$ARCHIVE_NAME"
 log "Generating appcast..."
 "$SPARKLE_BIN/generate_appcast" \
   --account "$SPARKLE_ACCOUNT" \
@@ -353,7 +401,9 @@ log "Generating appcast..."
   --release-notes-url-prefix "$RELEASE_NOTES_URL_PREFIX" \
   --link "$PRODUCT_LINK" \
   -o "$APPCAST_PATH" \
-  "$RELEASE_DIR"
+  "$TEMP_GENERATE_DIR"
+rm -rf "$TEMP_GENERATE_DIR"
+trap - EXIT
 
 if [[ "$PUBLISH" -eq 1 ]]; then
   REMOTE_URL="$(git remote get-url "$REMOTE_NAME" 2>/dev/null || true)"
@@ -368,14 +418,7 @@ if [[ "$PUBLISH" -eq 1 ]]; then
   log "Publishing artifacts to $REMOTE_NAME/$PAGES_BRANCH..."
   git clone --branch "$PAGES_BRANCH" --single-branch "$REMOTE_URL" "$TEMP_PUBLISH_DIR" >/dev/null
 
-  rsync -a \
-    --include='*/' \
-    --include='*.xml' \
-    --include='*.zip' \
-    --include='*.delta' \
-    --exclude='*' \
-    "$RELEASE_DIR/" \
-    "$TEMP_PUBLISH_DIR/"
+  rsync -a "$ARCHIVE_PATH" "$APPCAST_PATH" "$TEMP_PUBLISH_DIR/"
 
   pushd "$TEMP_PUBLISH_DIR" >/dev/null
   git add -A
@@ -392,9 +435,13 @@ log "Done."
 log "Version: $SHORT_VERSION ($BUILD_VERSION)"
 log "Archive: $ARCHIVE_PATH"
 log "Appcast: $APPCAST_PATH"
-log "Notarized: $([[ "$NOTARIZE" -eq 1 ]] && echo 'yes' || echo 'no (pass --notarize to enable)')"
+if [[ "$NOTARIZE" -eq 1 || "$PUBLISH" -eq 1 ]]; then
+  log "Notarization ticket verified."
+else
+  log "Notarization not checked (local-only release artifacts)."
+fi
 if [[ "$KEY_UPDATED" -eq 1 ]]; then
   log "SUPublicEDKey was updated in $INFO_PLIST_PATH"
-  log "Commit/push Info.plist on your app branch if this key rotation is intentional."
+  log "Intentional key rotation was explicitly requested; review Info.plist before committing."
 fi
 log "Tip: backup private key -> \"$SPARKLE_BIN/generate_keys\" --account \"$SPARKLE_ACCOUNT\" -x \"$HOME/Documents/sparkle_private_key_backup.txt\""

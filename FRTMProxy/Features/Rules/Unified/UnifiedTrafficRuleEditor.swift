@@ -28,6 +28,7 @@ struct UnifiedTrafficRuleEditor: View {
                 }
                 Spacer()
                 ControlButton(title: "Cancel", systemImage: "xmark", style: .ghost(colors)) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
                 ControlButton(
                     title: "Save Rule",
                     systemImage: "checkmark",
@@ -38,6 +39,7 @@ struct UnifiedTrafficRuleEditor: View {
                         dismiss()
                     }
                     .accessibilityHint(canSave ? "Saves the traffic rule" : validationSummary)
+                    .keyboardShortcut(.defaultAction)
             }
             .padding(DesignSystem.Spacing.xl)
             .background(colors.surface)
@@ -46,25 +48,28 @@ struct UnifiedTrafficRuleEditor: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xl) {
-                    UnifiedTrafficRuleGeneralEditor(draft: draft)
+                    UnifiedTrafficRuleGeneralEditor(draft: draft, colors: colors)
                     Divider()
                     UnifiedTrafficRuleMatcherEditor(draft: draft, colors: colors)
                     Divider()
-                    UnifiedTrafficRuleActionsEditor(draft: draft)
+                    UnifiedTrafficRuleActionsEditor(draft: draft, colors: colors)
                     if !draft.validationErrors.isEmpty {
                         Label(validationSummary, systemImage: "exclamationmark.triangle")
                             .font(DesignSystem.Fonts.caption)
                             .foregroundStyle(colors.danger)
+                            .lineLimit(3)
+                            .help(validationSummary)
                             .accessibilityLabel("Validation errors: \(validationSummary)")
                     }
                 }
                 .padding(DesignSystem.Spacing.xl)
             }
         }
-        .frame(minWidth: 980, minHeight: 760)
+        .frame(minWidth: DesignSystem.Metrics.scaled(820), minHeight: DesignSystem.Metrics.scaled(620))
         .textFieldStyle(ProxyTextFieldStyle(palette: colors, size: .compact))
         .font(DesignSystem.Fonts.body)
         .foregroundStyle(colors.textPrimary)
+        .tint(colors.accent)
         .background(colors.background)
     }
 
@@ -87,19 +92,20 @@ struct UnifiedTrafficRuleEditor: View {
 
 private struct UnifiedTrafficRuleGeneralEditor: View {
     @Bindable var draft: UnifiedTrafficRuleDraft
+    let colors: DesignSystem.ColorPalette
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             Label("General", systemImage: "slider.horizontal.3")
-                .font(.headline)
+                .font(DesignSystem.Fonts.title)
             HStack(spacing: DesignSystem.Spacing.lg) {
                 TextField("Rule name", text: $draft.rule.name)
                     .accessibilityLabel("Rule name")
                 Toggle("Enabled", isOn: $draft.rule.isEnabled)
             }
             Text("Rules execute from top to bottom. Reorder them in the Traffic Rules list.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(DesignSystem.Fonts.caption)
+                .foregroundStyle(colors.textSecondary)
         }
     }
 }

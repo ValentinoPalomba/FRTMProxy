@@ -37,6 +37,7 @@ struct SessionTimelineView: View {
                 .fixedSize()
                 .padding(.horizontal, DesignSystem.Spacing.lg)
                 .padding(.vertical, DesignSystem.Spacing.sm)
+                .help(session.isActive ? "Close the active session before exporting its complete capture. Loaded flows can be exported now." : "Export the complete capture or the loaded page.")
             }
 
             if !model.corruptFlowIDs.isEmpty {
@@ -45,23 +46,12 @@ struct SessionTimelineView: View {
             }
 
             if model.isLoading && !model.hasLoadedPage {
-                ProgressView("Loading captured flows…")
+                StateView(kind: .loading(message: "Loading captured flows…"), palette: colors)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let errorMessage = model.errorMessage, !model.hasLoadedPage {
-                ContentUnavailableView {
-                    Label("Unable to Load Session", systemImage: "exclamationmark.triangle")
-                } description: {
-                    Text(errorMessage)
-                } actions: {
-                    Button("Retry", systemImage: "arrow.clockwise", action: onReload)
-                        .buttonStyle(.borderedProminent)
-                }
+                StateView(kind: .failed(title: "Unable to Load Session", message: errorMessage, retry: onReload), palette: colors)
             } else if model.flows.isEmpty {
-                ContentUnavailableView(
-                    "No Captured Flows",
-                    systemImage: "network.slash",
-                    description: Text("This session does not contain any readable flows.")
-                )
+                StateView(kind: .empty(title: "No Captured Flows", message: "This session does not contain any readable flows.", systemImage: "network.slash"), palette: colors)
             } else {
                 HStack(spacing: DesignSystem.Spacing.md) {
                     Text("")
@@ -86,6 +76,7 @@ struct SessionTimelineView: View {
                         SessionFlowRow(
                             item: flow,
                             colors: colors,
+                            isSelected: selectedFlowID == flow.id,
                             onEditMetadata: { onEditMetadata(flow) },
                             onToggleBookmark: { onToggleBookmark(flow) },
                             onOpen: { onOpenFlow(flow.flow) }
@@ -94,23 +85,27 @@ struct SessionTimelineView: View {
                     }
                 }
                 .listStyle(.inset)
+                .tint(colors.accent)
+                .scrollContentBackground(.hidden)
+                .background(colors.background)
 
                 Divider()
 
                 HStack(spacing: DesignSystem.Spacing.md) {
                     if let selectedFlow {
-                        Button("Open Flow", systemImage: "arrow.up.right.square") {
+                        ControlButton(title: "Open Flow", systemImage: "arrow.up.right.square", style: .ghost(colors)) {
                             onOpenFlow(selectedFlow.flow)
                         }
                         .keyboardShortcut(.return, modifiers: [])
 
-                        Button(selectedFlow.note?.isEmpty == false ? "Edit Note" : "Add Note", systemImage: "note.text") {
+                        ControlButton(title: selectedFlow.note?.isEmpty == false ? "Edit Note" : "Add Note", systemImage: "note.text", style: .ghost(colors)) {
                             onEditMetadata(selectedFlow)
                         }
 
-                        Button(
-                            selectedFlow.isBookmarked ? "Remove Bookmark" : "Bookmark",
-                            systemImage: selectedFlow.isBookmarked ? "star.slash" : "star"
+                        ControlButton(
+                            title: selectedFlow.isBookmarked ? "Remove Bookmark" : "Bookmark",
+                            systemImage: selectedFlow.isBookmarked ? "star.slash" : "star",
+                            style: .ghost(colors)
                         ) {
                             onToggleBookmark(selectedFlow)
                         }
@@ -118,6 +113,7 @@ struct SessionTimelineView: View {
                     } else {
                         Text("Select a flow to open it, add a note, or bookmark it.")
                             .foregroundStyle(colors.textSecondary)
+                            .lineLimit(2)
                     }
 
                     Spacer()
@@ -127,17 +123,16 @@ struct SessionTimelineView: View {
                             .foregroundStyle(colors.warning)
                             .lineLimit(1)
                             .help(errorMessage)
-                        Button("Retry", systemImage: "arrow.clockwise", action: onLoadMore)
-                            .disabled(model.isLoading)
+                        ControlButton(title: "Retry", systemImage: "arrow.clockwise", style: .ghost(colors), disabled: model.isLoading, action: onLoadMore)
                     } else if model.isLoading {
                         ProgressView()
                             .controlSize(.small)
                         Text("Loading more…")
                             .foregroundStyle(colors.textSecondary)
                     } else if model.canLoadMore {
-                        Button("Load More", systemImage: "arrow.down.circle", action: onLoadMore)
+                        ControlButton(title: "Load More", systemImage: "arrow.down.circle", style: .ghost(colors), action: onLoadMore)
                     } else {
-                        Text("\(model.flows.count) loaded")
+                        Text("Loaded flows: \(model.flows.count)")
                             .foregroundStyle(colors.textSecondary)
                     }
                 }

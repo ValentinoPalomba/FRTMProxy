@@ -72,6 +72,9 @@ struct MapEditorView: View {
             Text("/")
                 .foregroundStyle(colors.textSecondary)
             Text(viewModel.title.isEmpty ? "No item selected" : viewModel.title)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .help(viewModel.title)
                 .font(DesignSystem.Fonts.sans(12, weight: .medium))
                 .foregroundStyle(colors.textPrimary)
         }
@@ -140,7 +143,7 @@ struct MapEditorView: View {
                     if let titleBadge {
                         Text(titleBadge)
                             .foregroundStyle(colors.danger)
-                            .font(.headline)
+                            .font(DesignSystem.Fonts.heading)
                     }
                 }
                 Spacer()
@@ -156,7 +159,7 @@ struct MapEditorView: View {
             bodyContent(selectedTab.wrappedValue)
         }
         .padding(DesignSystem.Spacing.lg)
-        .surfaceCard(fill: colors.surface, stroke: colors.border, shadowOpacity: 0.08)
+        .surfaceCard(palette: colors, shadowOpacity: 0.08)
         .disabled(!allowEditing)
         .opacity(!allowEditing ? 0.6 : 1)
     }
@@ -164,7 +167,7 @@ struct MapEditorView: View {
     private func requestTabContent(_ tab: EditorTab) -> AnyView {
         switch tab {
         case .body:
-            return AnyView(CodeEditorView(text: $viewModel.requestBody, isEditable: allowRequestEditing && isSelectionAvailable))
+            return AnyView(CodeEditorView(text: $viewModel.requestBody, isEditable: allowRequestEditing && isSelectionAvailable, colors: colors))
         case .headers:
             return AnyView(
                 KeyValueEditor(
@@ -197,7 +200,7 @@ struct MapEditorView: View {
     private func responseTabContent(_ tab: EditorTab) -> AnyView {
         switch tab {
         case .body:
-            return AnyView(CodeEditorView(text: $viewModel.responseBody, isEditable: isSelectionAvailable))
+            return AnyView(CodeEditorView(text: $viewModel.responseBody, isEditable: isSelectionAvailable, colors: colors))
         case .headers:
             return AnyView(
                 KeyValueEditor(
@@ -316,11 +319,7 @@ private struct KeyValueEditor: View {
 
             HStack {
                 Spacer()
-                Button(action: onAdd) {
-                    Label("Add", systemImage: "plus.circle.fill")
-                        .font(DesignSystem.Fonts.sans(12, weight: .semibold))
-                }
-                .buttonStyle(.plain)
+                ControlButton(title: "Add", systemImage: "plus", style: .ghost(colors), action: onAdd)
                 .padding(.top, DesignSystem.Spacing.xs)
             }
         }

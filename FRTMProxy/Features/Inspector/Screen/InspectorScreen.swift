@@ -7,6 +7,9 @@ struct InspectorScreen: View {
     @StateObject private var retryEditorViewModel = MapEditorViewModel()
     @StateObject private var breakpointEditorViewModel = MapEditorViewModel()
     @StateObject private var composerViewModel = RequestComposerViewModel()
+    @StateObject private var profileStore = CaptureProfileStore()
+    @State private var profileCreation: CaptureProfileCreationRequest?
+    @State private var profileActionError: String?
 
     @State private var presentedDestination: InspectorDestination?
     @State private var showCommandPalette = false
@@ -19,11 +22,8 @@ struct InspectorScreen: View {
     @State private var filterWorker = InspectorFlowFilterWorker()
     @State private var filterUpdateTask: Task<Void, Never>?
     @State private var filterGeneration: UInt = 0
-    @State private var workspaceExportBundle: WorkspaceBundle?
     @State private var lastSearchText: String = ""
     @State private var confirmClearTraffic = false
-    @AppStorage(WorkspaceInspectorPreferences.NoiseControl.queryKey) private var noiseQuery = ""
-    @AppStorage(WorkspaceInspectorPreferences.NoiseControl.enabledKey) private var noiseEnabled = false
 
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var settings: SettingsStore
@@ -45,6 +45,8 @@ struct InspectorScreen: View {
             compareSelection: $compareFlowID,
             colors: colors,
             emptyMessage: viewModel.flows.isEmpty ? "Waiting for traffic..." : "No results for the current filters",
+            showsThinkingOrb: viewModel.flows.isEmpty,
+            isCapturing: viewModel.isRunning,
             pinnedHosts: settings.pinnedHosts,
             pinnedApps: settings.pinnedApps,
             onTogglePinnedHost: { togglePinnedHost($0) },
@@ -70,6 +72,8 @@ struct InspectorScreen: View {
                 colors: colors,
                 isRunning: viewModel.isRunning,
                 filter: $filter,
+                profileStore: profileStore,
+                onCreateProfile: { profileCreation = CaptureProfileCreationRequest(member: nil) },
                 pinnedApps: settings.pinnedApps,
                 pinnedHosts: settings.pinnedHosts,
                 clientIPs: availableClientIPs,
@@ -85,8 +89,6 @@ struct InspectorScreen: View {
                 onShowComposer: { openComposer() },
                 onShowScripts: { present(.scripts) },
                 onShowSessions: openSessions,
-                onShowSelectiveCapture: { present(.selectiveCapture) },
-                onShowWorkspace: openWorkspace,
                 trafficProfiles: trafficProfiles,
                 activeTrafficProfile: viewModel.activeTrafficProfile,
                 onSelectTrafficProfile: { profile in
@@ -97,8 +99,7 @@ struct InspectorScreen: View {
             )
             .padding(.vertical, DesignSystem.Spacing.sm)
 
-            TrafficScopeBar(colors: colors, filter: $filter, noiseQuery: $noiseQuery, noiseEnabled: $noiseEnabled)
-
+            GeometryReader { geometry in
             Group {
                 if let flow = selectedFlow {
                     VSplitView {
@@ -135,6 +136,9 @@ struct InspectorScreen: View {
                     flowExplorer
                 }
             }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .clipped()
+            }
             .frame(maxHeight: .infinity)
 
             InspectorBottomBar(
@@ -159,6 +163,7 @@ struct InspectorScreen: View {
         }
 
         let contentWithFiltering = content
+        .frame(minWidth: DesignSystem.Metrics.scaled(1060), minHeight: DesignSystem.Metrics.scaled(900))
         .background(colors.background)
         .task {
             updateFilteredFlows()
@@ -175,8 +180,11 @@ struct InspectorScreen: View {
         .onDisappear {
             filterUpdateTask?.cancel()
         }
-        .onChange(of: noiseQuery) { _, _ in updateFilteredFlows(debounced: true) }
-        .onChange(of: noiseEnabled) { _, _ in updateFilteredFlows() }
+        .onChange(of: profileStore.activeProfileID) { _, _ in
+            filter = FlowFilter()
+            updateFilteredFlows()
+        }
+        .onChange(of: profileStore.profiles) { _, _ in updateFilteredFlows() }
 
         let withOverlays = contentWithFiltering
             .overlay {
@@ -208,6 +216,25 @@ struct InspectorScreen: View {
             .animation(.easeOut(duration: 0.18), value: showCommandPalette)
 
         return withOverlays
+        .environmentObject(profileStore)
+        .environment(\.captureProfileActions, CaptureProfileActions(
+            create: { member in profileCreation = CaptureProfileCreationRequest(member: member) },
+            add: { member, id in
+                do { try profileStore.add(member: member, to: id) }
+                catch { profileActionError = error.localizedDescription }
+            }
+        ))
+        .sheet(item: $profileCreation) { request in
+            CaptureProfileCreationView(store: profileStore, colors: colors, member: request.member) {
+                profileCreation = nil
+            }
+        }
+        .alert("Unable to update profile", isPresented: Binding(
+            get: { profileActionError != nil },
+            set: { if !$0 { profileActionError = nil } }
+        )) {
+            Button("OK") { profileActionError = nil }
+        } message: { Text(profileActionError ?? "") }
         .sheet(item: $presentedDestination, content: destinationSheet)
         .confirmationDialog(
             "Clear all captured traffic?",
@@ -228,9 +255,6 @@ struct InspectorScreen: View {
             if destination == .mapLocalRules {
                 rulesViewModel.load(sortedRules())
             }
-            if previous == .workspace, destination != .workspace {
-                workspaceExportBundle = nil
-            }
             if previous == .breakpointEditor,
                destination != .breakpointEditor,
                viewModel.activeBreakpointHit != nil {
@@ -250,10 +274,6 @@ struct InspectorScreen: View {
         .onReceive(NotificationCenter.default.publisher(for: .inspectorNavigationRequested)) { notification in
             guard let request = notification.object as? InspectorNavigationRequest else { return }
             handleNavigationRequest(request)
-        }
-        .onAppear {
-            syncPinnedHostFilterState()
-            syncPinnedAppFilterState()
         }
         .onChange(of: settings.pinnedHosts) { _, _ in
             syncPinnedHostFilterState()
@@ -294,7 +314,8 @@ struct InspectorScreen: View {
                 proxyPort: viewModel.isRunning ? viewModel.activePort : nil,
                 onClose: dismissDestination
             )
-            .frame(minWidth: 900, minHeight: 620)
+            .frame(minWidth: DesignSystem.Metrics.scaled(600), idealWidth: DesignSystem.Metrics.scaled(960),
+                   minHeight: DesignSystem.Metrics.scaled(480), idealHeight: DesignSystem.Metrics.scaled(640))
         case .scripts:
             ScriptsManagerView(
                 scripts: $viewModel.scripts,
@@ -328,23 +349,15 @@ struct InspectorScreen: View {
                 closeSession: { sessionID in
                     try await viewModel.closeCaptureSessionNow(sessionID)
                 },
+                importSession: { prepared, name in
+                    try await viewModel.importCaptureSession(prepared, name: name)
+                },
                 onOpenFlow: { flow in
                     viewModel.openStoredFlow(flow)
                     dismissDestination()
                 }
             )
-        case .selectiveCapture:
-            SelectiveCaptureView(
-                proxyPort: viewModel.activePort,
-                proxyIsRunning: viewModel.isRunning,
-                colors: colors,
-                onClose: dismissDestination
-            )
-        case .workspace:
-            WorkspaceManagerView(
-                exportBundle: workspaceExportBundle,
-                onImport: { try viewModel.applyWorkspaceBundle($0) }
-            )
+
         }
     }
 
@@ -365,8 +378,6 @@ struct InspectorScreen: View {
         switch request {
         case .sessions:
             openSessions()
-        case .selectiveCapture:
-            present(.selectiveCapture)
         case .deviceSetup:
             present(.deviceSetup)
         case .trafficRules:
@@ -381,8 +392,6 @@ struct InspectorScreen: View {
             openComposer()
         case .scripts:
             present(.scripts)
-        case .workspace:
-            openWorkspace()
         }
     }
 
@@ -397,7 +406,7 @@ struct InspectorScreen: View {
         let flows = viewModel.flows
         let filter = filter
         let worker = filterWorker
-        let noise = noiseEnabled ? noiseQuery : ""
+        let profile = profileStore.activeProfile
         filterUpdateTask = Task {
             if debounced {
                 do {
@@ -407,7 +416,7 @@ struct InspectorScreen: View {
                 }
             }
             guard !Task.isCancelled else { return }
-            guard let projection = try? await worker.project(flows: flows, filter: filter, noiseQuery: noise) else {
+            guard let projection = try? await worker.project(flows: flows, filter: filter, profile: profile) else {
                 return
             }
             await MainActor.run {
@@ -513,22 +522,6 @@ struct InspectorScreen: View {
                 openSessions()
             },
             CommandPaletteAction(
-                title: "Open Workspace",
-                subtitle: "Import or export a Git-friendly debugging workspace",
-                systemImage: "shippingbox",
-                keywords: ["workspace", "git", "export", "import"]
-            ) {
-                openWorkspace()
-            },
-            CommandPaletteAction(
-                title: "Selective Capture",
-                subtitle: "Launch one app, browser, or CLI through the proxy",
-                systemImage: "scope",
-                keywords: ["selective", "launch", "app", "browser", "cli"]
-            ) {
-                present(.selectiveCapture)
-            },
-            CommandPaletteAction(
                 title: "Open Device Setup",
                 subtitle: "Pair a simulator or device",
                 systemImage: "qrcode",
@@ -586,11 +579,6 @@ struct InspectorScreen: View {
             Task { await composerViewModel.loadFromFlow(flow) }
         }
         present(.composer)
-    }
-
-    private func openWorkspace() {
-        workspaceExportBundle = viewModel.currentWorkspaceBundle()
-        present(.workspace)
     }
 
     private func openMapEditor() {
@@ -820,6 +808,6 @@ struct InspectorScreen: View {
     }
 
     private var flowExplorerMinHeight: CGFloat { DesignSystem.Metrics.scaled(260) }
-    private var inspectorPanelMinHeight: CGFloat { DesignSystem.Metrics.scaled(260) }
-    private var inspectorPanelIdealHeight: CGFloat { DesignSystem.Metrics.scaled(340) }
+    private var inspectorPanelMinHeight: CGFloat { DesignSystem.Metrics.scaled(360) }
+    private var inspectorPanelIdealHeight: CGFloat { DesignSystem.Metrics.scaled(400) }
 }

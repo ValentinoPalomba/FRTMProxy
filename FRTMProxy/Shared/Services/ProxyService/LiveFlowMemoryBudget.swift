@@ -27,7 +27,7 @@ enum LiveFlowMemoryBudget {
         }
         if removed > 0 {
             flow.websocketMessages.removeFirst(removed)
-            flow.livePreviewWarning = "Live WebSocket preview limited to 1000 frames / 4 MiB. Older or oversized frames are omitted; recorded sessions receive events before this limit."
+            flow.livePreviewWarning = String(localized: "Live WebSocket preview limited to 1000 frames / 4 MiB. Older or oversized frames are omitted; recorded sessions receive events before this limit.", bundle: AppLocalization.bundle)
         }
         return removed
     }
@@ -37,12 +37,22 @@ enum LiveFlowMemoryBudget {
         func activity(_ flow: MitmFlow) -> TimeInterval {
             max(flow.responseTimestamp ?? flow.requestTimestamp ?? flow.timestamp ?? 0, flow.websocketMessages.last?.timestamp ?? 0)
         }
-        let ordered = flows.values.sorted {
-            let waitingA = $0.breakpoint?.state == .waiting, waitingB = $1.breakpoint?.state == .waiting
+        func preferred(_ first: MitmFlow, _ second: MitmFlow) -> Bool {
+            let waitingA = first.breakpoint?.state == .waiting, waitingB = second.breakpoint?.state == .waiting
             if waitingA != waitingB { return waitingA }
-            let a = activity($0), b = activity($1)
-            return a == b ? $0.id < $1.id : a > b
+            let firstActivity = activity(first), secondActivity = activity(second)
+            return firstActivity == secondActivity ? first.id < second.id : firstActivity > secondActivity
         }
+        // Steady capture normally adds one small flow to a full live window.
+        // Select the one eviction in linear time rather than sorting 501 rows.
+        if flows.count == maximumCount + 1,
+           flows.values.reduce(0, { $0 + (weights[$1.id] ?? cost($1)) }) <= maximumBytes,
+           let oldest = flows.values.max(by: preferred) {
+            var retained = flows
+            retained.removeValue(forKey: oldest.id)
+            return retained
+        }
+        let ordered = flows.values.sorted(by: preferred)
         var retained: [String: MitmFlow] = [:]
         var bytes = 0
         for flow in ordered {

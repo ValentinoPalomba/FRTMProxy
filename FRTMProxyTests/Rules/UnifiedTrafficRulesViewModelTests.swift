@@ -65,6 +65,11 @@ struct UnifiedTrafficRulesViewModelTests {
         #expect(rule.matcher.headers.count == 1)
         #expect(rule.matcher.headers[0].name == "X-Environment")
         #expect(rule.matcher.headers[0].value.value == "staging")
+        let matching = TrafficRuleMatchContext(scheme: "http", host: "example.com", path: "/", method: "GET", url: "http://example.com/", headers: ["x-environment": "STAGING"])
+        #expect(rule.matcher.matches(matching))
+        var other = matching
+        other.headers = ["X-Environment": "production"]
+        #expect(!rule.matcher.matches(other))
     }
 
     private func makeRule(name: String, priority: Int) -> TrafficRule {
@@ -74,5 +79,25 @@ struct UnifiedTrafficRulesViewModelTests {
             matcher: .init(host: .init(value: "example.com")),
             actions: [.delay(.init(id: UUID(), requestMilliseconds: 0, responseMilliseconds: 1))]
         )
+    }
+
+    @Test("Incomplete header matchers are retained and block saving")
+    func incompleteHeaderMatcher() {
+        let draft = UnifiedTrafficRuleDraft(rule: makeRule(name: "Headers", priority: 0))
+        draft.addHeaderMatcher()
+        let identity = draft.headerMatchers[0].id
+        draft.headerMatchers[0].value = .init(value: "*staging*", mode: .wildcard, isCaseSensitive: false)
+        #expect(!draft.validationErrors.isEmpty)
+        #expect(draft.materializedRule().matcher.headers.count == 1)
+        draft.headerMatchers[0].name = " X-Environment "
+        #expect(draft.validationErrors.isEmpty)
+        let saved = draft.materializedRule()
+        let reopened = UnifiedTrafficRuleDraft(rule: saved)
+        #expect(reopened.headerMatchers[0].name == "X-Environment")
+        #expect(reopened.headerMatchers[0].value == draft.headerMatchers[0].value)
+        draft.addHeaderMatcher()
+        draft.removeHeaderMatcher(id: identity)
+        #expect(draft.headerMatchers.count == 1)
+        #expect(draft.headerMatchers[0].id != identity)
     }
 }

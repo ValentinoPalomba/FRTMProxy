@@ -40,7 +40,9 @@ struct SettingsView: View {
                 }
             }
             .background(colors.background)
-            .frame(minWidth: 560, minHeight: 520)
+            .frame(minWidth: DesignSystem.Metrics.scaled(760), minHeight: DesignSystem.Metrics.scaled(520))
+            .preferredColorScheme(settings.activeTheme.preferredColorScheme)
+            .tint(colors.accent)
         } else {
             TabView {
                 SettingsGeneralTab(colors: colors)
@@ -79,7 +81,9 @@ struct SettingsView: View {
                     }
             }
             .background(colors.background)
-            .frame(minWidth: 560, minHeight: 520)
+            .frame(minWidth: DesignSystem.Metrics.scaled(760), minHeight: DesignSystem.Metrics.scaled(520))
+            .preferredColorScheme(settings.activeTheme.preferredColorScheme)
+            .tint(colors.accent)
         }
     }
 }

@@ -153,7 +153,6 @@ private struct FlowQuery {
     func matches(_ flow: FlowProjection) -> Bool {
         if isEmpty { return true }
 
-        let request = flow.request
         let response = flow.response
 
         let host = flow.host

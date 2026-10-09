@@ -12,8 +12,6 @@ enum InspectorDestination: String, Identifiable {
     case composer
     case scripts
     case sessions
-    case selectiveCapture
-    case workspace
 
     var id: String { rawValue }
 }

@@ -102,12 +102,17 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         }
         let executableURL = try bundledMitmdumpExecutableURL()
         let scriptURL = try bridgeScriptURL()
-        let bodyEnvironment = try CaptureBodyStore.environment()
         let launchID = UUID()
         startupID = launchID
         bridgeReady = false
         isStarting = true
         defer { if startupID == launchID { isStarting = false } }
+
+        let bodyEnvironment = try await Task.detached(priority: .userInitiated) {
+            try CaptureBodyStore.environment()
+        }.value
+        try Task.checkCancellation()
+        guard startupID == launchID else { throw CancellationError() }
 
         let result = try await Self.launchProcess(
             executableURL: executableURL,
@@ -256,6 +261,13 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             "--set", "connection_strategy=lazy"
         ]
 
+        #if DEBUG
+        if let fixture = ProcessInfo.processInfo.environment["FRTM_UI_TEST_STORAGE"], !fixture.isEmpty {
+            let directory = URL(fileURLWithPath: fixture, isDirectory: true).appending(path: "mitmproxy")
+            args.append(contentsOf: ["--set", "confdir=\(directory.path)"])
+        }
+        #endif
+
         if restrictToHosts {
             let normalizedHosts = hosts.map { PinnedHost.normalized($0) }.filter { !$0.isEmpty }
             if normalizedHosts.isEmpty {
@@ -360,46 +372,65 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
     }
     
     private nonisolated func handleIncomingLine(_ line: String, launchID: UUID) {
+        guard let data = line.data(using: .utf8) else { return }
+        // Foundation delivers pipe frames off the UI thread. Decode there before
+        // hopping to MainActor to publish state and notify persistence.
+        let decoded = Self.decodeBridgeLine(data)
         Task { @MainActor [weak self] in
             guard let self, self.startupID == launchID else { return }
-            self.handleCurrentLine(line)
+            self.handleBridgeLine(decoded, rawLine: line)
         }
     }
 
-    private func handleCurrentLine(_ line: String) {
-        guard let data = line.data(using: .utf8) else { return }
+    enum DecodedBridgeLine {
+        case ready(String?)
+        case rules(RulesSyncEvent)
+        case webSocket(WebSocketMessageEvent)
+        case flow(MitmFlow)
+        case captureMessage(String)
+        case unknown
+    }
 
-        if let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           object["event"] as? String == "proxy_ready",
-           object["startup_id"] as? String == startupID.uuidString {
-            bridgeReady = true
-            return
+    private struct BridgeEnvelope: Decodable {
+        let event: String?
+        let startup_id: String?
+        let message: String?
+    }
+
+    nonisolated static func decodeBridgeLine(_ data: Data) -> DecodedBridgeLine {
+        let decoder = JSONDecoder()
+        guard let envelope = try? decoder.decode(BridgeEnvelope.self, from: data) else { return .unknown }
+        switch envelope.event {
+        case "proxy_ready": return .ready(envelope.startup_id)
+        case "rules_ack", "rules_error":
+            guard let event = try? decoder.decode(RulesSyncEvent.self, from: data) else { return .unknown }
+            return .rules(event)
+        case "websocket_message":
+            guard let event = try? decoder.decode(WebSocketMessageEvent.self, from: data) else { return .unknown }
+            return .webSocket(event)
+        case "capture_warning", "script_error": return .captureMessage(envelope.message ?? "Unknown error")
+        default:
+            guard let flow = try? decoder.decode(MitmFlow.self, from: data) else { return .unknown }
+            return .flow(flow)
         }
+    }
 
-        if let rulesEvent = try? JSONDecoder().decode(RulesSyncEvent.self, from: data) {
-            if rulesEvent.revision == rulesRevision { rulesAckTask?.cancel(); rulesAckTask = nil }
-            switch rulesEvent.event {
+    private func handleBridgeLine(_ decoded: DecodedBridgeLine, rawLine: String) {
+        switch decoded {
+        case let .ready(id):
+            if id == startupID.uuidString { bridgeReady = true }
+        case let .rules(event):
+            if event.revision == rulesRevision { rulesAckTask?.cancel(); rulesAckTask = nil }
+            switch event.event {
             case .acknowledged:
-                onLog?("[RULES] revision \(rulesEvent.revision) applied (\(rulesEvent.count ?? 0) rules)\n")
+                onLog?("[RULES] revision \(event.revision) applied (\(event.count ?? 0) rules)\n")
             case .failed:
-                onLog?("[RULES] revision \(rulesEvent.revision) rejected: \(rulesEvent.message ?? "unknown error")\n")
+                onLog?("[RULES] revision \(event.revision) rejected: \(event.message ?? "unknown error")\n")
             }
-            return
-        }
-        if let wsEvent = try? JSONDecoder().decode(WebSocketMessageEvent.self, from: data),
-           wsEvent.event == "websocket_message" {
-            appendWebSocketMessage(wsEvent)
-            return
-        }
-        if let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           ["capture_warning", "script_error"].contains(object["event"] as? String ?? "") {
-            onLog?("[CAPTURE] \(object["message"] as? String ?? "Unknown error")\n")
-            return
-        }
-        if let flow = try? JSONDecoder().decode(MitmFlow.self, from: data) {
-            mergeFlow(flow)
-        } else {
-            onLog?(line)
+        case let .webSocket(event): appendWebSocketMessage(event)
+        case let .flow(flow): mergeFlow(flow)
+        case let .captureMessage(message): onLog?("[CAPTURE] \(message)\n")
+        case .unknown: onLog?(rawLine)
         }
     }
 

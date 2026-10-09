@@ -14,16 +14,25 @@ struct StateView: View {
         switch kind {
         case let .empty(title, message, systemImage):
             ContentUnavailableView {
-                Label(title, systemImage: systemImage)
+                Label(LocalizedStringKey(title), systemImage: systemImage)
+                    .font(DesignSystem.Fonts.heading)
+                    .foregroundStyle(palette.textPrimary)
             } description: {
-                if let message { Text(message) }
+                if let message {
+                    Text(LocalizedStringKey(message))
+                        .font(DesignSystem.Fonts.body)
+                        .foregroundStyle(palette.textSecondary)
+                        .lineLimit(4)
+                        .help(Text(LocalizedStringKey(message)))
+                }
             }
         case let .loading(message):
             VStack(spacing: DesignSystem.Spacing.md) {
                 ProgressView()
                     .controlSize(.small)
+                    .tint(palette.accent)
                 if let message {
-                    Text(message)
+                    Text(LocalizedStringKey(message))
                         .font(DesignSystem.Fonts.body)
                         .foregroundStyle(palette.textSecondary)
                 }
@@ -31,13 +40,20 @@ struct StateView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         case let .failed(title, message, retry):
             ContentUnavailableView {
-                Label(title, systemImage: "exclamationmark.triangle")
+                Label(LocalizedStringKey(title), systemImage: "exclamationmark.triangle")
+                    .font(DesignSystem.Fonts.heading)
+                    .foregroundStyle(palette.danger)
             } description: {
-                if let message { Text(message) }
+                if let message {
+                    Text(LocalizedStringKey(message))
+                        .font(DesignSystem.Fonts.body)
+                        .foregroundStyle(palette.textSecondary)
+                        .lineLimit(4)
+                        .help(Text(LocalizedStringKey(message)))
+                }
             } actions: {
                 if let retry {
-                    Button("Retry", action: retry)
-                        .buttonStyle(.borderedProminent)
+                    ControlButton(title: "Retry", systemImage: "arrow.clockwise", style: .filled(palette), action: retry)
                 }
             }
         }

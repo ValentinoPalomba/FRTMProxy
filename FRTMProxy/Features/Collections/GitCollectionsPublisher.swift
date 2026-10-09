@@ -178,7 +178,7 @@ enum GitCollectionsPublisher {
         var lastError: Error?
         for (index, candidate) in remoteCandidates.enumerated() {
             do {
-                try git(["clone", candidate, cloneDirectory.path], cwd: nil, author: nil, remoteURLForCredentialHelper: candidate)
+                _ = try git(["clone", candidate, cloneDirectory.path], cwd: nil, author: nil, remoteURLForCredentialHelper: candidate)
                 return candidate
             } catch {
                 lastError = error

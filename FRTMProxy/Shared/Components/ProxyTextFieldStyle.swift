@@ -23,6 +23,7 @@ struct ProxyTextFieldStyle: TextFieldStyle {
     let palette: DesignSystem.ColorPalette
     var leadingIcon: String?
     var size: Size = .regular
+    var trailingAccessoryWidth: CGFloat = 0
 
     func _body(configuration: TextField<_Label>) -> some View {
         HStack(spacing: DesignSystem.Spacing.sm) {
@@ -34,6 +35,7 @@ struct ProxyTextFieldStyle: TextFieldStyle {
                 .textFieldStyle(.plain)
                 .font(DesignSystem.Fonts.sans(13))
                 .foregroundStyle(palette.textPrimary)
+                .padding(.trailing, trailingAccessoryWidth)
         }
         .padding(.vertical, size.verticalPadding)
         .padding(.horizontal, size.horizontalPadding)

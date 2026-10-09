@@ -28,8 +28,7 @@ final class TrafficRuleStore: TrafficRuleStoreProtocol {
         legacyBreakpointFilename: String = "breakpoints.json",
         legacyScriptFilename: String = "scripts.json"
     ) {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-            ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+        let base = CaptureStorageConfiguration.root
         self.directoryURL = directoryURL ?? base.appending(path: "FRTMProxy", directoryHint: .isDirectory)
         fileURL = self.directoryURL.appending(path: filename)
         self.legacyMapRuleFilenames = legacyMapRuleFilenames

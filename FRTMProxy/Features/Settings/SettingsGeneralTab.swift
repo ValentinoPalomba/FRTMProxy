@@ -22,7 +22,7 @@ struct SettingsGeneralTab: View {
                     }
                 }
                 .pickerStyle(.menu)
-                .frame(maxWidth: 280, alignment: .leading)
+                .frame(maxWidth: DesignSystem.Metrics.scaled(280), alignment: .leading)
 
                 Text("Some system-owned dialogs follow the macOS language and may require reopening.")
                     .font(DesignSystem.Fonts.caption)

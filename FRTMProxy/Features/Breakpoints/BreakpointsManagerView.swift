@@ -33,7 +33,10 @@ struct BreakpointsManagerView: View {
             }
         }
         .padding(DesignSystem.Spacing.lg)
-        .frame(minWidth: 900, minHeight: 600)
+        .frame(minWidth: DesignSystem.Metrics.scaled(800), minHeight: DesignSystem.Metrics.scaled(560))
+        .font(DesignSystem.Fonts.body)
+        .foregroundStyle(colors.textPrimary)
+        .tint(colors.accent)
         .background(colors.background)
         .confirmationDialog(
             "Delete breakpoint?",
@@ -58,15 +61,16 @@ struct BreakpointsManagerView: View {
         HStack(spacing: DesignSystem.Spacing.md) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text("Breakpoints")
-                    .font(DesignSystem.Fonts.mono(20, weight: .semibold))
+                    .font(DesignSystem.Fonts.title)
                 Text("Create and enable persistent breakpoints for requests and responses.")
-                    .font(DesignSystem.Fonts.mono(13))
+                    .font(DesignSystem.Fonts.caption)
                     .foregroundStyle(colors.textSecondary)
             }
             Spacer()
             ControlButton(title: "Close", systemImage: "xmark", style: .ghost(colors)) {
                 dismiss()
             }
+            .keyboardShortcut(.cancelAction)
         }
     }
 
@@ -74,17 +78,12 @@ struct BreakpointsManagerView: View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             HStack {
                 Text("New breakpoint")
-                    .font(DesignSystem.Fonts.sans(14, weight: .semibold))
+                    .font(DesignSystem.Fonts.heading)
                     .foregroundStyle(colors.textPrimary)
                 Spacer()
-                Button {
+                ControlButton(title: "Use selected flow", systemImage: "cursorarrow.rays", style: .ghost(colors), disabled: viewModel.selectedFlow == nil) {
                     fillFromSelection()
-                } label: {
-                    Label("Use selected flow", systemImage: "cursorarrow.rays")
-                        .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                 }
-                .buttonStyle(.borderless)
-                .disabled(viewModel.selectedFlow == nil)
             }
 
             HStack(spacing: DesignSystem.Spacing.md) {
@@ -181,7 +180,7 @@ struct BreakpointsManagerView: View {
             ),
             palette: colors
         )
-        .frame(maxWidth: .infinity, minHeight: 220)
+        .frame(maxWidth: .infinity, minHeight: DesignSystem.Metrics.scaled(200))
     }
 
     private var canCreateBreakpoint: Bool {
@@ -257,9 +256,14 @@ private struct BreakpointRow: View {
         HStack(spacing: DesignSystem.Spacing.lg) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text(rule.host)
-                    .font(DesignSystem.Fonts.sans(15, weight: .semibold))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .help(rule.host)
+                    .font(DesignSystem.Fonts.heading)
                     .foregroundStyle(colors.textPrimary)
                 Text(rule.path)
+                    .lineLimit(2)
+                    .help(rule.path)
                     .font(DesignSystem.Fonts.mono(13))
                     .foregroundStyle(colors.textSecondary)
             }
@@ -285,12 +289,12 @@ private struct BreakpointRow: View {
             .labelsHidden()
             .toggleStyle(SwitchToggleStyle())
 
-            Button(role: .destructive, action: onDelete) {
-                Image(systemName: "trash")
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(colors.danger)
-            .accessibilityLabel("Delete breakpoint")
+            Button("Delete breakpoint", systemImage: "trash", role: .destructive, action: onDelete)
+                .labelStyle(.iconOnly)
+                .buttonStyle(.pressable)
+                .hoverHighlight(colors)
+                .foregroundStyle(colors.destructive)
+                .help("Delete breakpoint")
         }
         .padding(DesignSystem.Spacing.lg)
         .background(
@@ -314,12 +318,12 @@ private struct PhaseChip: View {
     var body: some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
-                Text(title)
-                    .font(DesignSystem.Fonts.sans(12, weight: .semibold))
+                Text(LocalizedStringKey(title))
+                    .font(DesignSystem.Fonts.label)
                     .foregroundStyle(isOn ? colors.accent : colors.textSecondary)
                 if let subtitle {
-                    Text(subtitle)
-                        .font(DesignSystem.Fonts.sans(10))
+                    Text(LocalizedStringKey(subtitle))
+                        .font(DesignSystem.Fonts.caption)
                         .foregroundStyle(colors.textSecondary)
                 }
             }
@@ -334,6 +338,8 @@ private struct PhaseChip: View {
                     )
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
+        .hoverHighlight(colors)
+        .accessibilityAddTraits(isOn ? [.isSelected] : [])
     }
 }

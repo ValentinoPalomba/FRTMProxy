@@ -25,6 +25,32 @@ struct MCPHistoryTests {
         return try #require(try JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any])
     }
 
+    @MainActor
+    private final class StoreHolder {
+        var store: (any SessionStoreProtocol)?
+    }
+
+    @Test @MainActor
+    func sessionProviderResolvesStorageInstalledAfterRouterCreation() async throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let holder = StoreHolder()
+        let router = MCPAutomationRouter(sessionStoreProvider: { holder.store }, flowProvider: { [] }, ruleUpdater: { _ in })
+        let unavailable = try await call("list_sessions", arguments: [:], router: router)
+        #expect(unavailable["isError"] as? Bool == true)
+        let store = try SQLiteSessionStore(databaseURL: directory.appending(path: "session.sqlite"), keyProvider: KeyProvider())
+        let session = try await store.createSession(name: "Late storage")
+        try await store.upsert(flow: MitmFlow(id: "late-flow", event: "response"), in: session.id)
+        holder.store = store
+        let listing = try content(await call("list_sessions", arguments: [:], router: router))
+        #expect((listing["sessions"] as? [[String: Any]])?.first?["flowCount"] as? Int == 1)
+        let page = try content(await call("query_session_flows", arguments: ["sessionID": session.id.uuidString], router: router))
+        #expect((page["flows"] as? [[String: Any]])?.first?["id"] as? String == "late-flow")
+        holder.store = nil
+        let removed = try await call("list_sessions", arguments: [:], router: router)
+        #expect(removed["isError"] as? Bool == true)
+    }
+
     @Test @MainActor
     func historyBeyondLiveCacheAndEmptyMatchPagesRemainReachable() async throws {
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)

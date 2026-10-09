@@ -33,12 +33,12 @@ enum SessionHARExporter {
             }
             let milliseconds = flow.duration.map { $0 * 1000 }
             var entry: [String: Any] = [
-                "startedDateTime": Date(timeIntervalSince1970: start).formatted(.iso8601),
+                "startedDateTime": Date(timeIntervalSince1970: start).formatted(Date.ISO8601FormatStyle(includingFractionalSeconds: true)),
                 "request": requestObject,
                 "response": ["status": response.status ?? 0, "statusText": "", "httpVersion": response.httpVersion ?? "",
                              "headers": headers(response.headerFields, fallback: response.headers ?? [:], redacted: redacted),
                              "cookies": [], "content": content, "redirectURL": "", "headersSize": -1, "bodySize": response.byteCount ?? -1],
-                "time": milliseconds ?? 0,
+                "time": milliseconds ?? -1,
                 "timings": ["send": -1, "wait": -1, "receive": -1],
                 "_captureEvent": flow.event, "_bodiesOmitted": redacted,
                 "_previewTruncated": (request.bodyTruncated ?? false) || (response.bodyTruncated ?? false)

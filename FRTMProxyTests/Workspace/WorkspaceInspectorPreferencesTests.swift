@@ -56,10 +56,12 @@ struct WorkspaceInspectorPreferencesTests {
         let imported = try #require(try await service.importPlan(from: url).bundle.manifest.inspectorPreferences)
         #expect(imported == preferences)
         try imported.apply(to: defaults)
-        #expect(try WorkspaceInspectorPreferences.read(from: defaults) == preferences)
+        var migratedPreferences = preferences
+        migratedPreferences.captureProfiles = try CaptureProfileStore.migratedProfiles(from: [focus])
+        #expect(try WorkspaceInspectorPreferences.read(from: defaults) == migratedPreferences)
         let legacyColumns = WorkspaceInspectorPreferences(headerColumns: [])
         try legacyColumns.apply(to: defaults)
-        #expect(try WorkspaceInspectorPreferences.read(from: defaults) == preferences)
+        #expect(try WorkspaceInspectorPreferences.read(from: defaults) == migratedPreferences)
         var invalid = preferences
         invalid.focusSets = [SavedFocusSet(name: "", filter: filter)]
         let before = defaults.data(forKey: SavedFocusSet.dataKey)
@@ -74,6 +76,69 @@ struct WorkspaceInspectorPreferencesTests {
         defaults.set(Data("invalid".utf8), forKey: SavedFocusSet.dataKey)
         #expect(throws: (any Error).self) { try WorkspaceInspectorPreferences.read(from: defaults) }
     }
+    @Test @MainActor
+    func namedProfilesRoundTripPreserveSelectionAndRefreshLiveStore() async throws {
+        let suite = "workspace-profiles-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        let profileSuite = suite + ".profiles"
+        let profileDefaults = try #require(UserDefaults(suiteName: profileSuite))
+        defer {
+            defaults.removePersistentDomain(forName: suite)
+            profileDefaults.removePersistentDomain(forName: profileSuite)
+        }
+        let store = CaptureProfileStore(defaults: profileDefaults)
+        let intesa = CaptureProfile(name: "Intesa", members: [.host("api.intesa.example")])
+        let bank = CaptureProfile(name: "CheBanca", members: [.app("com.chebanca.mobile")])
+        let preferences = WorkspaceInspectorPreferences(
+            captureProfiles: [intesa, bank], activeCaptureProfileID: bank.id, headerColumns: []
+        )
+        let directory = try WorkspaceServiceTestSupport.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let service = WorkspaceBundleService()
+        let bundle = WorkspaceBundle(
+            manifest: .init(identifier: "profiles", displayName: "Profiles", inspectorPreferences: preferences), resources: []
+        )
+        let url = try await service.export(bundle, toSelectedRoot: directory)
+        let imported = try #require(try await service.importPlan(from: url).bundle.manifest.inspectorPreferences)
+        try imported.apply(to: defaults, profileDefaults: profileDefaults)
+        store.reload()
+        #expect(store.profiles == [intesa, bank])
+        #expect(store.activeProfileID == bank.id)
+        #expect(defaults.object(forKey: CaptureProfileStore.dataKey) == nil)
+        #expect(try WorkspaceInspectorPreferences.read(from: defaults, profileDefaults: profileDefaults) == preferences)
+        try WorkspaceInspectorPreferences(headerColumns: []).apply(to: defaults, profileDefaults: profileDefaults)
+        store.reload()
+        #expect(store.activeProfileID == bank.id)
+        #expect(store.profiles == [intesa, bank])
+        var invalid = preferences
+        invalid.activeCaptureProfileID = UUID()
+        let before = profileDefaults.data(forKey: CaptureProfileStore.dataKey)
+        #expect(throws: (any Error).self) { try invalid.apply(to: defaults, profileDefaults: profileDefaults) }
+        #expect(profileDefaults.data(forKey: CaptureProfileStore.dataKey) == before)
+        invalid.activeCaptureProfileID = nil
+        invalid.captureProfiles = [intesa, intesa]
+        #expect(throws: (any Error).self) { try invalid.validate() }
+    }
+
+    @Test @MainActor
+    func legacyWorkspaceReplacesProfilesWithoutLosingDuplicateNamedFilters() throws {
+        let suite = "workspace-legacy-profiles-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let store = CaptureProfileStore(defaults: defaults)
+        let old = try store.createProfile(name: "Old", member: .host("old.example"))
+        store.selectProfile(old.id)
+        let first = SavedFocusSet(name: "API", filter: FlowFilter(searchText: "status:500"))
+        let second = SavedFocusSet(name: "API", filter: FlowFilter(searchText: "host:example.com"))
+        try WorkspaceInspectorPreferences(focusSets: [first, second], headerColumns: []).apply(to: defaults)
+        store.reload()
+        #expect(store.profiles.map(\.name) == ["API", "API (2)"])
+        #expect(store.profiles.map(\.id) == [first.id, second.id])
+        #expect(store.profiles.map(\.legacyFilter) == [first.filter, second.filter])
+        #expect(store.activeProfileID == nil)
+        #expect(try SavedFocusSet.decode(try #require(defaults.data(forKey: SavedFocusSet.dataKey))) == [first, second])
+    }
+
     @Test func savedFocusLimitsPreserveLegacyNamesAndRejectDuplicateIDs() throws {
         let focus = SavedFocusSet(name: "API", filter: FlowFilter(searchText: "status:500"))
         let sameLegacyName = SavedFocusSet(name: "API", filter: FlowFilter(searchText: "host:example.com"))

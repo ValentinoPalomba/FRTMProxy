@@ -1,7 +1,7 @@
 import Foundation
 
 extension ProxyViewModel {
-    func currentWorkspaceBundle(defaults: UserDefaults = .standard) -> WorkspaceBundle? {
+    func currentWorkspaceBundle(defaults: UserDefaults = .standard, profileDefaults: UserDefaults? = nil) -> WorkspaceBundle? {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
 
@@ -44,7 +44,7 @@ extension ProxyViewModel {
         }
 
         let preferences: WorkspaceInspectorPreferences
-        do { preferences = try .read(from: defaults) }
+        do { preferences = try .read(from: defaults, profileDefaults: profileDefaults) }
         catch {
             appendLog("[WORKSPACE] unable to export inspector preferences: \(error.localizedDescription)\n")
             onToast?("Unable to export unreadable inspector preferences", .error)
@@ -60,7 +60,11 @@ extension ProxyViewModel {
         return WorkspaceBundle(manifest: manifest, resources: payloads)
     }
 
-    func applyWorkspaceBundle(_ plan: WorkspaceImportPlan, defaults: UserDefaults = .standard) throws -> WorkspaceImportResult {
+    func applyWorkspaceBundle(
+        _ plan: WorkspaceImportPlan,
+        defaults: UserDefaults = .standard,
+        profileDefaults: UserDefaults? = nil
+    ) throws -> WorkspaceImportResult {
         do {
             try plan.bundle.manifest.inspectorPreferences?.validate()
             if let document = plan.trafficRuleDocument {
@@ -85,7 +89,7 @@ extension ProxyViewModel {
             )
         }
 
-        try plan.bundle.manifest.inspectorPreferences?.apply(to: defaults)
+        try plan.bundle.manifest.inspectorPreferences?.apply(to: defaults, profileDefaults: profileDefaults)
         synchronizeEffectiveTrafficRules(force: true)
 
         for resource in plan.skippedResources {

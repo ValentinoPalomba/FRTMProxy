@@ -33,7 +33,10 @@ struct RulesManagerView: View {
             }
         }
         .padding(DesignSystem.Spacing.lg)
-        .frame(minWidth: 960, minHeight: 620)
+        .frame(minWidth: DesignSystem.Metrics.scaled(800), minHeight: DesignSystem.Metrics.scaled(560))
+        .font(DesignSystem.Fonts.body)
+        .foregroundStyle(colors.textPrimary)
+        .tint(colors.accent)
         .background(colors.background)
         .sheet(item: $editingRule, onDismiss: { editingRule = nil }) { rule in
             RuleEditorSheet(
@@ -79,9 +82,9 @@ struct RulesManagerView: View {
         HStack(spacing: DesignSystem.Spacing.md) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text("Map Local Rules")
-                    .font(DesignSystem.Fonts.mono(20, weight: .semibold))
+                    .font(DesignSystem.Fonts.heading)
                 Text("Manage saved mock responses and quickly enable/disable rules.")
-                    .font(DesignSystem.Fonts.mono(13))
+                    .font(DesignSystem.Fonts.body)
                     .foregroundStyle(colors.textSecondary)
             }
             Spacer()
@@ -107,6 +110,7 @@ struct RulesManagerView: View {
             ) {
                 dismiss()
             }
+            .keyboardShortcut(.cancelAction)
         }
     }
 
@@ -212,9 +216,13 @@ private struct RuleRow: View {
         HStack(spacing: DesignSystem.Spacing.lg) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text(rule.host)
+                    .lineLimit(1)
+                    .help(rule.host)
                     .font(DesignSystem.Fonts.sans(15, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
                 Text(rule.path)
+                    .lineLimit(2)
+                    .help(rule.path)
                     .font(DesignSystem.Fonts.mono(12))
                     .foregroundStyle(colors.textSecondary)
             }
@@ -226,14 +234,12 @@ private struct RuleRow: View {
             .toggleStyle(.switch)
             .labelsHidden()
 
-            Button(role: .destructive) {
-                onDelete()
-            } label: {
-                Image(systemName: "trash")
-                    .foregroundStyle(colors.danger)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Delete rule")
+            Button("Delete rule", systemImage: "trash", role: .destructive, action: onDelete)
+                .labelStyle(.iconOnly)
+                .foregroundStyle(colors.destructive)
+                .buttonStyle(.pressable)
+                .hoverHighlight(colors)
+                .help("Delete rule")
         }
         .padding(DesignSystem.Spacing.md)
         .background(
@@ -308,20 +314,23 @@ private struct NewRuleSheet: View {
 
             HStack {
                 Spacer()
-                Button("Cancel") {
+                ControlButton(title: "Cancel", systemImage: "xmark", style: .ghost(colors)) {
                     host = ""
                     path = "/"
                     dismiss()
                 }
-                Button("Create") {
+                .keyboardShortcut(.cancelAction)
+                ControlButton(title: "Create", systemImage: "plus", style: .filled(colors), disabled: host.trimmingCharacters(in: .whitespaces).isEmpty) {
                     onCreate()
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(host.trimmingCharacters(in: .whitespaces).isEmpty)
+                .keyboardShortcut(.defaultAction)
             }
         }
         .padding(DesignSystem.Spacing.xl)
-        .frame(minWidth: 420)
+        .frame(minWidth: DesignSystem.Metrics.scaled(420))
+        .foregroundStyle(colors.textPrimary)
+        .background(colors.background)
+        .tint(colors.accent)
     }
 
     private func applyURLSplitIfNeeded(changedField: HostPathInputField, previousValue: String, newValue: String) {
@@ -399,6 +408,6 @@ private struct RuleEditorSheet: View {
                 editorViewModel.load(rule: rule)
             }
         }
-        .frame(minWidth: 980, minHeight: 700)
+        .frame(minWidth: DesignSystem.Metrics.scaled(760), minHeight: DesignSystem.Metrics.scaled(620))
     }
 }

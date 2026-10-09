@@ -51,7 +51,7 @@ struct SettingsProxyTab: View {
                             .foregroundStyle(colors.textPrimary)
                         Spacer()
                         TextField("", value: $settings.defaultPort, formatter: portFormatter)
-                            .frame(width: 92)
+                            .frame(width: DesignSystem.Metrics.scaled(92))
                             .textFieldStyle(ProxyTextFieldStyle(palette: colors, size: .compact))
                             .onChange(of: settings.defaultPort) { _, newValue in
                                 settings.defaultPort = Self.sanitizedPort(newValue)

@@ -5,15 +5,32 @@ import Darwin
 /// Original bytes stay encrypted on disk; the live flow only carries a bounded preview and a filename.
 enum CaptureBodyStore {
     static var directory: URL {
-        URL.applicationSupportDirectory.appending(path: "FRTMProxy/Bodies", directoryHint: .isDirectory)
+        CaptureStorageConfiguration.root.appending(path: "FRTMProxy/Bodies", directoryHint: .isDirectory)
     }
 
     static func environment() throws -> [String: String] {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
                                                attributes: [.posixPermissions: 0o700])
-        let key = try KeychainSessionEncryptionKeyProvider().loadOrCreateKey()
+        let key = try CaptureStorageConfiguration.keyProvider.loadOrCreateKey()
         return ["FRTMPROXY_BODY_DIRECTORY": directory.path,
                 "FRTMPROXY_BODY_KEY": key.withUnsafeBytes { Data($0).base64EncodedString() }]
+    }
+
+    static func save(_ body: Data, flowID: String, phase: String, directory: URL, key: SymmetricKey) throws -> String {
+        guard ["request", "response"].contains(phase), body.count <= 64 * 1024 * 1024 else {
+            throw CocoaError(.fileWriteInapplicableStringEncoding)
+        }
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
+                                               attributes: [.posixPermissions: 0o700])
+        let reference = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased() + ".gcm"
+        let box = try AES.GCM.seal(body, using: key, authenticating: Data("\(flowID):\(phase)".utf8))
+        guard let combined = box.combined else { throw CocoaError(.fileWriteUnknown) }
+        let url = directory.appending(path: reference)
+        guard FileManager.default.createFile(atPath: url.path, contents: combined,
+                                             attributes: [.posixPermissions: 0o600]) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        return reference
     }
 
     static func isValidReference(_ reference: String) -> Bool {
@@ -49,7 +66,7 @@ enum CaptureBodyStore {
 
     static func load(reference: String, flowID: String, phase: String,
                      directory: URL = directory,
-                     keyProvider: any SessionEncryptionKeyProviding = KeychainSessionEncryptionKeyProvider(),
+                     keyProvider: any SessionEncryptionKeyProviding = CaptureStorageConfiguration.keyProvider,
                      maximumBytes: Int = 64 * 1024 * 1024) throws -> Data {
         guard isValidReference(reference),
               ["request", "response"].contains(phase) else { throw CocoaError(.fileReadInvalidFileName) }

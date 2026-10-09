@@ -19,18 +19,18 @@ struct TrafficProfile: Identifiable, Equatable, Codable {
     var summary: String {
         var pieces: [String] = []
         if latencyMs > 0 {
-            pieces.append("\(latencyMs)ms ±\(jitterMs)ms latency")
+            pieces.append(String(localized: "\(latencyMs)ms ±\(jitterMs)ms latency", bundle: AppLocalization.bundle))
         }
         if downstreamKbps > 0 || upstreamKbps > 0 {
             pieces.append("↓\(downstreamKbps)kbps / ↑\(upstreamKbps)kbps")
         }
         if packetLoss > 0 {
-            pieces.append("\(Int(packetLoss * 100))% packet loss")
+            pieces.append(String(localized: "\(Int(packetLoss * 100))% packet loss", bundle: AppLocalization.bundle))
         }
         if responseDelayMs > 0 {
-            pieces.append("+\(responseDelayMs)ms response delay")
+            pieces.append(String(localized: "+\(responseDelayMs)ms response delay", bundle: AppLocalization.bundle))
         }
-        return pieces.isEmpty ? "No throttling applied" : pieces.joined(separator: " · ")
+        return pieces.isEmpty ? String(localized: "No throttling applied", bundle: AppLocalization.bundle) : pieces.joined(separator: " · ")
     }
 }
 

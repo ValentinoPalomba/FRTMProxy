@@ -10,7 +10,7 @@ struct SessionSidebarView: View {
     var body: some View {
         List(selection: $selection) {
             ForEach(sessions) { session in
-                SessionSidebarRow(session: session, colors: colors)
+                SessionSidebarRow(session: session, colors: colors, isSelected: selection == session.id)
                     .tag(session.id)
                     .contextMenu {
                         if session.isActive {
@@ -31,13 +31,12 @@ struct SessionSidebarView: View {
             }
         }
         .listStyle(.sidebar)
+        .tint(colors.accent)
+        .scrollContentBackground(.hidden)
+        .background(colors.surface)
         .overlay {
             if sessions.isEmpty {
-                ContentUnavailableView(
-                    "No Sessions",
-                    systemImage: "clock",
-                    description: Text("Captured sessions will appear here.")
-                )
+                StateView(kind: .empty(title: "No Sessions", message: "Captured sessions will appear here.", systemImage: "clock"), palette: colors)
             }
         }
     }

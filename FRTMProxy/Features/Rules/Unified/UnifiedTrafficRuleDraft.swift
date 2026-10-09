@@ -27,15 +27,21 @@ final class UnifiedTrafficRuleDraft {
     }
 
     var validationErrors: [String] {
-        materializedRule().matcher.validationErrors
+        var errors = materializedRule().matcher.validationErrors
+        for header in headerMatchers {
+            let name = header.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !HTTPHeaderField.isValidName(name) {
+                errors.append("Enter a valid name for every header matcher or remove the unused row.")
+            }
+        }
+        return errors
     }
 
     func materializedRule() -> TrafficRule {
         var result = rule
         result.schemaVersion = TrafficRule.currentSchemaVersion
         result.matcher.headers = headerMatchers
-            .filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-            .map { .init(name: $0.name, value: $0.value) }
+            .map { .init(name: $0.name.trimmingCharacters(in: .whitespacesAndNewlines), value: $0.value) }
         return result
     }
 

@@ -7,6 +7,7 @@ struct CaptureSession: Identifiable, Codable, Equatable, Sendable {
     var updatedAt: Date
     var endedAt: Date?
     var flowCount: Int
+    var incompleteReason: String? = nil
 
     var isActive: Bool { endedAt == nil }
 }

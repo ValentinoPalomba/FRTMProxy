@@ -41,24 +41,31 @@ struct CommandPaletteView: View {
     @State private var query: String = ""
     @State private var selectedIndex: Int = 0
     @FocusState private var isSearchFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var filteredActions: [CommandPaletteAction] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return actions }
         let tokens = trimmed.lowercased().split(separator: " ").map(String.init)
         return actions.filter { action in
-            let haystack = ([action.title, action.subtitle ?? ""] + action.keywords).joined(separator: " ").lowercased()
-            return tokens.allSatisfy { haystack.contains($0) }
+            let bundle = AppLocalization.bundle
+            let translatedTitle = bundle.localizedString(forKey: action.title, value: action.title, table: nil)
+            let translatedSubtitle = action.subtitle.map { bundle.localizedString(forKey: $0, value: $0, table: nil) } ?? ""
+            let haystack = ([translatedTitle, translatedSubtitle, action.title, action.subtitle ?? ""] + action.keywords)
+                .joined(separator: " ").lowercased()
+            return tokens.allSatisfy { haystack.localizedStandardContains($0) }
         }
     }
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.35)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    isPresented = false
-                }
+            Button {
+                isPresented = false
+            } label: {
+                Color.black.opacity(0.35).ignoresSafeArea()
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Close")
 
             VStack(spacing: DesignSystem.Spacing.md) {
                 HStack(spacing: DesignSystem.Spacing.sm) {
@@ -82,32 +89,32 @@ struct CommandPaletteView: View {
                         ),
                         palette: colors
                     )
-                    .frame(maxWidth: .infinity, minHeight: 160)
+                    .frame(maxWidth: .infinity, minHeight: DesignSystem.Metrics.scaled(160))
                 } else {
                     ScrollViewReader { proxy in
                         ScrollView {
                             LazyVStack(spacing: DesignSystem.Spacing.sm) {
                                 ForEach(Array(filteredActions.enumerated()), id: \.element.id) { index, action in
-                                    CommandPaletteRow(
-                                        action: action,
-                                        isSelected: index == selectedIndex,
-                                        colors: colors
-                                    )
-                                    .id(action.id)
-                                    .onTapGesture {
+                                    Button {
                                         selectedIndex = index
                                         runSelectedAction()
+                                    } label: {
+                                        CommandPaletteRow(action: action, isSelected: index == selectedIndex, colors: colors)
                                     }
+                                    .buttonStyle(.pressable)
+                                    .disabled(!action.isEnabled)
+                                    .accessibilityAddTraits(index == selectedIndex ? [.isSelected] : [])
+                                    .id(action.id)
                                 }
                             }
                             .padding(.vertical, DesignSystem.Spacing.xs)
                         }
-                        .frame(maxHeight: 320)
+                        .frame(maxHeight: DesignSystem.Metrics.scaled(320))
                         .onChange(of: selectedIndex) { _, _ in
                             guard !filteredActions.isEmpty else { return }
                             let clamped = min(max(selectedIndex, 0), filteredActions.count - 1)
                             let targetID = filteredActions[clamped].id
-                            withAnimation(.easeOut(duration: 0.12)) {
+                            withAnimation(DesignSystem.Motion.adaptive(DesignSystem.Motion.fast, reduceMotion: reduceMotion)) {
                                 proxy.scrollTo(targetID, anchor: .center)
                             }
                         }
@@ -121,7 +128,7 @@ struct CommandPaletteView: View {
                 }
             }
             .padding(DesignSystem.Spacing.lg)
-            .frame(width: 520)
+            .frame(width: DesignSystem.Metrics.scaled(520))
             .background(
                 RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                     .fill(colors.surface)
@@ -217,15 +224,19 @@ private struct CommandPaletteRow: View {
             if let icon = action.systemImage {
                 Image(systemName: icon)
                     .foregroundStyle(iconColor)
-                    .frame(width: 18)
+                    .frame(width: DesignSystem.Metrics.scaled(18))
             }
 
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
-                Text(action.title)
+                Text(LocalizedStringKey(action.title))
+                    .lineLimit(2)
+                    .help(Text(LocalizedStringKey(action.title)))
                     .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                     .foregroundStyle(textColor)
                 if let subtitle = action.subtitle {
-                    Text(subtitle)
+                    Text(LocalizedStringKey(subtitle))
+                        .lineLimit(2)
+                        .help(Text(LocalizedStringKey(subtitle)))
                         .font(DesignSystem.Fonts.sans(11))
                         .foregroundStyle(colors.textSecondary)
                 }
@@ -266,4 +277,3 @@ private struct CommandPaletteRow: View {
         action.isEnabled ? colors.textPrimary : colors.textSecondary
     }
 }
-

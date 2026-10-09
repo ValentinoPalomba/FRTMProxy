@@ -2,6 +2,7 @@ import SwiftUI
 
 struct UnifiedTrafficRuleActionsEditor: View {
     let draft: UnifiedTrafficRuleDraft
+    let colors: DesignSystem.ColorPalette
     @State private var editingAction: TrafficRuleAction?
 
     var body: some View {
@@ -9,10 +10,10 @@ struct UnifiedTrafficRuleActionsEditor: View {
             HStack {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                     Label("Actions", systemImage: "bolt")
-                        .font(.headline)
+                        .font(DesignSystem.Fonts.title)
                     Text("Actions run from top to bottom. Mock and Block are terminal in the bridge.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(DesignSystem.Fonts.caption)
+                        .foregroundStyle(colors.textSecondary)
                 }
                 Spacer()
                 Menu("Add Action", systemImage: "plus") {
@@ -22,21 +23,29 @@ struct UnifiedTrafficRuleActionsEditor: View {
                         }
                     }
                 }
+                .menuStyle(.borderlessButton)
+                .font(DesignSystem.Fonts.label)
+                .foregroundStyle(colors.textPrimary)
+                .padding(.horizontal, DesignSystem.Spacing.md)
+                .padding(.vertical, DesignSystem.Spacing.sm)
+                .surfaceCard(palette: colors, radius: DesignSystem.Radius.md, shadowOpacity: 0)
+                .tint(colors.accent)
                 .accessibilityHint("Adds a new ordered traffic action")
             }
 
             if draft.rule.actions.isEmpty {
-                ContentUnavailableView(
-                    "No Actions",
-                    systemImage: "bolt.slash",
-                    description: Text("Add at least one action before saving this rule.")
+                StateView(
+                    kind: .empty(title: "No Actions", message: "Add at least one action before saving this rule.", systemImage: "bolt.slash"),
+                    palette: colors
                 )
-                .frame(maxWidth: .infinity, minHeight: 160)
+                .frame(maxWidth: .infinity, minHeight: DesignSystem.Metrics.scaled(160))
             } else {
                 VStack(spacing: DesignSystem.Spacing.sm) {
-                    ForEach(Array(draft.rule.actions.enumerated()), id: \.element.id) { index, action in
+                    ForEach(draft.rule.actions) { action in
+                        let index = draft.rule.actions.firstIndex { $0.id == action.id } ?? 0
                         UnifiedTrafficRuleActionRow(
                             action: action,
+                            colors: colors,
                             position: index + 1,
                             canMoveUp: index > draft.rule.actions.startIndex,
                             canMoveDown: index < draft.rule.actions.index(before: draft.rule.actions.endIndex),
@@ -50,7 +59,7 @@ struct UnifiedTrafficRuleActionsEditor: View {
             }
         }
         .sheet(item: $editingAction) { action in
-            UnifiedTrafficRuleActionEditor(action: action) { updated in
+            UnifiedTrafficRuleActionEditor(action: action, colors: colors) { updated in
                 draft.upsertAction(updated)
             }
         }
@@ -59,6 +68,7 @@ struct UnifiedTrafficRuleActionsEditor: View {
 
 private struct UnifiedTrafficRuleActionRow: View {
     let action: TrafficRuleAction
+    let colors: DesignSystem.ColorPalette
     let position: Int
     let canMoveUp: Bool
     let canMoveDown: Bool
@@ -70,28 +80,24 @@ private struct UnifiedTrafficRuleActionRow: View {
     var body: some View {
         HStack(spacing: DesignSystem.Spacing.md) {
             Text(position, format: .number)
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
+                .font(DesignSystem.Fonts.caption).monospacedDigit()
+                .foregroundStyle(colors.textSecondary)
                 .accessibilityLabel("Position \(position)")
             Image(systemName: action.systemImage)
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(colors.accent)
                 .accessibilityHidden(true)
             Text(action.displayName)
-                .font(.body)
+                .font(DesignSystem.Fonts.body)
+                .lineLimit(2)
+                .help(action.displayName)
             Spacer()
-            Button("Move Up", systemImage: "chevron.up", action: onMoveUp)
-                .labelStyle(.iconOnly)
-                .disabled(!canMoveUp)
-            Button("Move Down", systemImage: "chevron.down", action: onMoveDown)
-                .labelStyle(.iconOnly)
-                .disabled(!canMoveDown)
-            Button("Edit Action", systemImage: "pencil", action: onEdit)
-                .labelStyle(.iconOnly)
-            Button("Delete Action", systemImage: "trash", role: .destructive, action: onDelete)
-                .labelStyle(.iconOnly)
+            ControlButton(title: "Move Up", systemImage: "chevron.up", style: .ghost(colors), disabled: !canMoveUp, action: onMoveUp)
+            ControlButton(title: "Move Down", systemImage: "chevron.down", style: .ghost(colors), disabled: !canMoveDown, action: onMoveDown)
+            ControlButton(title: "Edit", systemImage: "pencil", style: .ghost(colors), action: onEdit)
+            ControlButton(title: "Delete", systemImage: "trash", style: .destructive(colors), action: onDelete)
         }
         .padding(DesignSystem.Spacing.sm)
-        .background(Color.secondary.opacity(0.08), in: .rect(cornerRadius: DesignSystem.Radius.sm))
+        .background(colors.surfaceElevated, in: .rect(cornerRadius: DesignSystem.Radius.sm))
         .accessibilityElement(children: .contain)
     }
 }

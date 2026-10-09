@@ -122,13 +122,17 @@ enum HARCollectionConverter {
     static func harEncoder(prettyPrinted: Bool) -> JSONEncoder {
         let encoder = JSONEncoder()
         encoder.outputFormatting = prettyPrinted ? [.prettyPrinted, .sortedKeys] : [.sortedKeys]
-        encoder.dateEncodingStrategy = .custom(encodeHARDate(_:to:))
+        encoder.dateEncodingStrategy = .custom { date, encoder in
+            try encodeHARDate(date, to: encoder)
+        }
         return encoder
     }
 
     static var harDecoder: JSONDecoder {
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .custom(decodeHARDate(from:))
+        decoder.dateDecodingStrategy = .custom { decoder in
+            try decodeHARDate(from: decoder)
+        }
         return decoder
     }
 

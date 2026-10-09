@@ -8,6 +8,7 @@ final class RequestComposerViewModel: ObservableObject {
     @Published var requestHeaders: [ComposerHeaderRow] = []
     @Published var requestBody = ""
     @Published var bodyIsBase64 = false
+    @Published var showsRequestHeaders = false
     @Published private(set) var history: [ComposerDraft] = []
     @Published var variables: [ComposerHeaderRow] = []
     @Published private(set) var isRestoring = true
@@ -115,6 +116,15 @@ final class RequestComposerViewModel: ObservableObject {
         } catch { persistenceError = error.localizedDescription }
     }
 
+    func saveVariables(_ rows: [ComposerHeaderRow]) async throws {
+        guard !isRestoring, !restoreFailed else { throw CocoaError(.fileReadUnknown) }
+        _ = try ComposerTemplate.request(.init(method: "GET", url: "https://example.com", headers: [], body: ""), variables: rows)
+        let saved = try await store.save(.init(history: history, variables: rows))
+        variables = saved.variables
+        history = saved.history
+        persistenceError = nil
+    }
+
     func clearHistory() async {
         history = []
         await saveLocalState()
@@ -179,6 +189,15 @@ final class RequestComposerViewModel: ObservableObject {
         }
         if generation == id { isLoading = false }
     }
-    func addHeaderRow() { requestHeaders.append(.init(key: "", value: "")) }
+    @discardableResult
+    func addHeaderRow() -> UUID? {
+        guard requestHeaders.count < 128 else {
+            errorMessage = ComposerTemplate.Failure.headerLimit.localizedDescription
+            return nil
+        }
+        let row = ComposerHeaderRow(key: "", value: "")
+        requestHeaders.append(row)
+        return row.id
+    }
     func removeHeaderRow(at offsets: IndexSet) { requestHeaders.remove(atOffsets: offsets) }
 }

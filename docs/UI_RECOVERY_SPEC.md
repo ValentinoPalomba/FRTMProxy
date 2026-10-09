@@ -1,5 +1,7 @@
 # FRTMProxy — spec di correzione e consolidamento
 
+Aggiornamento di perimetro del 6 ottobre 2026: Workspace e Acquisizione mirata sono rimossi dalla UI. I profili chiamata/host/app si selezionano, creano e gestiscono dentro Manage; non hanno un controllo primario nell’header. Add Field resta nel menu slider finale della tabella. I riferimenti a workspace/focus/noise nelle sezioni seguenti descrivono il piano precedente e non richiedono nuove superfici UI.
+
 Data: 4 ottobre 2026. Stato: proposta operativa, da usare come criterio di accettazione.
 
 ## Obiettivo

@@ -103,7 +103,7 @@ final class DeviceConnectViewModel: ObservableObject {
                     self?.refreshWiFiSSID()
                     self?.pushConfigToServer()
                 }
-                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                try? await Task.sleep(for: .seconds(2))
             }
         }
     }
@@ -163,7 +163,7 @@ struct DeviceConnectView: View {
             Divider()
                 .overlay(colors.border)
 
-            ScrollView(.vertical, showsIndicators: false) {
+            ScrollView(.vertical) {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
                     if selectedTab == .device {
                         pairingSection
@@ -175,7 +175,8 @@ struct DeviceConnectView: View {
                 .padding(.bottom, DesignSystem.Spacing.sm)
             }
         }
-        .frame(width: 760)
+        .scrollIndicators(.hidden)
+        .frame(width: DesignSystem.Metrics.scaled(760), height: DesignSystem.Metrics.scaled(640))
         .background(colors.background)
         .onAppear {
             locationPermission.requestWhenInUseIfNeeded()
@@ -195,10 +196,10 @@ struct DeviceConnectView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                     Text("Pair devices over your Wi‑Fi")
-                        .font(DesignSystem.Fonts.mono(19, weight: .bold))
+                        .font(DesignSystem.Fonts.title)
                         .foregroundStyle(colors.textPrimary)
                     Text("Generate a proxy + CA configuration profile and share it instantly via QR code.")
-                        .font(DesignSystem.Fonts.sans(12, weight: .medium))
+                        .font(DesignSystem.Fonts.body)
                         .foregroundStyle(colors.textSecondary)
                 }
                 Spacer()
@@ -207,6 +208,7 @@ struct DeviceConnectView: View {
                     ControlButton(title: "Close", systemImage: "xmark", style: .ghost(colors)) {
                         dismiss()
                     }
+                    .keyboardShortcut(.cancelAction)
                 }
             }
         }
@@ -227,7 +229,7 @@ struct DeviceConnectView: View {
     private var pairingSection: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
             Text("Device setup")
-                .font(DesignSystem.Fonts.sans(13, weight: .semibold))
+                .font(DesignSystem.Fonts.label)
                 .foregroundStyle(colors.textSecondary)
             deviceSection
             Divider()
@@ -241,7 +243,7 @@ struct DeviceConnectView: View {
     private var simulatorTab: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             Text("Simulator setup")
-                .font(DesignSystem.Fonts.sans(13, weight: .semibold))
+                .font(DesignSystem.Fonts.label)
                 .foregroundStyle(colors.textSecondary)
             SimulatorSetupView()
                 .environmentObject(settings)
@@ -253,10 +255,10 @@ struct DeviceConnectView: View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text("Physical device profile")
-                    .font(DesignSystem.Fonts.mono(16, weight: .bold))
+                    .font(DesignSystem.Fonts.heading)
                     .foregroundStyle(colors.textPrimary)
                 Text("Includes proxy settings and the mitmproxy CA for the detected Wi‑Fi network.")
-                    .font(DesignSystem.Fonts.sans(12, weight: .medium))
+                    .font(DesignSystem.Fonts.body)
                     .foregroundStyle(colors.textSecondary)
             }
 
@@ -282,13 +284,13 @@ struct DeviceConnectView: View {
                     .fill(colors.warning.opacity(0.14))
             )
 
-            QRCodeView(text: model.connectionURL?.absoluteString ?? "", size: 240)
+            QRCodeView(text: model.connectionURL?.absoluteString ?? "", size: DesignSystem.Metrics.scaled(240))
                 .environmentObject(settings)
 
             if let urlString = model.connectionURL?.absoluteString, !urlString.isEmpty {
                 Label {
                     Text(urlString)
-                        .font(DesignSystem.Fonts.mono(11, weight: .medium))
+                        .font(DesignSystem.Fonts.monoBody)
                         .foregroundStyle(colors.textSecondary)
                         .lineLimit(2)
                         .textSelection(.enabled)
@@ -311,15 +313,16 @@ struct DeviceConnectView: View {
             }
 
             Text("Profiles are tied to the current SSID. If you switch network, restart the server to regenerate the QR code.")
-                .font(DesignSystem.Fonts.sans(11, weight: .medium))
+                .font(DesignSystem.Fonts.caption)
                 .foregroundStyle(colors.textSecondary)
 
             if needsSSIDOverride {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                     Text("SSID not detected — set it manually")
-                        .font(DesignSystem.Fonts.sans(12, weight: .semibold))
+                        .font(DesignSystem.Fonts.label)
                         .foregroundStyle(colors.warning)
                     TextField("Enter SSID", text: $model.ssidOverride)
+                        .accessibilityLabel("Wi-Fi network name")
                         .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "wifi"))
                         .onChange(of: model.ssidOverride) { _, newValue in
                             model.setSSIDOverride(newValue)
@@ -404,25 +407,25 @@ struct DeviceConnectView: View {
     private func instructionRow(index: Int, text: String) -> some View {
         HStack(alignment: .top, spacing: DesignSystem.Spacing.sm) {
             Text("\(index).")
-                .font(DesignSystem.Fonts.mono(12, weight: .bold))
+                .font(DesignSystem.Fonts.monoBody)
                 .foregroundStyle(colors.accent)
-                .frame(width: 28, alignment: .leading)
-            Text(text)
-                .font(DesignSystem.Fonts.sans(12, weight: .medium))
+                .frame(width: DesignSystem.Metrics.scaled(28), alignment: .leading)
+            Text(LocalizedStringKey(text))
+                .font(DesignSystem.Fonts.body)
                 .foregroundStyle(colors.textPrimary)
-                .lineSpacing(2)
+                .lineSpacing(DesignSystem.Spacing.xxs)
         }
     }
 
     private func callout(_ text: String, icon: String, tint: Color) -> some View {
         HStack(alignment: .top, spacing: DesignSystem.Spacing.sm) {
             Image(systemName: icon)
-                .font(.system(size: 14, weight: .semibold))
+                .font(DesignSystem.Fonts.label)
                 .foregroundStyle(tint)
                 .padding(DesignSystem.Spacing.sm)
                 .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous))
-            Text(text)
-                .font(DesignSystem.Fonts.sans(12, weight: .medium))
+            Text(LocalizedStringKey(text))
+                .font(DesignSystem.Fonts.body)
                 .foregroundStyle(colors.textPrimary)
         }
         .padding(DesignSystem.Spacing.sm)
@@ -443,15 +446,15 @@ struct DeviceConnectView: View {
         } label: {
             HStack(spacing: DesignSystem.Spacing.md) {
                 Image(systemName: tab.iconName)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(DesignSystem.Fonts.heading)
                     .foregroundStyle(isSelected ? colors.accent : colors.textSecondary)
-                    .frame(width: 24)
+                    .frame(width: DesignSystem.Metrics.scaled(24))
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
-                    Text(tab.title)
-                        .font(DesignSystem.Fonts.sans(13, weight: .semibold))
+                    Text(LocalizedStringKey(tab.title))
+                        .font(DesignSystem.Fonts.label)
                         .foregroundStyle(isSelected ? colors.textPrimary : colors.textSecondary)
-                    Text(tab.subtitle)
-                        .font(DesignSystem.Fonts.sans(11, weight: .medium))
+                    Text(LocalizedStringKey(tab.subtitle))
+                        .font(DesignSystem.Fonts.caption)
                         .foregroundStyle(isSelected ? colors.accent : colors.textSecondary.opacity(0.8))
                 }
                 Spacer()
@@ -469,6 +472,8 @@ struct DeviceConnectView: View {
                     .stroke(isSelected ? colors.accent.opacity(0.6) : colors.border.opacity(0.7), lineWidth: 1)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
+        .accessibilityLabel(Text(LocalizedStringKey(tab.title)))
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }

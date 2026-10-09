@@ -63,7 +63,7 @@ private struct InterfaceScaleSection: View {
                     }
                 }
 
-                Text(selectedScale.summary)
+                Text(LocalizedStringKey(selectedScale.summary))
                     .font(DesignSystem.Fonts.caption)
                     .foregroundStyle(colors.textSecondary)
             }
@@ -77,7 +77,7 @@ private struct InterfaceScaleSection: View {
             selection = option.id
         } label: {
             Text(option.label)
-                .font(DesignSystem.Fonts.sans(13, weight: .bold))
+                .font(DesignSystem.Fonts.label)
                 .foregroundStyle(isSelected ? colors.accent : colors.textPrimary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, DesignSystem.Spacing.sm)
@@ -89,5 +89,8 @@ private struct InterfaceScaleSection: View {
                 )
         }
         .buttonStyle(.pressable)
+        .hoverHighlight(colors)
+        .accessibilityLabel("Interface scale \(option.label)")
+        .accessibilityValue(isSelected ? "Selected" : "Not selected")
     }
 }

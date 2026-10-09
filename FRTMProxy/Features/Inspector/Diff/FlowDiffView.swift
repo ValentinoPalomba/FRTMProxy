@@ -17,37 +17,40 @@ struct FlowDiffView: View {
                 Text("Compare flows").font(DesignSystem.Fonts.title)
                 Spacer()
                 ControlButton(title: "Close", systemImage: "xmark", style: .ghost(colors), action: onClose)
+                    .keyboardShortcut(.cancelAction)
             }
             Picker("Section", selection: $section) {
-                ForEach(DiffSection.allCases, id: \.self) { Text($0.label).tag($0) }
+                ForEach(DiffSection.allCases, id: \.self) { Text(LocalizedStringKey($0.label)).tag($0) }
             }
             Picker("Comparison", selection: $mode) {
-                ForEach(FlowComparison.Mode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                ForEach(FlowComparison.Mode.allCases, id: \.self) { Text(LocalizedStringKey($0.rawValue)).tag($0) }
             }
             .pickerStyle(.segmented)
             .disabled(section == .requestHeaders || section == .responseHeaders)
             Text("A: \(flowA.request?.url ?? flowA.id)\nB: \(flowB.request?.url ?? flowB.id)")
                 .font(DesignSystem.Fonts.caption)
                 .foregroundStyle(colors.textSecondary).textSelection(.enabled)
+                .lineLimit(4)
+                .help("A: \(flowA.request?.url ?? flowA.id)\nB: \(flowB.request?.url ?? flowB.id)")
             if let error {
-                Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(colors.warning)
+                StateView(kind: .failed(title: "Comparison failed", message: error, retry: nil), palette: colors)
             } else if let result {
                 if let warning = result.warning {
-                    Label(warning, systemImage: "exclamationmark.triangle").foregroundStyle(colors.warning)
+                    Label(warning, systemImage: "exclamationmark.triangle").foregroundStyle(colors.warning).lineLimit(3).help(warning)
                 }
-                Text(result.rows.isEmpty ? "No differences in the compared data" : "\(result.rows.count) changed paths / byte blocks")
+                Text(result.rows.isEmpty ? String(localized: "No differences in the compared data", bundle: AppLocalization.bundle) : String(localized: "\(result.rows.count) changed paths / byte blocks", bundle: AppLocalization.bundle))
                 Table(result.rows) {
-                    TableColumn("Path / Offset") { Text($0.id).textSelection(.enabled) }
+                    TableColumn("Path / Offset") { Text($0.id).lineLimit(2).help($0.id).textSelection(.enabled) }
                     TableColumn("A") { row in
-                        Text(row.a ?? "〈absent〉").foregroundStyle(row.a == nil ? colors.textSecondary : colors.danger).textSelection(.enabled)
+                        Text(row.a ?? "〈absent〉").foregroundStyle(row.a == nil ? colors.textSecondary : colors.danger).lineLimit(3).help(row.a ?? "〈absent〉").textSelection(.enabled)
                     }
                     TableColumn("B") { row in
-                        Text(row.b ?? "〈absent〉").foregroundStyle(row.b == nil ? colors.textSecondary : colors.success).textSelection(.enabled)
+                        Text(row.b ?? "〈absent〉").foregroundStyle(row.b == nil ? colors.textSecondary : colors.success).lineLimit(3).help(row.b ?? "〈absent〉").textSelection(.enabled)
                     }
                 }
                 .font(DesignSystem.Fonts.monoBody)
                 .scrollContentBackground(.hidden)
-            } else { ProgressView("Comparing…") }
+            } else { StateView(kind: .loading(message: "Comparing…"), palette: colors) }
         }
         .padding(DesignSystem.Spacing.lg)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

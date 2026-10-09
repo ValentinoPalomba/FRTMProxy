@@ -1,32 +1,98 @@
 import Foundation
 
 extension ProxyViewModel {
-    func loadCaptureSessions() {
-        guard let sessionStore, captureSessionLoadTask == nil else { return }
-        captureSessionLoadTask = Task { [weak self] in
+    @MainActor
+    func handleUnexpectedProxyExit() {
+        guard captureSessionCloseTask == nil, let sessionID = activeCaptureSessionID,
+              let sessionStore else { return }
+        let reason = String(localized: "The proxy stopped unexpectedly. The session may be incomplete; saved traffic remains available.", bundle: AppLocalization.bundle)
+        activeCaptureSessionID = nil
+        if let index = captureSessions.firstIndex(where: { $0.id == sessionID }) {
+            captureSessions[index].incompleteReason = reason
+        }
+        appendLog("[SESSION] \(reason)\n")
+        onToast?(reason, .error)
+        let writer = sessionCaptureWriter
+        captureSessionCloseTask = Task { @MainActor [weak self] in
             do {
+                try await sessionStore.markSessionIncomplete(id: sessionID, reason: reason)
+                await Task.yield()
+                try await writer?.flush(sessionID: sessionID)
+                try await sessionStore.closeSession(id: sessionID)
+                self?.captureSessions = try await sessionStore.sessions()
+            } catch {
+                self?.appendLog("[SESSION] cannot close interrupted capture: \(error.localizedDescription)\n")
+            }
+            self?.captureSessionCloseTask = nil
+        }
+    }
+
+    @MainActor
+    func handleCaptureSaturation(sessionID: UUID) {
+        guard activeCaptureSessionID == sessionID else { return }
+        let reason = SessionCaptureWriter.CapacityError.saturated.localizedDescription
+        activeCaptureSessionID = nil
+        if let index = captureSessions.firstIndex(where: { $0.id == sessionID }) {
+            captureSessions[index].incompleteReason = reason
+        }
+        appendLog("[SESSION] \(reason)\n")
+        onToast?(reason, .error)
+        stopProxy()
+        guard let sessionStore else { return }
+        let writer = sessionCaptureWriter
+        captureSessionCloseTask = Task { @MainActor [weak self] in
+            do {
+                // Record incompleteness before attempting to drain accepted data.
+                try await sessionStore.markSessionIncomplete(id: sessionID, reason: reason)
+                try await writer?.flush(sessionID: sessionID)
+                try await sessionStore.closeSession(id: sessionID)
+                self?.captureSessions = try await sessionStore.sessions()
+            } catch {
+                self?.appendLog("[SESSION] cannot persist incomplete status: \(error.localizedDescription)\n")
+            }
+            self?.captureSessionCloseTask = nil
+        }
+    }
+
+    func loadCaptureSessions() {
+        guard captureSessionLoadTask == nil else { return }
+        captureSessionLoadTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                if self.sessionStore == nil {
+                    let store = try await Task.detached(priority: .userInitiated) {
+                        try Self.makeDefaultSessionStore()
+                    }.value
+                    self.installSessionStore(store)
+                }
+                guard let sessionStore = self.sessionStore else { return }
                 try await sessionStore.cleanupDeletedBodies()
                 let stored = try await sessionStore.sessions()
                 await MainActor.run {
-                    guard let self else { return }
                     self.captureSessions = stored
-                    self.activeCaptureSessionID = stored.first(where: \.isActive)?.id
+                    self.activeCaptureSessionID = stored.first(where: { $0.isActive && $0.incompleteReason == nil })?.id
                     self.captureSessionLoadTask = nil
                 }
             } catch {
                 await MainActor.run {
-                    self?.appendLog("[SESSION] unable to load sessions: \(error.localizedDescription)\n")
-                    self?.captureSessionLoadTask = nil
+                    self.appendLog("[SESSION] unable to load sessions: \(error.localizedDescription)\n")
+                    self.onToast?("Capture storage unavailable: \(error.localizedDescription)", .error)
+                    self.captureSessionLoadTask = nil
                 }
             }
         }
     }
 
     @MainActor
-    func ensureCaptureSession(name: String? = nil) async {
+    @discardableResult
+    func ensureCaptureSession(name: String? = nil) async -> Bool {
         await captureSessionLoadTask?.value
         await captureSessionCloseTask?.value
-        guard activeCaptureSessionID == nil, let sessionStore else { return }
+        if activeCaptureSessionID != nil { return true }
+        guard let sessionStore else {
+            onToast?("Capture storage is unavailable. Unlock the Keychain and reload Sessions before starting capture.", .error)
+            return false
+        }
         do {
             let session = try await sessionStore.activeSessionOrCreate(
                 name: name ?? defaultCaptureSessionName(),
@@ -38,8 +104,11 @@ extension ProxyViewModel {
             } else {
                 captureSessions.insert(session, at: 0)
             }
+            return true
         } catch {
             appendLog("[SESSION] unable to create session: \(error.localizedDescription)\n")
+            onToast?("Cannot start capture: \(error.localizedDescription)", .error)
+            return false
         }
     }
 
@@ -67,6 +136,19 @@ extension ProxyViewModel {
             }
             self?.captureSessionCloseTask = nil
         }
+    }
+
+    @MainActor
+    func importCaptureSession(_ prepared: SessionHARImporter.Prepared, name: String) async throws -> CaptureSession {
+        await captureSessionLoadTask?.value
+        guard let sessionStore else { throw SessionStoreError.database("Capture storage is unavailable") }
+        let imported = try await sessionStore.importSession(prepared, name: name)
+        captureSessions.insert(imported, at: 0)
+        // The import has committed. A later refresh error must not offer a retry
+        // that imports the same file twice.
+        do { captureSessions = try await sessionStore.sessions() }
+        catch { appendLog("[SESSION] imported capture; list refresh failed: \(error.localizedDescription)\n") }
+        return imported
     }
 
     func deleteCaptureSession(_ id: UUID) {

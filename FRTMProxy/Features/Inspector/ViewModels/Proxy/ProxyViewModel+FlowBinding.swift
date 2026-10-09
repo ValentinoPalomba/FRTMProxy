@@ -30,13 +30,44 @@ extension ProxyViewModel {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] flow in
                 guard let self else { return }
+                if flow.id == self.selectedFlowID {
+                    self.retainSelectedFlow(self.enrichFlowsWithCachedApps([flow])[0])
+                }
                 self.enqueueBreakpointHits(from: [flow])
                 guard let writer = self.sessionCaptureWriter,
                       let sessionID = self.activeCaptureSessionID else { return }
-                writer.enqueue(flow, sessionID: sessionID)
+                if !writer.enqueue(flow, sessionID: sessionID) {
+                    self.handleCaptureSaturation(sessionID: sessionID)
+                }
             }
             .store(in: &cancellables)
 
+        bindSessionWriterUpdates()
+
+        service.isRunningPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] running in
+                guard let self else { return }
+                let stoppedUnexpectedly = self.isRunning && !running
+                self.isRunning = running
+                if !running {
+                    self.breakpointQueue.removeAll()
+                    self.activeBreakpointHit = nil
+                    if stoppedUnexpectedly { self.handleUnexpectedProxyExit() }
+                }
+                self.syncMacOSProxyOverride()
+                if running {
+                    self.service.applyTrafficProfile(self.activeTrafficProfile)
+                }
+            }
+            .store(in: &cancellables)
+
+        service.onLog = { [weak self] text in
+            Task { @MainActor [weak self] in self?.appendLog(text) }
+        }
+    }
+
+    func bindSessionWriterUpdates() {
         sessionCaptureWriter?.updatesPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] update in
@@ -55,25 +86,6 @@ extension ProxyViewModel {
             }
             .store(in: &cancellables)
 
-        service.isRunningPublisher
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] running in
-                guard let self else { return }
-                self.isRunning = running
-                if !running {
-                    self.breakpointQueue.removeAll()
-                    self.activeBreakpointHit = nil
-                }
-                self.syncMacOSProxyOverride()
-                if running {
-                    self.service.applyTrafficProfile(self.activeTrafficProfile)
-                }
-            }
-            .store(in: &cancellables)
-
-        service.onLog = { [weak self] text in
-            Task { @MainActor [weak self] in self?.appendLog(text) }
-        }
     }
 
     func enrichFlowsWithCachedApps(_ flows: [MitmFlow]) -> [MitmFlow] {
@@ -138,6 +150,12 @@ extension ProxyViewModel {
                     }
                     if changed {
                         self.flows = updated
+                    }
+                    if var selected = self.selectedFlow, selected.clientApp == nil,
+                       let selectedPort = selected.client?.port,
+                       self.connectionKey(clientIP: selected.clientIP, clientPort: selectedPort, proxyPort: proxyPort) == key {
+                        selected.clientApp = app
+                        self.retainSelectedFlow(selected, merging: false)
                     }
                 }
             }

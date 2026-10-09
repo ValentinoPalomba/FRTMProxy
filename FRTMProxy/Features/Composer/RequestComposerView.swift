@@ -12,43 +12,43 @@ struct RequestComposerView: View {
     @State private var narrowTab: ComposerMainTab = .request
 
     var body: some View {
-        GeometryReader { geo in
-            if geo.size.width >= 700 {
-                twoColumnLayout
-            } else {
-                singleColumnLayout
+        VStack(spacing: 0) {
+            composerHeader
+            Divider().overlay(colors.border.opacity(0.7))
+            GeometryReader { geo in
+                if geo.size.width >= DesignSystem.Metrics.scaled(900) {
+                    twoColumnLayout
+                        .frame(width: geo.size.width, height: geo.size.height)
+                } else {
+                    singleColumnLayout
+                        .frame(width: geo.size.width, height: geo.size.height)
+                }
             }
+            .clipped()
+            composerFooter
         }
         .background(colors.surface)
+        .tint(colors.accent)
         .onDisappear { viewModel.cancel() }
     }
 
     // MARK: - Two-column layout (wide)
 
     private var twoColumnLayout: some View {
-        VStack(spacing: 0) {
-            composerHeader
+        HStack(spacing: 0) {
+            requestCard
+                .frame(maxWidth: .infinity)
             Divider().overlay(colors.border.opacity(0.7))
-
-            HStack(spacing: 0) {
-                requestCard
-                    .frame(maxWidth: .infinity)
-                Divider().overlay(colors.border.opacity(0.7))
-                responseCard
-                    .frame(maxWidth: .infinity)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            composerFooter
+            responseCard
+                .frame(maxWidth: .infinity)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Single-column layout (narrow)
 
     private var singleColumnLayout: some View {
         VStack(spacing: 0) {
-            composerHeader
-            Divider().overlay(colors.border.opacity(0.7))
 
             // Tab switcher
             HStack(spacing: DesignSystem.Spacing.sm) {
@@ -76,20 +76,34 @@ struct RequestComposerView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            composerFooter
         }
     }
 
     // MARK: - Header
 
     private var composerHeader: some View {
-        HStack(spacing: DesignSystem.Spacing.md) {
-            Text("Compose Request")
-                .font(DesignSystem.Fonts.sans(15, weight: .semibold))
-                .foregroundStyle(colors.textPrimary)
-            Spacer()
-            ComposerLocalControls(model: viewModel, colors: colors)
-            ControlButton(title: "Close", systemImage: "xmark", style: .ghost(colors)) { onClose() }
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: DesignSystem.Spacing.md) {
+                Text("Compose Request")
+                    .font(DesignSystem.Fonts.heading)
+                    .foregroundStyle(colors.textPrimary)
+                    .fixedSize()
+                Spacer()
+                ComposerLocalControls(model: viewModel, colors: colors)
+                    .fixedSize()
+                ControlButton(title: "Close", systemImage: "xmark", style: .ghost(colors)) { onClose() }
+                    .fixedSize()
+                    .keyboardShortcut(.cancelAction)
+            }
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                HStack {
+                    Text("Compose Request").font(DesignSystem.Fonts.heading).foregroundStyle(colors.textPrimary)
+                    Spacer()
+                    ControlButton(title: "Close", systemImage: "xmark", style: .ghost(colors)) { onClose() }
+                        .keyboardShortcut(.cancelAction)
+                }
+                ComposerLocalControls(model: viewModel, colors: colors)
+            }
         }
         .padding(DesignSystem.Spacing.lg)
         .background(colors.surfaceElevated)
@@ -108,13 +122,14 @@ struct RequestComposerView: View {
     }
 
     private var methodPicker: some View {
+        ScrollView(.horizontal) {
         HStack(spacing: DesignSystem.Spacing.xs) {
             ForEach(RequestComposerViewModel.httpMethods, id: \.self) { method in
                 let isSelected = viewModel.method == method
                 let tint = DesignSystem.Colors.methodColor(method, palette: colors)
                 Button { viewModel.method = method } label: {
                     Text(method)
-                        .font(DesignSystem.Fonts.mono(11, weight: .bold))
+                        .font(DesignSystem.Fonts.mono(11, weight: .semibold))
                         .foregroundStyle(isSelected ? tint : colors.textSecondary)
                         .padding(.horizontal, DesignSystem.Spacing.sm)
                         .padding(.vertical, DesignSystem.Spacing.xs)
@@ -127,10 +142,15 @@ struct RequestComposerView: View {
                                 .stroke(isSelected ? tint.opacity(0.5) : colors.border.opacity(0.4), lineWidth: 1)
                         )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pressable)
+                .hoverHighlight(colors)
+                .accessibilityAddTraits(isSelected ? [.isSelected] : [])
             }
             Spacer()
         }
+        }
+        .scrollIndicators(.hidden)
+        .frame(height: DesignSystem.Metrics.scaled(32))
     }
 
     // MARK: - Request Card
@@ -150,6 +170,8 @@ struct RequestComposerView: View {
         ComposerCard(title: "Response", colors: colors) {
             if viewModel.responseTruncated {
                 Label("Preview truncated at 2 MiB — \(viewModel.responseByteCount) bytes received", systemImage: "exclamationmark.triangle")
+                    .font(DesignSystem.Fonts.caption)
+                    .lineLimit(2)
                     .foregroundStyle(colors.warning)
             }
             Group {
@@ -232,7 +254,7 @@ private struct ComposerCard<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                 .foregroundStyle(colors.textSecondary)
                 .padding(.horizontal, DesignSystem.Spacing.lg)
@@ -271,7 +293,9 @@ struct ComposerTabPill: View {
                         .stroke(isSelected ? colors.border.opacity(0.9) : colors.border.opacity(0.4), lineWidth: 1)
                 )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
+        .hoverHighlight(colors)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }
 
@@ -280,20 +304,19 @@ struct ComposerTabPill: View {
 private struct ComposerRequestBody: View {
     @ObservedObject var viewModel: RequestComposerViewModel
     let colors: DesignSystem.ColorPalette
-    @State private var tab: ComposerRequestTab = .body
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             HStack(spacing: DesignSystem.Spacing.sm) {
-                ComposerTabPill(label: "Body", isSelected: tab == .body, colors: colors) { tab = .body }
-                ComposerTabPill(label: "Headers", isSelected: tab == .headers, colors: colors) { tab = .headers }
+                ComposerTabPill(label: "Body", isSelected: !viewModel.showsRequestHeaders, colors: colors) { viewModel.showsRequestHeaders = false }
+                ComposerTabPill(label: "Headers", isSelected: viewModel.showsRequestHeaders, colors: colors) { viewModel.showsRequestHeaders = true }
+                    .accessibilityIdentifier("composer.request.headers")
                 Spacer()
             }
 
             Divider().overlay(colors.border.opacity(0.5))
 
-            switch tab {
-            case .body:
+            if !viewModel.showsRequestHeaders {
                 Toggle("Body is Base64 (send decoded bytes)", isOn: $viewModel.bodyIsBase64)
                     .toggleStyle(.checkbox)
                     .font(DesignSystem.Fonts.caption)
@@ -302,7 +325,7 @@ private struct ComposerRequestBody: View {
                     .proxyTextEditor(palette: colors)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            case .headers:
+            } else {
                 ComposerHeadersEditor(viewModel: viewModel, colors: colors)
             }
         }
@@ -316,28 +339,30 @@ private struct ComposerHeadersEditor: View {
     let colors: DesignSystem.ColorPalette
 
     @FocusState private var focusedHeader: UUID?
+    @State private var addedHeader: UUID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             HStack {
-                Text("\(viewModel.requestHeaders.count) headers")
+                Text("\(viewModel.requestHeaders.count) / 128 headers")
                     .font(DesignSystem.Fonts.caption)
                     .foregroundStyle(colors.textSecondary)
                 Spacer()
-                ControlButton(title: "Add Header", systemImage: "plus", style: .ghost(colors)) {
-                    viewModel.addHeaderRow()
-                    focusedHeader = viewModel.requestHeaders.last?.id
+                ControlButton(title: "Add Header", systemImage: "plus", style: .ghost(colors), disabled: viewModel.requestHeaders.count >= 128) {
+                    addedHeader = viewModel.addHeaderRow()
                 }
             }
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(spacing: DesignSystem.Spacing.sm) {
+                    VStack(spacing: DesignSystem.Spacing.sm) {
                         ForEach($viewModel.requestHeaders) { $row in
                             HStack(spacing: DesignSystem.Spacing.sm) {
                                 TextField("Key", text: $row.key)
+                                    .accessibilityLabel("Request header name")
                                     .focused($focusedHeader, equals: row.id)
                                     .frame(maxWidth: .infinity)
                                 TextField("Value", text: $row.value)
+                                    .accessibilityLabel("Request header value")
                                     .frame(maxWidth: .infinity)
                                 ControlButton(title: "Remove", systemImage: "minus.circle", style: .ghost(colors)) {
                                     viewModel.requestHeaders.removeAll { $0.id == row.id }
@@ -348,10 +373,12 @@ private struct ComposerHeadersEditor: View {
                         }
                     }
                 }
-                .onChange(of: viewModel.requestHeaders.count) { oldCount, newCount in
-                    if newCount > oldCount, let id = viewModel.requestHeaders.last?.id {
-                        proxy.scrollTo(id, anchor: .bottom)
-                    }
+                .task(id: addedHeader) {
+                    guard let id = addedHeader else { return }
+                    proxy.scrollTo(id, anchor: .bottom)
+                    await Task.yield()
+                    guard !Task.isCancelled, viewModel.requestHeaders.contains(where: { $0.id == id }) else { return }
+                    focusedHeader = id
                 }
             }
             .frame(maxHeight: .infinity)
@@ -383,6 +410,8 @@ private struct ComposerResponseBody: View {
             case .body:
                 ScrollView([.vertical, .horizontal]) {
                     Text(prettyBody)
+                        .accessibilityIdentifier("composer.response.body")
+                        .accessibilityValue(prettyBody)
                         .font(DesignSystem.Fonts.mono(12))
                         .foregroundStyle(colors.textPrimary)
                         .textSelection(.enabled)
@@ -458,7 +487,7 @@ private struct ComposerStatusBadge: View {
 
     var body: some View {
         Text(String(status))
-            .font(DesignSystem.Fonts.mono(12, weight: .bold))
+            .font(DesignSystem.Fonts.mono(12, weight: .semibold))
             .foregroundStyle(tint)
             .padding(.horizontal, DesignSystem.Spacing.sm)
             .padding(.vertical, DesignSystem.Spacing.xs)
@@ -471,5 +500,4 @@ private struct ComposerStatusBadge: View {
 // MARK: - Supporting enums
 
 private enum ComposerMainTab { case request, response }
-private enum ComposerRequestTab { case body, headers }
 private enum ComposerResponseTab { case body, headers }

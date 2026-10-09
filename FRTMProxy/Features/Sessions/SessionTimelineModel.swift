@@ -5,6 +5,9 @@ import Observation
 @Observable
 final class SessionTimelineModel {
     private(set) var sessionID: UUID?
+    private(set) var loadingGeneration = UUID()
+    private var flowIndexes: [String: Int] = [:]
+    private var corruptIDs = Set<String>()
     private(set) var flows: [CaptureSessionFlow] = []
     private(set) var nextCursor: CaptureSessionPageCursor?
     private(set) var corruptFlowIDs: [String] = []
@@ -18,6 +21,9 @@ final class SessionTimelineModel {
 
     func reset(for sessionID: UUID) {
         self.sessionID = sessionID
+        loadingGeneration = UUID()
+        flowIndexes = [:]
+        corruptIDs = []
         flows = []
         nextCursor = nil
         corruptFlowIDs = []
@@ -26,23 +32,25 @@ final class SessionTimelineModel {
         errorMessage = nil
     }
 
-    func startLoading() {
+    @discardableResult
+    func startLoading() -> UUID {
+        loadingGeneration = UUID()
         isLoading = true
         errorMessage = nil
+        return loadingGeneration
     }
 
-    func receive(_ page: CaptureSessionPage, for sessionID: UUID) {
-        guard self.sessionID == sessionID else { return }
-        var indexes = Dictionary(uniqueKeysWithValues: flows.enumerated().map { ($0.element.id, $0.offset) })
+    func receive(_ page: CaptureSessionPage, for sessionID: UUID, generation: UUID? = nil) {
+        guard self.sessionID == sessionID, generation == nil || generation == loadingGeneration else { return }
         for incoming in page.flows {
-            if let index = indexes[incoming.id] {
+            if let index = flowIndexes[incoming.id] {
                 flows[index] = incoming
             } else {
-                indexes[incoming.id] = flows.count
+                flowIndexes[incoming.id] = flows.count
                 flows.append(incoming)
             }
         }
-        for flowID in page.corruptFlowIDs where !corruptFlowIDs.contains(flowID) {
+        for flowID in page.corruptFlowIDs where corruptIDs.insert(flowID).inserted {
             corruptFlowIDs.append(flowID)
         }
         nextCursor = page.nextCursor
@@ -51,14 +59,14 @@ final class SessionTimelineModel {
         errorMessage = nil
     }
 
-    func fail(_ error: Error, for sessionID: UUID) {
-        guard self.sessionID == sessionID else { return }
+    func fail(_ error: Error, for sessionID: UUID, generation: UUID? = nil) {
+        guard self.sessionID == sessionID, generation == nil || generation == loadingGeneration else { return }
         isLoading = false
         errorMessage = error.localizedDescription
     }
 
     func updateMetadata(flowID: String, note: String?, isBookmarked: Bool) {
-        guard let index = flows.firstIndex(where: { $0.id == flowID }) else { return }
+        guard let index = flowIndexes[flowID] else { return }
         flows[index].note = note
         flows[index].isBookmarked = isBookmarked
     }

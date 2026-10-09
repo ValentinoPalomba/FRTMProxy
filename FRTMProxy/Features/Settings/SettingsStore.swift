@@ -198,7 +198,7 @@ final class SettingsStore: ObservableObject {
         AppLanguage.language(with: selectedLanguageID)
     }
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = CaptureStorageConfiguration.preferences) {
         self.defaults = defaults
         self.selectedLanguageID = AppLanguage.language(
             with: defaults.string(forKey: languageKey)

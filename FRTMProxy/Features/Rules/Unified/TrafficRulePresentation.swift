@@ -3,14 +3,14 @@ import Foundation
 extension TrafficRuleAction {
     var displayName: String {
         switch self {
-        case .mock: "Mock Response"
-        case .mapRemote: "Map Remote"
-        case .rewriteRequest: "Rewrite Request"
-        case .rewriteResponse: "Rewrite Response"
-        case .block: "Block"
-        case .delay: "Delay"
-        case .breakpoint: "Breakpoint"
-        case .script: "Script"
+        case .mock: String(localized: "Mock Response", bundle: AppLocalization.bundle)
+        case .mapRemote: String(localized: "Map Remote", bundle: AppLocalization.bundle)
+        case .rewriteRequest: String(localized: "Rewrite Request", bundle: AppLocalization.bundle)
+        case .rewriteResponse: String(localized: "Rewrite Response", bundle: AppLocalization.bundle)
+        case .block: String(localized: "Block", bundle: AppLocalization.bundle)
+        case .delay: String(localized: "Delay", bundle: AppLocalization.bundle)
+        case .breakpoint: String(localized: "Breakpoint", bundle: AppLocalization.bundle)
+        case .script: String(localized: "Script", bundle: AppLocalization.bundle)
         }
     }
 
@@ -34,6 +34,6 @@ extension TrafficRuleMatcher {
             guard let pattern, !pattern.value.isEmpty else { return nil }
             return pattern.value
         }
-        return parts.isEmpty ? "All traffic" : parts.joined(separator: " · ")
+        return parts.isEmpty ? String(localized: "All traffic", bundle: AppLocalization.bundle) : parts.joined(separator: " · ")
     }
 }

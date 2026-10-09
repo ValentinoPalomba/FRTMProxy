@@ -10,6 +10,7 @@ struct JSONBodyQueryView: View {
 
     var body: some View {
         DisclosureGroup("Search JSON Preview") {
+            ScrollView {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                 Picker("Search Mode", selection: $mode) {
                     ForEach(JSONBodyQuery.Mode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
@@ -24,7 +25,7 @@ struct JSONBodyQueryView: View {
                         .foregroundStyle(colors.warning)
                 }
                 if model.isSearching { ProgressView("Searching…") }
-                if let error = model.error { Text(error).foregroundStyle(colors.warning) }
+                if let error = model.error { Text(error).foregroundStyle(colors.warning).lineLimit(3).help(error) }
                 if !model.output.isEmpty {
                     HStack {
                         Text("\(model.count) result(s)")
@@ -34,13 +35,27 @@ struct JSONBodyQueryView: View {
                             NSPasteboard.general.setString(model.output, forType: .string)
                         }
                     }
-                    CodeEditorView(text: .constant(model.output), isEditable: false)
-                        .frame(height: DesignSystem.Metrics.scaled(180))
+                    ScrollView([.horizontal, .vertical]) {
+                        Text(model.output)
+                            .font(DesignSystem.Fonts.monoBody)
+                            .foregroundStyle(colors.textPrimary)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .topLeading)
+                            .padding(DesignSystem.Spacing.sm)
+                    }
+                    .frame(height: DesignSystem.Metrics.scaled(72))
+                    .background(colors.surfaceElevated)
+                    .clipShape(.rect(cornerRadius: DesignSystem.Radius.sm))
+                    .accessibilityIdentifier("inspector.json.results")
                 }
             }
             .font(DesignSystem.Fonts.caption)
             .padding(.vertical, DesignSystem.Spacing.sm)
+            }
+            .frame(maxHeight: DesignSystem.Metrics.scaled(140))
         }
+        .tint(colors.accent)
+        .foregroundStyle(colors.textPrimary)
         .onChange(of: query) { _, _ in model.search(body: payload, query: query, mode: mode) }
         .onChange(of: mode) { _, _ in model.search(body: payload, query: query, mode: mode) }
         .onChange(of: payload) { _, _ in model.search(body: payload, query: query, mode: mode) }

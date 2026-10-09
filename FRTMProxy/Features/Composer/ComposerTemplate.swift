@@ -10,16 +10,19 @@ enum ComposerTemplate {
     }
     static let httpMethods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
     enum Failure: LocalizedError {
-        case variable(String), invalidRequest
+        case variable(String), unnamedHeader, headerLimit, invalidRequest
         var errorDescription: String? {
             switch self {
             case let .variable(name): "Undefined, duplicate or invalid variable: \(name)"
+            case .unnamedHeader: "A header value needs a name. Enter a valid HTTP header name or remove the row."
+            case .headerLimit: "Maximum 128 headers. Remove a header before adding another."
             case .invalidRequest: "Use an HTTP(S) URL and valid headers without line breaks. Maximum body: 2 MiB."
             }
         }
     }
     static func request(_ draft: ComposerDraft, variables: [ComposerHeaderRow]) throws -> Request {
-        guard draft.headers.count <= 128, variables.count <= 128 else { throw Failure.invalidRequest }
+        guard draft.headers.count <= 128 else { throw Failure.headerLimit }
+        guard variables.count <= 128 else { throw Failure.invalidRequest }
         var values: [String: String] = [:]
         let pattern = try NSRegularExpression(pattern: #"\{\{([A-Za-z_][A-Za-z0-9_]*)\}\}"#)
         let namePattern = try NSRegularExpression(pattern: #"^[A-Za-z_][A-Za-z0-9_]*$"#)
@@ -54,7 +57,10 @@ enum ComposerTemplate {
         for row in draft.headers {
             let name = try expand(row.key).trimmingCharacters(in: .whitespacesAndNewlines)
             let value = try expand(row.value)
-            if name.isEmpty { continue }
+            if name.isEmpty {
+                guard value.isEmpty else { throw Failure.unnamedHeader }
+                continue
+            }
             headerBytes += name.utf8.count + value.utf8.count
             guard headerBytes <= 64 * 1024 else { throw Failure.invalidRequest }
             guard HTTPHeaderField.isValidName(name),

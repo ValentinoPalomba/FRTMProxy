@@ -8,6 +8,7 @@ struct CodeEditorView: NSViewRepresentable {
     @Binding var text: String
     let isEditable: Bool
     var minHeight: CGFloat = 0
+    var colors: DesignSystem.ColorPalette?
 
     @Environment(\.colorScheme) var colorScheme
 
@@ -41,7 +42,8 @@ struct CodeEditorView: NSViewRepresentable {
             webView: webView,
             text: text,
             isEditable: isEditable,
-            isDarkMode: colorScheme == .dark
+            isDarkMode: colorScheme == .dark,
+            appearance: CodeEditorAppearance(colors: colors ?? DesignSystem.Colors.palette(colorScheme))
         )
     }
 }
@@ -53,6 +55,11 @@ final class Coordinator: NSObject, CodeMirrorWebViewDelegate {
     private var isSyncingFromParent = false
     private var lastAppliedText: String = ""
     private var didConfigureEditor = false
+    private var lastFontSize: Int?
+    private var lastReadonly: Bool?
+    private var lastDarkMode: Bool?
+    private var lastAppearance: CodeEditorAppearance?
+    private var isEditorLoaded = false
     private weak var registeredWebView: CodeMirrorWebView?
 
     init(parent: CodeEditorView) {
@@ -67,6 +74,11 @@ final class Coordinator: NSObject, CodeMirrorWebViewDelegate {
             CodeMirrorShortcutCenter.shared.register(webView: webView)
             registeredWebView = webView
             didConfigureEditor = false
+            lastFontSize = nil
+            lastReadonly = nil
+            lastDarkMode = nil
+            lastAppearance = nil
+            isEditorLoaded = false
         }
         
         webView.delegate = self
@@ -92,18 +104,48 @@ final class Coordinator: NSObject, CodeMirrorWebViewDelegate {
         webView: CodeMirrorWebView,
         text: String,
         isEditable: Bool,
-        isDarkMode: Bool
+        isDarkMode: Bool,
+        appearance: CodeEditorAppearance
     ) {
         if !didConfigureEditor {
             webView.setLineWrapping(true)
             webView.setTabInsertsSpaces(true)
-            webView.setFontSize(13)
             webView.setMimeType("application/json")
             didConfigureEditor = true
         }
 
-        webView.setReadonly(!isEditable)
-        webView.setDarkTheme(isDarkMode)
+        let fontSize = Int(DesignSystem.Metrics.font(13).rounded())
+        if lastFontSize != fontSize {
+            webView.setFontSize(fontSize)
+            lastFontSize = fontSize
+        }
+        if lastReadonly != !isEditable {
+            webView.setReadonly(!isEditable)
+            lastReadonly = !isEditable
+        }
+        if lastDarkMode != isDarkMode {
+            webView.setDarkTheme(isDarkMode)
+            lastDarkMode = isDarkMode
+        }
+        if isEditorLoaded, lastAppearance != appearance {
+            lastAppearance = appearance
+            webView.webview.callAsyncJavaScript(
+                """
+                let style = document.getElementById('frtm-editor-theme');
+                if (!style) {
+                    style = document.createElement('style');
+                    style.id = 'frtm-editor-theme';
+                    document.head.appendChild(style);
+                }
+                style.textContent = css;
+                """,
+                arguments: ["css": appearance.css], in: nil, in: .page
+            ) { result in
+                if case let .failure(error) = result {
+                    NSLog("CodeMirror theme failed: \(error.localizedDescription)")
+                }
+            }
+        }
 
         if lastAppliedText != text {
             isSyncingFromParent = true
@@ -115,11 +157,14 @@ final class Coordinator: NSObject, CodeMirrorWebViewDelegate {
     // MARK: CodeMirrorWebViewDelegate
 
     func codeMirrorViewDidLoadSuccess(_ sender: CodeMirrorWebView) {
+        isEditorLoaded = true
+        lastAppearance = nil
         syncConfiguration(
             webView: sender,
             text: parent.text,
             isEditable: parent.isEditable,
-            isDarkMode: parent.colorScheme == .dark
+            isDarkMode: parent.colorScheme == .dark,
+            appearance: CodeEditorAppearance(colors: parent.colors ?? DesignSystem.Colors.palette(parent.colorScheme))
         )
     }
 

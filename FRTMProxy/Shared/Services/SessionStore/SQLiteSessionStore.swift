@@ -12,7 +12,7 @@ enum SessionStoreError: Error, Equatable {
 }
 
 actor SQLiteSessionStore: SessionStoreProtocol {
-    static let schemaVersion = 2
+    static let schemaVersion = 3
 
     private struct EncryptedFlowEnvelope: Codable {
         var flow: MitmFlow
@@ -95,6 +95,45 @@ actor SQLiteSessionStore: SessionStoreProtocol {
         )
     }
 
+    func importSession(_ prepared: SessionHARImporter.Prepared, name: String) throws -> CaptureSession {
+        guard !prepared.items.isEmpty, prepared.items.count <= SessionHARImporter.maximumEntries else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        var references: [String] = []
+        do {
+            let imported = try transaction {
+                let session = try createSession(name: name, at: prepared.startedAt)
+                for item in prepared.items {
+                    try Task.checkCancellation()
+                    var flow = item.flow
+                    if let body = item.requestBody {
+                        let reference = try CaptureBodyStore.save(body, flowID: flow.id, phase: "request", directory: bodyDirectory, key: encryptionKey)
+                        references.append(reference)
+                        flow.request?.originalBodyReference = reference
+                    }
+                    if let body = item.responseBody {
+                        let reference = try CaptureBodyStore.save(body, flowID: flow.id, phase: "response", directory: bodyDirectory, key: encryptionKey)
+                        references.append(reference)
+                        flow.response?.originalBodyReference = reference
+                    }
+                    _ = try upsertFlow(flow, in: session.id)
+                }
+                if prepared.items.contains(where: { ["response_headers", "response_stream"].contains($0.flow.event) }) {
+                    try markSessionIncomplete(id: session.id, reason: "Imported HAR includes unfinished streams; only recorded bytes are available.")
+                }
+                try closeSession(id: session.id, at: prepared.endedAt)
+                guard let imported = try self.session(id: session.id) else { throw SessionStoreError.sessionNotFound(session.id) }
+                return imported
+            }
+            return imported
+        } catch {
+            // Files are private to this attempted transaction; unreferenced leftovers
+            // after a cleanup failure remain eligible for the existing orphan sweep.
+            for reference in references { try? FileManager.default.removeItem(at: bodyDirectory.appending(path: reference)) }
+            throw error
+        }
+    }
+
     func sessions() throws -> [CaptureSession] {
         try querySessions(whereClause: "", bindings: { _ in })
     }
@@ -129,6 +168,15 @@ actor SQLiteSessionStore: SessionStoreProtocol {
         }
         // Durable queue survives a crash or disk error after the database commit.
         try cleanupDeletedBodies()
+    }
+
+    func markSessionIncomplete(id: UUID, reason: String) throws {
+        try requireSession(id)
+        try withStatement("UPDATE sessions SET incomplete_reason = COALESCE(incomplete_reason, ?) WHERE id = ?") { statement in
+            bind(String(reason.prefix(1024)), at: 1, to: statement)
+            bind(id.uuidString, at: 2, to: statement)
+            try stepDone(statement)
+        }
     }
 
     private func recordBodyReferences(_ flow: MitmFlow, sessionID: UUID) throws {
@@ -461,6 +509,17 @@ actor SQLiteSessionStore: SessionStoreProtocol {
                 throw error
             }
         }
+        if currentVersion < 3 {
+            try execute("BEGIN IMMEDIATE", on: database)
+            do {
+                try execute("ALTER TABLE sessions ADD COLUMN incomplete_reason TEXT", on: database)
+                try execute("PRAGMA user_version = 3", on: database)
+                try execute("COMMIT", on: database)
+            } catch {
+                try? execute("ROLLBACK", on: database)
+                throw error
+            }
+        }
         try execute("CREATE TABLE IF NOT EXISTS body_reference_state(id INTEGER PRIMARY KEY CHECK(id = 1), completed INTEGER NOT NULL)", on: database)
     }
 
@@ -478,7 +537,7 @@ actor SQLiteSessionStore: SessionStoreProtocol {
         bindings: (OpaquePointer) -> Void
     ) throws -> [CaptureSession] {
         let sql = """
-            SELECT s.id, s.name, s.created_at, s.updated_at, s.ended_at, COUNT(f.flow_id)
+            SELECT s.id, s.name, s.created_at, s.updated_at, s.ended_at, COUNT(f.flow_id), s.incomplete_reason
             FROM sessions s LEFT JOIN flows f ON f.session_id = s.id
             \(whereClause)
             GROUP BY s.id
@@ -497,7 +556,8 @@ actor SQLiteSessionStore: SessionStoreProtocol {
                     endedAt: sqlite3_column_type(statement, 4) == SQLITE_NULL
                         ? nil
                         : Date(timeIntervalSince1970: sqlite3_column_double(statement, 4)),
-                    flowCount: Int(sqlite3_column_int64(statement, 5))
+                    flowCount: Int(sqlite3_column_int64(statement, 5)),
+                    incompleteReason: sqlite3_column_type(statement, 6) == SQLITE_NULL ? nil : columnString(statement, at: 6)
                 ))
             }
             try verifyLastStep(statement)

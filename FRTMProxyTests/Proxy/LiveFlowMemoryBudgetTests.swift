@@ -4,6 +4,22 @@ import Testing
 
 @Suite("Live flow memory budget")
 struct LiveFlowMemoryBudgetTests {
+    @Test func countPressureKeepsPausedAndUsesStableActivityTies() {
+        var paused = MitmFlow(id: "paused", event: "request")
+        paused.breakpoint = .init(phase: .request, state: .waiting, key: "paused")
+        var recent = MitmFlow(id: "recent", event: "response")
+        recent.timestamp = 5
+        var first = MitmFlow(id: "a", event: "response")
+        first.timestamp = 1
+        var second = MitmFlow(id: "b", event: "response")
+        second.timestamp = 1
+        let flows = Dictionary(uniqueKeysWithValues: [paused, recent, first, second].map { ($0.id, $0) })
+        let retained = LiveFlowMemoryBudget.retain(flows, weights: [:], maximumCount: 3)
+        #expect(Set(retained.keys) == ["paused", "recent", "a"])
+        #expect(retained["paused"] == paused)
+        #expect(flows.count == 4)
+    }
+
     @Test func byteBudgetRetainsRecentAndPausedFlowsWithStableTies() throws {
         func flow(_ id: String, _ timestamp: Double, paused: Bool = false) -> MitmFlow {
             var result = MitmFlow(id: id, event: "response")

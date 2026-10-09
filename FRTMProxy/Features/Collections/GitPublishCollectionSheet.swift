@@ -40,12 +40,16 @@ struct GitPublishCollectionSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
             header
-            form
+            ScrollView { form }
             footer
         }
         .padding(DesignSystem.Spacing.lg)
-        .frame(minWidth: 760, minHeight: 520)
+        .frame(width: DesignSystem.Metrics.scaled(680), height: DesignSystem.Metrics.scaled(660))
+        .font(DesignSystem.Fonts.body)
+        .foregroundStyle(colors.textPrimary)
+        .tint(colors.accent)
         .background(colors.background)
+        .interactiveDismissDisabled(isWorking)
         .alert(
             "Operation failed",
             isPresented: Binding(
@@ -63,10 +67,10 @@ struct GitPublishCollectionSheet: View {
         HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                 Text(collection.origin?.git == nil ? "Publish Collection" : "Push Collection")
-                    .font(DesignSystem.Fonts.mono(22, weight: .semibold))
+                    .font(DesignSystem.Fonts.title)
                     .foregroundStyle(colors.textPrimary)
                 Text("Export the collection as `.har`, create a commit, and push to a branch. Optionally create a tag too.")
-                    .font(DesignSystem.Fonts.mono(12))
+                    .font(DesignSystem.Fonts.caption)
                     .foregroundStyle(colors.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -76,6 +80,7 @@ struct GitPublishCollectionSheet: View {
             ControlButton(title: "Close", systemImage: "xmark", style: .ghost(colors), disabled: isWorking) {
                 dismiss()
             }
+            .keyboardShortcut(.cancelAction)
         }
         .padding(DesignSystem.Spacing.lg)
         .surfaceCard(fill: colors.surface, stroke: colors.border.opacity(0.9), shadowOpacity: 0.08)
@@ -96,7 +101,7 @@ struct GitPublishCollectionSheet: View {
     private var repositorySection: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             Text("Repository")
-                .font(DesignSystem.Fonts.sans(14, weight: .semibold))
+                .font(DesignSystem.Fonts.heading)
                 .foregroundStyle(colors.textPrimary)
 
             if let lockedSource {
@@ -107,7 +112,7 @@ struct GitPublishCollectionSheet: View {
                     .truncationMode(.middle)
             } else if viewModel.gitCollectionSources.isEmpty {
                 Text("No Git source configured.")
-                    .font(DesignSystem.Fonts.mono(12))
+                    .font(DesignSystem.Fonts.caption)
                     .foregroundStyle(colors.textSecondary)
             } else {
                 Picker("Repo", selection: $selectedSourceID) {
@@ -117,7 +122,7 @@ struct GitPublishCollectionSheet: View {
                 }
                 .pickerStyle(.menu)
                 Text("Configure repositories in Collections → Git.")
-                    .font(DesignSystem.Fonts.mono(11))
+                    .font(DesignSystem.Fonts.caption)
                     .foregroundStyle(colors.textSecondary)
             }
         }
@@ -126,7 +131,7 @@ struct GitPublishCollectionSheet: View {
     private var branchSection: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             Text("Branch")
-                .font(DesignSystem.Fonts.sans(14, weight: .semibold))
+                .font(DesignSystem.Fonts.heading)
                 .foregroundStyle(colors.textPrimary)
             TextField("Branch name (e.g. main)", text: $branch)
                 .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "arrow.triangle.branch"))
@@ -136,7 +141,7 @@ struct GitPublishCollectionSheet: View {
     private var pathSection: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             Text("File Path")
-                .font(DesignSystem.Fonts.sans(14, weight: .semibold))
+                .font(DesignSystem.Fonts.heading)
                 .foregroundStyle(colors.textPrimary)
 
             if collection.origin?.git != nil {
@@ -149,7 +154,7 @@ struct GitPublishCollectionSheet: View {
                 TextField("Relative path (e.g. collections/api.har)", text: $relativePath)
                     .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "doc"))
                 Text("Relative path to the Git source subdirectory (if configured).")
-                    .font(DesignSystem.Fonts.mono(11))
+                    .font(DesignSystem.Fonts.caption)
                     .foregroundStyle(colors.textSecondary)
             }
         }
@@ -158,7 +163,7 @@ struct GitPublishCollectionSheet: View {
     private var commitSection: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             Text("Commit Message")
-                .font(DesignSystem.Fonts.sans(14, weight: .semibold))
+                .font(DesignSystem.Fonts.heading)
                 .foregroundStyle(colors.textPrimary)
             TextField("Message", text: $commitMessage)
                 .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "text.quote"))
@@ -168,12 +173,12 @@ struct GitPublishCollectionSheet: View {
     private var tagSection: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             Text("Tag (optional)")
-                .font(DesignSystem.Fonts.sans(14, weight: .semibold))
+                .font(DesignSystem.Fonts.heading)
                 .foregroundStyle(colors.textPrimary)
             TextField("Tag name (e.g. v1.2.3)", text: $tagName)
                 .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "tag"))
             Text("If set, FRTMProxy will create an annotated tag after the push.")
-                .font(DesignSystem.Fonts.mono(11))
+                .font(DesignSystem.Fonts.caption)
                 .foregroundStyle(colors.textSecondary)
         }
     }

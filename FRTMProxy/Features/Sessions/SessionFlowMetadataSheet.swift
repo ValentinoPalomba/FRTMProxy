@@ -40,7 +40,8 @@ struct SessionFlowMetadataSheet: View {
             Toggle("Bookmark this flow", isOn: $isBookmarked)
 
             TextEditor(text: $note)
-                .font(DesignSystem.Fonts.body)
+                .accessibilityLabel("Flow note")
+                .proxyTextEditor(palette: colors)
                 .frame(minHeight: DesignSystem.Metrics.scaled(140))
                 .padding(DesignSystem.Spacing.sm)
                 .background(colors.surfaceElevated)
@@ -52,17 +53,16 @@ struct SessionFlowMetadataSheet: View {
 
             HStack {
                 Spacer()
-                Button("Cancel", role: .cancel) { dismiss() }
+                ControlButton(title: "Cancel", systemImage: "xmark", style: .ghost(colors), disabled: isSaving) { dismiss() }
                     .keyboardShortcut(.cancelAction)
-                Button("Save") { save() }
+                ControlButton(title: "Save", systemImage: "checkmark", style: .filled(colors), disabled: isSaving) { save() }
                     .keyboardShortcut(.defaultAction)
-                    .buttonStyle(.borderedProminent)
-                    .disabled(isSaving)
             }
         }
         .padding(DesignSystem.Spacing.xl)
-        .frame(minWidth: 520, minHeight: 320)
+        .frame(width: DesignSystem.Metrics.scaled(520), height: DesignSystem.Metrics.scaled(360))
         .background(colors.background)
+        .interactiveDismissDisabled(isSaving)
         .alert(
             "Unable to Save Note",
             isPresented: Binding(

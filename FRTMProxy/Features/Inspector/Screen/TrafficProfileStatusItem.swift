@@ -9,7 +9,8 @@ struct TrafficProfileStatusItem: View {
     }
 
     private var label: String {
-        profile.isDisabled ? "Profile: Off" : "Profile: \(profile.name)"
+        let name = AppLocalization.bundle.localizedString(forKey: profile.name, value: profile.name, table: nil)
+        return profile.isDisabled ? String(localized: "Profile: Off", bundle: AppLocalization.bundle) : String(localized: "Profile: \(name)", bundle: AppLocalization.bundle)
     }
 
     var body: some View {

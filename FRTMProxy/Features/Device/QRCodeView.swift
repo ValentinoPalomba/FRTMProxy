@@ -23,26 +23,30 @@ struct QRCodeView: View {
                     RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                         .stroke(colors.border.opacity(0.9), lineWidth: 1)
                 )
-                .shadow(color: Color.black.opacity(0.12), radius: 16, y: 8)
 
             if let image = makeImage(from: text), !text.isEmpty {
                 Image(nsImage: image)
                     .interpolation(.none)
                     .resizable()
                     .scaledToFit()
-                    .padding(DesignSystem.Spacing.xl)
+                    // Keep the QR quiet zone opaque for cameras in every theme.
+                    .padding(DesignSystem.Spacing.sm)
+                    .background(Color.white)
+                    .padding(DesignSystem.Spacing.lg)
             } else {
                 VStack(spacing: DesignSystem.Spacing.sm) {
                     Image(systemName: "qrcode")
-                        .font(.system(size: 36, weight: .regular))
+                        .font(DesignSystem.Fonts.sans(36))
                     Text("QR code unavailable")
-                        .font(DesignSystem.Fonts.sans(12, weight: .semibold))
+                        .font(DesignSystem.Fonts.label)
                 }
                 .foregroundStyle(colors.textSecondary)
             }
         }
         .frame(width: size, height: size)
-        .accessibilityLabel(Text("QR code"))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(text.isEmpty ? "QR code unavailable" : "Device pairing QR code")
+        .accessibilityValue(text)
     }
 
     private func makeImage(from text: String) -> NSImage? {

@@ -2,6 +2,8 @@ import SwiftUI
 import AppKit
 
 struct FlowContextMenuContent: View {
+    @EnvironmentObject private var profileStore: CaptureProfileStore
+    @Environment(\.captureProfileActions) private var profileActions
     let flow: MitmFlow
     let isHostPinned: Bool
     let isAppPinned: Bool
@@ -16,6 +18,21 @@ struct FlowContextMenuContent: View {
     let onFilterDevice: () -> Void
 
     var body: some View {
+        Menu {
+            if let member = CaptureProfileMember.request(for: flow) {
+                profileMemberMenu("This Call", scope: "request", member: member)
+            }
+            if !flow.host.isEmpty {
+                profileMemberMenu("This Host", scope: "host", member: .host(flow.host))
+            }
+            if let app = flow.clientApp, !FlowClientApp.normalizedID(app.id).isEmpty {
+                profileMemberMenu("This App", scope: "app", member: .app(app.id))
+            }
+        } label: {
+            Label("Profiles", systemImage: "person.crop.rectangle.stack")
+        }
+        .disabled(!profileStore.canEdit)
+
         Menu {
             Button(action: onEditRetry) {
                 Label("Edit & Retry", systemImage: "arrow.triangle.2.circlepath")
@@ -152,6 +169,21 @@ struct FlowContextMenuContent: View {
         }
     }
 
+    private func profileMemberMenu(_ title: LocalizedStringKey, scope: String, member: CaptureProfileMember) -> some View {
+        Menu {
+            Button("Create Profile…", systemImage: "plus") { profileActions?.create(member) }
+                .accessibilityIdentifier("capture.profile.create.\(scope)")
+            if !profileStore.profiles.isEmpty {
+                Divider()
+                ForEach(profileStore.profiles) { profile in
+                    Button(profile.name) { profileActions?.add(member, profile.id) }
+                        .disabled(profile.members.contains(member.normalized ?? member))
+                        .accessibilityIdentifier("capture.profile.add.\(scope).\(profile.name)")
+                }
+            }
+        } label: { Text(title) }
+    }
+
     private var shouldShowFilters: Bool {
         flow.clientApp != nil || !flow.clientIP.isEmpty
     }
@@ -199,5 +231,21 @@ struct FlowContextMenuContent: View {
                 return
             }
         }
+    }
+}
+
+struct CaptureProfileActions {
+    let create: (CaptureProfileMember) -> Void
+    let add: (CaptureProfileMember, UUID) -> Void
+}
+
+private struct CaptureProfileActionsKey: EnvironmentKey {
+    static let defaultValue: CaptureProfileActions? = nil
+}
+
+extension EnvironmentValues {
+    var captureProfileActions: CaptureProfileActions? {
+        get { self[CaptureProfileActionsKey.self] }
+        set { self[CaptureProfileActionsKey.self] = newValue }
     }
 }

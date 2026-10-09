@@ -1,0 +1,270 @@
+{
+  "passed": true,
+  "scope": "Real GUI app + HTTP bridge + encrypted SQLite session writer; MCP roundtrip probes MainActor responsiveness, not visual frame timings. No TLS, large bodies, or external network traffic in this run.",
+  "configuration": {
+    "app": "/private/tmp/frtm-current-verification/FRTMProxy.app",
+    "requests": 6000,
+    "concurrency": 20,
+    "rate": 100,
+    "maximum_app_rss_mib": 300,
+    "maximum_engine_rss_mib": 500,
+    "timeout": 0,
+    "build_configuration": "Debug -O, ENABLE_DEBUG_DYLIB=NO",
+    "keep_open": false,
+    "report": "artifacts/app-stress-current.json"
+  },
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "machine": "arm64",
+  "fixtureRoot": "/tmp/frtm-app-stress-qt_8j9mt",
+  "fixture": {
+    "bodyBytes": 1024,
+    "port": 56074,
+    "originPort": 56075
+  },
+  "failures": [],
+  "hardware": [
+    "Mac16,10",
+    "Apple M4",
+    "25769803776"
+  ],
+  "build": "1.8.1",
+  "ownedAppPID": 95214,
+  "crashRecovery": {
+    "injectedEngineSIGTERM": true,
+    "steadyLoadIncomplete": false,
+    "interruptedSessionMarked": true,
+    "interruptedSessionClosed": true,
+    "passed": true
+  },
+  "scheduled": 6000,
+  "completed": 6000,
+  "persistedFlows": 6000,
+  "terminalIDs": 6000,
+  "missingTerminalIDs": 0,
+  "unexpectedTerminalIDs": 0,
+  "duplicateIDs": 0,
+  "corruptFlows": 0,
+  "sessions": 1,
+  "loadSeconds": 60.203,
+  "targetRateMet": true,
+  "throughput": 99.66258491384413,
+  "clientErrorCounts": {},
+  "clientLatencyMilliseconds": {
+    "samples": 6000,
+    "p50": 2.6473750000004515,
+    "p95": 3.5822920000043723,
+    "maximum": 37.363499999997885
+  },
+  "mainActorProbeMilliseconds": {
+    "samples": 29,
+    "p50": 29.95420800000126,
+    "p95": 84.79649999999594,
+    "maximum": 89.17749999999813
+  },
+  "memory": {
+    "appBytes": {
+      "peakBytes": 268926976,
+      "firstBytes": 179912704,
+      "lastBytes": 261603328,
+      "tailMeanBytes": 241537447.72413793,
+      "tailChangeBytes": 81690624
+    },
+    "engineBytes": {
+      "peakBytes": 142163968,
+      "firstBytes": 111083520,
+      "lastBytes": 142131200,
+      "tailMeanBytes": 135301896.8275862,
+      "tailChangeBytes": 31047680
+    },
+    "allChildrenBytes": {
+      "peakBytes": 142163968,
+      "firstBytes": 111083520,
+      "lastBytes": 142131200,
+      "tailMeanBytes": 135301896.8275862,
+      "tailChangeBytes": 31047680
+    }
+  },
+  "memorySamples": [
+    {
+      "seconds": 3.92,
+      "appBytes": 179912704,
+      "engineBytes": 111083520,
+      "allChildrenBytes": 111083520
+    },
+    {
+      "seconds": 5.97,
+      "appBytes": 183156736,
+      "engineBytes": 112427008,
+      "allChildrenBytes": 112427008
+    },
+    {
+      "seconds": 8.03,
+      "appBytes": 198918144,
+      "engineBytes": 112705536,
+      "allChildrenBytes": 112705536
+    },
+    {
+      "seconds": 10.1,
+      "appBytes": 214581248,
+      "engineBytes": 115605504,
+      "allChildrenBytes": 115605504
+    },
+    {
+      "seconds": 12.17,
+      "appBytes": 219250688,
+      "engineBytes": 119848960,
+      "allChildrenBytes": 119848960
+    },
+    {
+      "seconds": 14.24,
+      "appBytes": 224444416,
+      "engineBytes": 123076608,
+      "allChildrenBytes": 123076608
+    },
+    {
+      "seconds": 16.27,
+      "appBytes": 226590720,
+      "engineBytes": 126369792,
+      "allChildrenBytes": 126369792
+    },
+    {
+      "seconds": 18.31,
+      "appBytes": 235945984,
+      "engineBytes": 129712128,
+      "allChildrenBytes": 129712128
+    },
+    {
+      "seconds": 20.36,
+      "appBytes": 233488384,
+      "engineBytes": 133971968,
+      "allChildrenBytes": 133971968
+    },
+    {
+      "seconds": 22.41,
+      "appBytes": 233897984,
+      "engineBytes": 138280960,
+      "allChildrenBytes": 138280960
+    },
+    {
+      "seconds": 24.48,
+      "appBytes": 234733568,
+      "engineBytes": 142163968,
+      "allChildrenBytes": 142163968
+    },
+    {
+      "seconds": 26.52,
+      "appBytes": 234323968,
+      "engineBytes": 142163968,
+      "allChildrenBytes": 142163968
+    },
+    {
+      "seconds": 28.57,
+      "appBytes": 240877568,
+      "engineBytes": 142163968,
+      "allChildrenBytes": 142163968
+    },
+    {
+      "seconds": 30.68,
+      "appBytes": 249233408,
+      "engineBytes": 142147584,
+      "allChildrenBytes": 142147584
+    },
+    {
+      "seconds": 32.78,
+      "appBytes": 251215872,
+      "engineBytes": 142147584,
+      "allChildrenBytes": 142147584
+    },
+    {
+      "seconds": 34.87,
+      "appBytes": 252248064,
+      "engineBytes": 142147584,
+      "allChildrenBytes": 142147584
+    },
+    {
+      "seconds": 36.93,
+      "appBytes": 253329408,
+      "engineBytes": 142147584,
+      "allChildrenBytes": 142147584
+    },
+    {
+      "seconds": 39.02,
+      "appBytes": 253247488,
+      "engineBytes": 142147584,
+      "allChildrenBytes": 142147584
+    },
+    {
+      "seconds": 41.07,
+      "appBytes": 258736128,
+      "engineBytes": 142131200,
+      "allChildrenBytes": 142131200
+    },
+    {
+      "seconds": 43.13,
+      "appBytes": 261324800,
+      "engineBytes": 142131200,
+      "allChildrenBytes": 142131200
+    },
+    {
+      "seconds": 45.22,
+      "appBytes": 261668864,
+      "engineBytes": 142131200,
+      "allChildrenBytes": 142131200
+    },
+    {
+      "seconds": 47.27,
+      "appBytes": 268926976,
+      "engineBytes": 142131200,
+      "allChildrenBytes": 142131200
+    },
+    {
+      "seconds": 49.37,
+      "appBytes": 261718016,
+      "engineBytes": 142131200,
+      "allChildrenBytes": 142131200
+    },
+    {
+      "seconds": 51.43,
+      "appBytes": 261570560,
+      "engineBytes": 142131200,
+      "allChildrenBytes": 142131200
+    },
+    {
+      "seconds": 53.56,
+      "appBytes": 264912896,
+      "engineBytes": 142131200,
+      "allChildrenBytes": 142131200
+    },
+    {
+      "seconds": 55.68,
+      "appBytes": 261586944,
+      "engineBytes": 142131200,
+      "allChildrenBytes": 142131200
+    },
+    {
+      "seconds": 57.77,
+      "appBytes": 261570560,
+      "engineBytes": 142131200,
+      "allChildrenBytes": 142131200
+    },
+    {
+      "seconds": 59.89,
+      "appBytes": 261570560,
+      "engineBytes": 142131200,
+      "allChildrenBytes": 142131200
+    },
+    {
+      "seconds": 61.96,
+      "appBytes": 261603328,
+      "engineBytes": 142131200,
+      "allChildrenBytes": 142131200
+    }
+  ],
+  "historyValidationProgress": {
+    "complete": true,
+    "scannedIDs": 6000,
+    "terminalIDs": 6000
+  },
+  "elapsedSeconds": 72.68,
+  "keptOpen": false
+}

@@ -118,10 +118,10 @@ private struct BreakpointToggleRow: View {
                     .foregroundStyle(isEnabled ? colors.accent : colors.border)
                     .font(.system(size: DesignSystem.Metrics.scaled(18)))
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
-                    Text(title)
+                    Text(LocalizedStringKey(title))
                         .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                         .foregroundStyle(colors.textPrimary)
-                    Text(subtitle)
+                    Text(LocalizedStringKey(subtitle))
                         .font(DesignSystem.Fonts.sans(11))
                         .foregroundStyle(colors.textSecondary)
                 }

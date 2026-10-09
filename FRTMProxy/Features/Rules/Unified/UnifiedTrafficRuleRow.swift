@@ -20,27 +20,35 @@ struct UnifiedTrafficRuleRow: View {
                     Text(rule.name)
                         .font(DesignSystem.Fonts.heading)
                         .foregroundStyle(colors.textPrimary)
+                        .lineLimit(2)
+                        .help(rule.name)
                     Text("Priority \(rule.priority)")
                         .font(DesignSystem.Fonts.mono(11, weight: .medium))
                         .foregroundStyle(colors.textSecondary)
+                        .fixedSize()
                 }
                 Text(rule.matcher.compactSummary)
                     .font(DesignSystem.Fonts.mono(12))
                     .foregroundStyle(colors.textSecondary)
                     .lineLimit(2)
-                HStack(spacing: DesignSystem.Spacing.xs) {
-                    ForEach(rule.actions) { action in
-                        Label(action.displayName, systemImage: action.systemImage)
-                            .font(.caption)
-                            .padding(.horizontal, DesignSystem.Spacing.sm)
-                            .padding(.vertical, DesignSystem.Spacing.xs)
-                            .foregroundStyle(colors.textSecondary)
-                            .background(colors.surfaceElevated, in: .capsule)
+                    .help(rule.matcher.compactSummary)
+                ScrollView(.horizontal) {
+                    HStack(spacing: DesignSystem.Spacing.xs) {
+                        ForEach(rule.actions) { action in
+                            Label(action.displayName, systemImage: action.systemImage)
+                                .font(DesignSystem.Fonts.caption)
+                                .padding(.horizontal, DesignSystem.Spacing.sm)
+                                .padding(.vertical, DesignSystem.Spacing.xs)
+                                .foregroundStyle(colors.textSecondary)
+                                .background(colors.surfaceElevated, in: .capsule)
+                        }
                     }
                 }
+                .scrollIndicators(.hidden)
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel(actionAccessibilityLabel)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             Spacer(minLength: DesignSystem.Spacing.lg)
             HStack(spacing: DesignSystem.Spacing.xs) {
                 Button("Move Rule Up", systemImage: "chevron.up", action: onMoveUp)
@@ -48,19 +56,23 @@ struct UnifiedTrafficRuleRow: View {
                     .disabled(!canMoveUp)
                     .buttonStyle(.pressable)
                     .hoverHighlight(colors)
+                    .help("Move Rule Up")
                 Button("Move Rule Down", systemImage: "chevron.down", action: onMoveDown)
                     .labelStyle(.iconOnly)
                     .disabled(!canMoveDown)
                     .buttonStyle(.pressable)
                     .hoverHighlight(colors)
+                    .help("Move Rule Down")
                 Button("Edit Rule", systemImage: "pencil", action: onEdit)
                     .labelStyle(.iconOnly)
                     .buttonStyle(.pressable)
                     .hoverHighlight(colors)
+                    .help("Edit Rule")
                 Button("Delete Rule", systemImage: "trash", role: .destructive, action: onDelete)
                     .labelStyle(.iconOnly)
                     .buttonStyle(.pressable)
                     .hoverHighlight(colors)
+                    .help("Delete Rule")
             }
             .foregroundStyle(colors.textSecondary)
         }

@@ -3,11 +3,13 @@ import SwiftUI
 struct UnifiedTrafficRuleActionEditor: View {
     @Environment(\.dismiss) private var dismiss
     @State private var model: UnifiedTrafficRuleActionFormModel
+    let colors: DesignSystem.ColorPalette
     let onSave: (TrafficRuleAction) -> Void
 
-    init(action: TrafficRuleAction, onSave: @escaping (TrafficRuleAction) -> Void) {
+    init(action: TrafficRuleAction, colors: DesignSystem.ColorPalette, onSave: @escaping (TrafficRuleAction) -> Void) {
         _model = State(initialValue: UnifiedTrafficRuleActionFormModel(action: action))
         self.onSave = onSave
+        self.colors = colors
     }
 
     var body: some View {
@@ -16,68 +18,77 @@ struct UnifiedTrafficRuleActionEditor: View {
         VStack(spacing: 0) {
             HStack {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    Text(model.kind.title)
-                        .font(.title2)
-                        .bold()
+                    Text(LocalizedStringKey(model.kind.title))
+                        .font(DesignSystem.Fonts.title)
                     Text("Configure this action. Its position controls execution order.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(DesignSystem.Fonts.caption)
+                        .foregroundStyle(colors.textSecondary)
                 }
                 Spacer()
-                Button("Cancel", systemImage: "xmark") { dismiss() }
-                Button("Save Action", systemImage: "checkmark") {
+                ControlButton(title: "Cancel", systemImage: "xmark", style: .ghost(colors)) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                ControlButton(title: "Save Action", systemImage: "checkmark", style: .filled(colors), disabled: model.validationMessage != nil) {
                     onSave(model.makeAction())
                     dismiss()
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(model.validationMessage != nil)
+                .keyboardShortcut(.defaultAction)
             }
             .padding(DesignSystem.Spacing.lg)
+            .background(colors.surface)
 
             Divider()
 
             Form {
                 switch model.kind {
                 case .mock:
-                    UnifiedMockActionFields(model: model)
+                    UnifiedMockActionFields(model: model, colors: colors)
                 case .mapRemote:
                     UnifiedMapRemoteActionFields(model: model)
                 case .rewriteRequest:
-                    UnifiedRewriteRequestActionFields(model: model)
+                    UnifiedRewriteRequestActionFields(model: model, colors: colors)
                 case .rewriteResponse:
-                    UnifiedRewriteResponseActionFields(model: model)
+                    UnifiedRewriteResponseActionFields(model: model, colors: colors)
                 case .block:
-                    UnifiedBlockActionFields(model: model)
+                    UnifiedBlockActionFields(model: model, colors: colors)
                 case .delay:
                     UnifiedDelayActionFields(model: model)
                 case .breakpoint:
                     UnifiedBreakpointActionFields(model: model)
                 case .script:
-                    UnifiedScriptActionFields(model: model)
+                    UnifiedScriptActionFields(model: model, colors: colors)
                 }
 
                 if let message = model.validationMessage {
                     Section {
                         Label(message, systemImage: "exclamationmark.triangle")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(colors.danger)
+                            .lineLimit(3)
+                            .help(message)
                             .accessibilityLabel("Validation error: \(message)")
                     }
                 }
             }
             .formStyle(.grouped)
+            .scrollContentBackground(.hidden)
         }
-        .frame(minWidth: 720, minHeight: 620)
+        .textFieldStyle(ProxyTextFieldStyle(palette: colors, size: .compact))
+        .font(DesignSystem.Fonts.body)
+        .foregroundStyle(colors.textPrimary)
+        .tint(colors.accent)
+        .background(colors.background)
+        .frame(width: DesignSystem.Metrics.scaled(720), height: DesignSystem.Metrics.scaled(620))
     }
 }
 
 private struct UnifiedMockActionFields: View {
     @Bindable var model: UnifiedTrafficRuleActionFormModel
+    let colors: DesignSystem.ColorPalette
 
     var body: some View {
         Section("Response") {
             Stepper("Status: \(model.status)", value: $model.status, in: 100...599)
-            UnifiedActionHeadersField(text: $model.headersText)
-            UnifiedActionBodyField(text: $model.body, label: "Response body")
+            UnifiedActionHeadersField(text: $model.headersText, colors: colors)
+            UnifiedActionBodyField(text: $model.body, colors: colors, label: "Response body")
         }
     }
 }
@@ -97,15 +108,16 @@ private struct UnifiedMapRemoteActionFields: View {
 
 private struct UnifiedRewriteRequestActionFields: View {
     @Bindable var model: UnifiedTrafficRuleActionFormModel
+    let colors: DesignSystem.ColorPalette
 
     var body: some View {
         Section("Request overrides") {
             TextField("Method (leave empty to preserve)", text: $model.method)
             TextField("URL (leave empty to preserve)", text: $model.url)
-            UnifiedActionHeadersField(text: $model.headersText)
+            UnifiedActionHeadersField(text: $model.headersText, colors: colors)
             Toggle("Replace request body", isOn: $model.includesBody)
             if model.includesBody {
-                UnifiedActionBodyField(text: $model.body, label: "Request body")
+                UnifiedActionBodyField(text: $model.body, colors: colors, label: "Request body")
             }
         }
     }
@@ -113,6 +125,7 @@ private struct UnifiedRewriteRequestActionFields: View {
 
 private struct UnifiedRewriteResponseActionFields: View {
     @Bindable var model: UnifiedTrafficRuleActionFormModel
+    let colors: DesignSystem.ColorPalette
 
     var body: some View {
         Section("Response overrides") {
@@ -120,10 +133,10 @@ private struct UnifiedRewriteResponseActionFields: View {
             if model.includesStatus {
                 Stepper("Status: \(model.status)", value: $model.status, in: 100...599)
             }
-            UnifiedActionHeadersField(text: $model.headersText)
+            UnifiedActionHeadersField(text: $model.headersText, colors: colors)
             Toggle("Replace response body", isOn: $model.includesBody)
             if model.includesBody {
-                UnifiedActionBodyField(text: $model.body, label: "Response body")
+                UnifiedActionBodyField(text: $model.body, colors: colors, label: "Response body")
             }
         }
     }
@@ -131,12 +144,13 @@ private struct UnifiedRewriteResponseActionFields: View {
 
 private struct UnifiedBlockActionFields: View {
     @Bindable var model: UnifiedTrafficRuleActionFormModel
+    let colors: DesignSystem.ColorPalette
 
     var body: some View {
         Section("Synthetic response") {
             Stepper("Status: \(model.status)", value: $model.status, in: 100...599)
-            UnifiedActionHeadersField(text: $model.headersText)
-            UnifiedActionBodyField(text: $model.body, label: "Block message")
+            UnifiedActionHeadersField(text: $model.headersText, colors: colors)
+            UnifiedActionBodyField(text: $model.body, colors: colors, label: "Block message")
         }
     }
 }
@@ -165,13 +179,13 @@ private struct UnifiedBreakpointActionFields: View {
 
 private struct UnifiedScriptActionFields: View {
     @Bindable var model: UnifiedTrafficRuleActionFormModel
+    let colors: DesignSystem.ColorPalette
 
     var body: some View {
         Section("JavaScript") {
             Toggle("Response only", isOn: $model.responseOnly)
             TextEditor(text: $model.source)
-                .font(.system(.body, design: .monospaced))
-                .frame(minHeight: 320)
+                .proxyTextEditor(palette: colors, minHeight: DesignSystem.Metrics.scaled(280))
                 .accessibilityLabel("Script source")
         }
     }
@@ -179,33 +193,33 @@ private struct UnifiedScriptActionFields: View {
 
 private struct UnifiedActionHeadersField: View {
     @Binding var text: String
+    let colors: DesignSystem.ColorPalette
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
             Text("Headers")
-                .font(.headline)
+                .font(DesignSystem.Fonts.heading)
             TextEditor(text: $text)
-                .font(.system(.body, design: .monospaced))
-                .frame(minHeight: 90)
+                .proxyTextEditor(palette: colors, minHeight: DesignSystem.Metrics.scaled(90))
                 .accessibilityLabel("Headers, one name colon value pair per line")
             Text("One Name: Value pair per line. Existing names are replaced.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(DesignSystem.Fonts.caption)
+                .foregroundStyle(colors.textSecondary)
         }
     }
 }
 
 private struct UnifiedActionBodyField: View {
     @Binding var text: String
+    let colors: DesignSystem.ColorPalette
     let label: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
             Text(label)
-                .font(.headline)
+                .font(DesignSystem.Fonts.heading)
             TextEditor(text: $text)
-                .font(.system(.body, design: .monospaced))
-                .frame(minHeight: 150)
+                .proxyTextEditor(palette: colors, minHeight: DesignSystem.Metrics.scaled(150))
                 .accessibilityLabel(label)
         }
     }

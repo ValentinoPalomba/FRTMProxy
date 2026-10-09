@@ -175,9 +175,9 @@ class ProxyIntegration(unittest.TestCase):
                 return event
         raise AssertionError("Expected bridge event did not arrive")
 
-    def configure(self, actions):
+    def configure(self, actions, matcher=None):
         revision = time.time_ns()
-        rules = [{"id": "fixture", "priority": 0, "isEnabled": True, "matcher": {}, "actions": actions}] if actions else []
+        rules = [{"id": "fixture", "priority": 0, "isEnabled": True, "matcher": matcher or {}, "actions": actions}] if actions else []
         self.process.stdin.write(json.dumps({"type": "replace_rules", "revision": revision, "document": {"rules": rules}}) + "\n")
         self.process.stdin.flush()
         self.wait_event(lambda e: e.get("event") == "rules_ack" and e.get("revision") == revision)
@@ -254,6 +254,21 @@ class ProxyIntegration(unittest.TestCase):
         self.assertEqual(echoed["contentLength"], [str(len(original))])
         literal = self.composer_probe(f"http://127.0.0.1:{self.origin}/a/../echo?ids[0]=1")
         self.assertEqual(json.loads(base64.b64decode(literal["body"]))["path"], "/a/../echo?ids[0]=1")
+
+    def test_header_matcher_wildcard_and_case_sensitivity(self):
+        actions = [{"type": "mock", "configuration": {"status": 202, "body": "matched", "headers": {}}}]
+        def send(value):
+            return self.composer_probe(f"http://127.0.0.1:{self.origin}/header-match",
+                headerFields=[{"name": "x-environment", "value": value}])
+        matcher = {"headers": [{"name": "X-Environment", "value": {
+            "mode": "wildcard", "value": "stage*", "isCaseSensitive": False}}]}
+        self.configure(actions, matcher)
+        self.assertEqual(send("STAGE-DEV")["status"], 202)
+        self.assertEqual(send("production")["status"], 200)
+        matcher["headers"][0]["value"]["isCaseSensitive"] = True
+        self.configure(actions, matcher)
+        self.assertEqual(send("STAGE-DEV")["status"], 200)
+        self.assertEqual(send("stage-dev")["status"], 202)
 
     def test_body_storage_is_leased_for_active_capture(self):
         with (self.bodies / ".capture.lock").open("rb") as lease:

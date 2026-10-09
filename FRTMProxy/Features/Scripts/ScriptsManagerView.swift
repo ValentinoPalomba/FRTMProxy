@@ -29,7 +29,7 @@ struct ScriptsManagerView: View {
             }
         }
         .padding(DesignSystem.Spacing.lg)
-        .frame(minWidth: 780, minHeight: 500)
+        .frame(width: DesignSystem.Metrics.scaled(780), height: DesignSystem.Metrics.scaled(500))
         .background(colors.background)
         .sheet(item: $editingScript) { script in
             ScriptEditorSheet(
@@ -83,10 +83,10 @@ struct ScriptsManagerView: View {
         HStack(spacing: DesignSystem.Spacing.md) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text("Script Rules")
-                    .font(DesignSystem.Fonts.mono(20, weight: .semibold))
+                    .font(DesignSystem.Fonts.title)
                     .foregroundStyle(colors.textPrimary)
                 Text("Transform responses dynamically using JavaScript.")
-                    .font(DesignSystem.Fonts.mono(13))
+                    .font(DesignSystem.Fonts.body)
                     .foregroundStyle(colors.textSecondary)
             }
             Spacer()
@@ -96,6 +96,7 @@ struct ScriptsManagerView: View {
             ControlButton(title: "Close", systemImage: "xmark", style: .ghost(colors)) {
                 onClose()
             }
+            .keyboardShortcut(.cancelAction)
         }
     }
 
@@ -147,15 +148,21 @@ private struct ScriptRuleRow: View {
             Toggle("", isOn: $script.isEnabled)
                 .toggleStyle(.switch)
                 .labelsHidden()
-                .scaleEffect(0.75)
+                .accessibilityLabel(script.name.isEmpty ? "Enable untitled script" : "Enable \(script.name)")
+                .tint(colors.accent)
 
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text(script.name.isEmpty ? "(Untitled)" : script.name)
                     .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                     .foregroundStyle(colors.textPrimary)
+                    .lineLimit(1)
+                    .help(script.name)
                 Text(scriptSummary)
                     .font(DesignSystem.Fonts.mono(11))
                     .foregroundStyle(colors.textSecondary)
+                    .lineLimit(2)
+                    .truncationMode(.middle)
+                    .help(scriptSummary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -200,14 +207,18 @@ private struct ScriptEditorSheet: View {
             // Header
             HStack(spacing: DesignSystem.Spacing.md) {
                 Image(systemName: "curlybraces")
-                    .font(.system(size: DesignSystem.Metrics.scaled(16), weight: .semibold))
+                    .font(DesignSystem.Fonts.heading)
                     .foregroundStyle(colors.accent)
-                Text(script.name.isEmpty ? "New Script" : script.name)
-                    .font(DesignSystem.Fonts.sans(15, weight: .semibold))
+                Text(script.name.isEmpty ? String(localized: "New Script", bundle: AppLocalization.bundle) : script.name)
+                    .font(DesignSystem.Fonts.heading)
                     .foregroundStyle(colors.textPrimary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
                 Spacer()
                 ControlButton(title: "Cancel", systemImage: "xmark", style: .ghost(colors)) { onClose() }
+                    .keyboardShortcut(.cancelAction)
                 ControlButton(title: "Save", systemImage: "checkmark", style: .filled(colors)) { onSave(script) }
+                    .keyboardShortcut(.defaultAction)
             }
             .padding(DesignSystem.Spacing.lg)
             .background(colors.surfaceElevated)
@@ -241,8 +252,10 @@ private struct ScriptEditorSheet: View {
                         Text("Script")
                             .font(DesignSystem.Fonts.sans(12, weight: .semibold))
                             .foregroundStyle(colors.textSecondary)
-                        CodeEditorView(text: $script.code, isEditable: true, minHeight: 300)
-                            .frame(maxWidth: .infinity, minHeight: 300)
+                        CodeEditorView(text: $script.code, isEditable: true, minHeight: DesignSystem.Metrics.scaled(260), colors: colors)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: DesignSystem.Metrics.scaled(260))
+                            .clipShape(.rect(cornerRadius: DesignSystem.Radius.md))
                             .overlay(
                                 RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                                     .stroke(colors.border.opacity(0.7), lineWidth: 1)
@@ -260,8 +273,8 @@ private struct ScriptEditorSheet: View {
                 .padding(DesignSystem.Spacing.lg)
             }
         }
-        .background(colors.surface)
-        .frame(minWidth: 800, minHeight: 600)
+        .background(colors.background)
+        .frame(width: DesignSystem.Metrics.scaled(780), height: DesignSystem.Metrics.scaled(600))
     }
 
     private func formField<Content: View>(label: String, @ViewBuilder content: () -> Content) -> some View {

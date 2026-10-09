@@ -89,7 +89,7 @@ enum GitCollectionsSyncer {
         var lastError: Error?
         for (index, candidate) in remoteCandidates.enumerated() {
             do {
-                try git(["clone", candidate, cloneDirectory.path], cwd: nil, remoteURLForCredentialHelper: candidate)
+                _ = try git(["clone", candidate, cloneDirectory.path], cwd: nil, remoteURLForCredentialHelper: candidate)
                 return candidate
             } catch {
                 lastError = error
@@ -108,8 +108,8 @@ enum GitCollectionsSyncer {
         var lastError: Error?
         for (index, candidate) in remoteCandidates.enumerated() {
             do {
-                try git(["remote", "set-url", "origin", candidate], cwd: cloneDirectory, remoteURLForCredentialHelper: candidate)
-                try git(["fetch", "--prune", "--tags"], cwd: cloneDirectory, remoteURLForCredentialHelper: candidate)
+                _ = try git(["remote", "set-url", "origin", candidate], cwd: cloneDirectory, remoteURLForCredentialHelper: candidate)
+                _ = try git(["fetch", "--prune", "--tags"], cwd: cloneDirectory, remoteURLForCredentialHelper: candidate)
                 return candidate
             } catch {
                 lastError = error
@@ -138,12 +138,12 @@ enum GitCollectionsSyncer {
     }
 
     private static func checkout(reference: String, in cloneDirectory: URL, remoteURLForCredentialHelper: String) throws {
-        try git(["fetch", "--prune", "--tags"], cwd: cloneDirectory, remoteURLForCredentialHelper: remoteURLForCredentialHelper)
+        _ = try git(["fetch", "--prune", "--tags"], cwd: cloneDirectory, remoteURLForCredentialHelper: remoteURLForCredentialHelper)
 
         do {
-            try git(["checkout", "-B", reference, "origin/\(reference)"], cwd: cloneDirectory)
+            _ = try git(["checkout", "-B", reference, "origin/\(reference)"], cwd: cloneDirectory)
         } catch {
-            try git(["checkout", reference], cwd: cloneDirectory)
+            _ = try git(["checkout", reference], cwd: cloneDirectory)
         }
 
         if let originCommit = try? git(["rev-parse", "--verify", "origin/\(reference)^{commit}"], cwd: cloneDirectory) {

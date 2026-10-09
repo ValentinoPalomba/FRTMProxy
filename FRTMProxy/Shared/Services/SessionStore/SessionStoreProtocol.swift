@@ -21,11 +21,13 @@ struct SessionFlowUpsertSummary: Equatable, Sendable {
 protocol SessionStoreProtocol: Actor {
     static var schemaVersion: Int { get }
 
+    func importSession(_ prepared: SessionHARImporter.Prepared, name: String) throws -> CaptureSession
     func createSession(name: String, at date: Date) throws -> CaptureSession
     func activeSessionOrCreate(name: String, at date: Date) throws -> CaptureSession
     func sessions() throws -> [CaptureSession]
     func session(id: UUID) throws -> CaptureSession?
     func closeSession(id: UUID, at date: Date) throws
+    func markSessionIncomplete(id: UUID, reason: String) throws
     func deleteSession(id: UUID) throws
     func cleanupDeletedBodies() throws
 
@@ -51,6 +53,12 @@ protocol SessionStoreProtocol: Actor {
 }
 
 extension SessionStoreProtocol {
+    func importSession(_ prepared: SessionHARImporter.Prepared, name: String) throws -> CaptureSession {
+        throw SessionStoreError.database("Session store does not support HAR import")
+    }
+    func markSessionIncomplete(id: UUID, reason: String) throws {
+        throw SessionStoreError.database("Session store cannot record incomplete capture status")
+    }
     func cleanupDeletedBodies() throws {}
 
     func createSession(name: String) throws -> CaptureSession {
@@ -62,7 +70,7 @@ extension SessionStoreProtocol {
     }
 
     func activeSessionOrCreate(name: String, at date: Date) throws -> CaptureSession {
-        if let activeSession = try sessions().first(where: \.isActive) {
+        if let activeSession = try sessions().first(where: { $0.isActive && $0.incompleteReason == nil }) {
             return activeSession
         }
         return try createSession(name: name, at: date)

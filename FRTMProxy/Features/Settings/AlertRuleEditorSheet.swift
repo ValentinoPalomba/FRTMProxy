@@ -32,24 +32,27 @@ struct AlertRuleEditorSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
             Text("Edit Alert Rule")
-                .font(DesignSystem.Fonts.titleLarge)
+                .font(DesignSystem.Fonts.title)
                 .foregroundStyle(colors.textPrimary)
 
-            SettingsCard(title: "Rule", colors: colors) {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                    TextField("Name", text: $name)
-                        .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "tag"))
-                    TextField("Query", text: $query)
-                        .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "magnifyingglass"))
-                    Toggle(isOn: $isEnabled) {
-                        Text("Enabled")
-                            .font(DesignSystem.Fonts.sans(13, weight: .medium))
-                            .foregroundStyle(colors.textPrimary)
+            ScrollView {
+                SettingsCard(title: "Rule", colors: colors) {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                        TextField("Name", text: $name)
+                            .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "tag"))
+                        TextField("Query", text: $query)
+                            .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "magnifyingglass"))
+                        Toggle(isOn: $isEnabled) {
+                            Text("Enabled")
+                                .font(DesignSystem.Fonts.sans(13, weight: .medium))
+                                .foregroundStyle(colors.textPrimary)
+                        }
+                            .toggleStyle(.switch)
+                            .tint(colors.accent)
+                        Text("Examples: `status:>=400`, `host:api.example.com method:POST`, `type:json -status:2xx`.")
+                            .font(DesignSystem.Fonts.caption)
+                            .foregroundStyle(colors.textSecondary)
                     }
-                        .toggleStyle(SwitchToggleStyle())
-                    Text("Examples: `status:>=400`, `host:api.example.com method:POST`, `type:json -status:2xx`.")
-                        .font(DesignSystem.Fonts.caption)
-                        .foregroundStyle(colors.textSecondary)
                 }
             }
 
@@ -82,7 +85,7 @@ struct AlertRuleEditorSheet: View {
             }
         }
         .padding(DesignSystem.Spacing.xl)
-        .frame(minWidth: 560, minHeight: 380)
+        .frame(width: DesignSystem.Metrics.scaled(560), height: DesignSystem.Metrics.scaled(420))
         .background(colors.background)
     }
 }

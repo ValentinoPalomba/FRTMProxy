@@ -49,12 +49,12 @@ struct UnifiedTrafficRulesManagerView: View {
                 let orderedRules = model.orderedRules
                 ScrollView {
                     LazyVStack(spacing: DesignSystem.Spacing.sm) {
-                        ForEach(orderedRules.enumerated(), id: \.element.id) { index, rule in
+                        ForEach(orderedRules) { rule in
                             UnifiedTrafficRuleRow(
                                 rule: rule,
                                 colors: colors,
-                                canMoveUp: index > orderedRules.startIndex,
-                                canMoveDown: index < orderedRules.index(before: orderedRules.endIndex),
+                                canMoveUp: rule.id != orderedRules.first?.id,
+                                canMoveDown: rule.id != orderedRules.last?.id,
                                 onToggle: { model.setEnabled($0, ruleID: rule.id) },
                                 onEdit: { editingRule = rule },
                                 onMoveUp: { model.move(ruleID: rule.id, direction: .up) },
@@ -68,7 +68,10 @@ struct UnifiedTrafficRulesManagerView: View {
                 .scrollIndicators(.hidden)
             }
         }
-        .frame(minWidth: 1_000, minHeight: 680)
+        .frame(minWidth: DesignSystem.Metrics.scaled(800), minHeight: DesignSystem.Metrics.scaled(560))
+        .font(DesignSystem.Fonts.body)
+        .foregroundStyle(colors.textPrimary)
+        .tint(colors.accent)
         .background(colors.background)
         .sheet(item: $editingRule) { rule in
             UnifiedTrafficRuleEditor(rule: rule) { updated in
@@ -118,14 +121,16 @@ private struct UnifiedTrafficRulesManagerHeader: View {
                 Text("Traffic Rules")
                     .font(DesignSystem.Fonts.title)
                     .foregroundStyle(colors.textPrimary)
-                Text("\(ruleCount) configured · top rule runs first")
+                Text("Rules configured: \(ruleCount) · top rule runs first")
                     .font(DesignSystem.Fonts.caption)
                     .foregroundStyle(colors.textSecondary)
             }
             Spacer()
             ControlButton(title: "Add Rule", systemImage: "plus", style: .ghost(colors), action: onAdd)
             ControlButton(title: "Cancel", systemImage: "xmark", style: .ghost(colors), action: onClose)
+                .keyboardShortcut(.cancelAction)
             ControlButton(title: "Save Rules", systemImage: "checkmark", style: .filled(colors), action: onSave)
+                .keyboardShortcut(.defaultAction)
         }
         .padding(DesignSystem.Spacing.xl)
         .background(colors.surface)

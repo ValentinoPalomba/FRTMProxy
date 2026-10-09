@@ -11,16 +11,22 @@ struct ControlButton: View {
     let systemImage: String
     let style: ControlButtonStyle
     let disabled: Bool
+    let iconOnly: Bool
     let action: () -> Void
 
     @State private var isHovering = false
+    @FocusState private var isFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(title: LocalizedStringKey, systemImage: String, style: ControlButtonStyle, disabled: Bool = false, action: @escaping () -> Void) {
+    init(
+        title: LocalizedStringKey, systemImage: String, style: ControlButtonStyle,
+        disabled: Bool = false, iconOnly: Bool = false, action: @escaping () -> Void
+    ) {
         self.title = title
         self.systemImage = systemImage
         self.style = style
         self.disabled = disabled
+        self.iconOnly = iconOnly
         self.action = action
     }
 
@@ -28,15 +34,18 @@ struct ControlButton: View {
         Button(action: action) {
             HStack(spacing: DesignSystem.Spacing.sm) {
                 Image(systemName: systemImage)
-                Text(title)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-                    .allowsTightening(true)
+                if !iconOnly {
+                    Text(title)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                        .allowsTightening(true)
+                }
             }
             .font(DesignSystem.Fonts.sans(13, weight: .semibold))
-            .padding(.horizontal, DesignSystem.Spacing.md)
+            .padding(.horizontal, iconOnly ? DesignSystem.Spacing.sm : DesignSystem.Spacing.md)
             .padding(.vertical, DesignSystem.Spacing.sm)
-            .frame(minHeight: DesignSystem.Metrics.scaled(32))
+            .frame(minWidth: iconOnly ? DesignSystem.Metrics.scaled(32) : nil,
+                   minHeight: DesignSystem.Metrics.scaled(32))
             .background(backgroundView)
             .foregroundStyle(foreground)
             .overlay(
@@ -46,6 +55,8 @@ struct ControlButton: View {
             .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous))
         }
         .buttonStyle(.pressable)
+        .focused($isFocused)
+        .focusRing(palette, isActive: isFocused)
         .opacity(disabled ? 0.5 : 1)
         .onHover { hovering in
             guard !disabled else { return }
@@ -56,6 +67,12 @@ struct ControlButton: View {
         .disabled(disabled)
         .accessibilityLabel(Text(title))
         .accessibilityAddTraits(.isButton)
+    }
+
+    private var palette: DesignSystem.ColorPalette {
+        switch style {
+        case .filled(let colors), .ghost(let colors), .destructive(let colors): return colors
+        }
     }
 
     private var showHover: Bool {

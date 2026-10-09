@@ -25,8 +25,13 @@ struct SettingsTabScaffold<Content: View>: View {
                 content
                 Spacer(minLength: 0)
             }
+            .frame(maxWidth: DesignSystem.Metrics.scaled(760), alignment: .leading)
             .padding(DesignSystem.Spacing.xl)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
         }
+        .font(DesignSystem.Fonts.body)
+        .foregroundStyle(colors.textPrimary)
+        .tint(colors.accent)
         .background(colors.background)
     }
 }

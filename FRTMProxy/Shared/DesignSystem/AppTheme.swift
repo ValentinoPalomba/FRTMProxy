@@ -726,7 +726,7 @@ enum ThemeLibrary {
         eInkDark
     ]
 
-    static var defaultTheme: AppTheme { systemTheme }
+    static var defaultTheme: AppTheme { xcodeLight }
 
     static var automaticThemes: [AppTheme] {
         available.filter { $0.category == .automatic }

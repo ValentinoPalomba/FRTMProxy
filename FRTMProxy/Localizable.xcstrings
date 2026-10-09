@@ -7,11 +7,37 @@
     "—" : {
       "shouldTranslate" : false
     },
+    "〈absent〉" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "〈assente〉"
+          }
+        }
+      }
+    },
     "/" : {
       "shouldTranslate" : false
     },
     "/v1/users" : {
       "shouldTranslate" : false
+    },
+    "%@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ %@"
+          }
+        }
+      }
     },
     "%@ and its actions will be removed from this draft." : {
       "localizations" : {
@@ -60,6 +86,7 @@
       }
     },
     "%@ exited with status %d." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -112,6 +139,7 @@
       }
     },
     "%@ has exited." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -158,6 +186,7 @@
       }
     },
     "%@ is running through FRTMProxy." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -199,6 +228,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ 正在通过 FRTMProxy 运行。"
+          }
+        }
+      }
+    },
+    "%@ matcher mode" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modalità di corrispondenza: %@"
+          }
+        }
+      }
+    },
+    "%@ pattern" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pattern: %@"
           }
         }
       }
@@ -249,7 +298,18 @@
         }
       }
     },
+    "%@ will be removed. Captured traffic remains available in All Traffic." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ verrà rimosso. Il traffico acquisito resterà disponibile in Tutto il traffico."
+          }
+        }
+      }
+    },
     "%@, %lld flows%@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -297,6 +357,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@、%lld 流量%@"
+          }
+        }
+      }
+    },
+    "%@, %lld flows%@%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$lld flows%3$@%4$@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %lld flussi%@%@"
+          }
+        }
+      }
+    },
+    "%@: %@" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@: %@"
           }
         }
       }
@@ -411,7 +504,44 @@
     "%lld / %lld" : {
       "shouldTranslate" : false
     },
+    "%lld / %lld flows" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld / %2$lld flows"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld / %lld chiamate"
+          }
+        }
+      }
+    },
+    "%lld / 128 headers" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld / 128 intestazioni"
+          }
+        }
+      }
+    },
+    "%lld / 128 variables" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld / 128 variabili"
+          }
+        }
+      }
+    },
     "%lld %@ captured so far" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -434,7 +564,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld %@ catturati finora"
+            "value" : "Acquisizioni finora: %lld (%@)"
           }
         },
         "ja" : {
@@ -458,6 +588,7 @@
       }
     },
     "%lld applied, %lld skipped." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -486,7 +617,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld applicato, %lld saltato."
+            "value" : "Risorse applicate: %lld · ignorate: %lld"
           }
         },
         "ja" : {
@@ -607,7 +738,18 @@
         }
       }
     },
+    "%lld changed paths / byte blocks" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld percorsi o blocchi di byte modificati"
+          }
+        }
+      }
+    },
     "%lld configured" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -630,7 +772,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld configurati"
+            "value" : "Regole configurate: %lld"
           }
         },
         "ja" : {
@@ -677,7 +819,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld configurato · la priorità più bassa viene eseguita per prima"
+            "value" : "Regole configurate: %lld · la priorità più bassa viene eseguita per prima"
           }
         },
         "ja" : {
@@ -701,6 +843,7 @@
       }
     },
     "%lld configured · top rule runs first" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -723,7 +866,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld configurato · la regola superiore viene eseguita per prima"
+            "value" : "Regole configurate: %lld · la prima voce dell’elenco viene eseguita per prima"
           }
         },
         "ja" : {
@@ -742,6 +885,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld已配置·顶级规则首先运行"
+          }
+        }
+      }
+    },
+    "%lld flows" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld chiamate"
           }
         }
       }
@@ -799,6 +952,7 @@
       }
     },
     "%lld loaded" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -821,7 +975,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld caricato"
+            "value" : "Elementi caricati: %lld"
           }
         },
         "ja" : {
@@ -840,6 +994,27 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld已加载"
+          }
+        }
+      }
+    },
+    "%lld members" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Numero di elementi: %lld"
+          }
+        }
+      }
+    },
+    "%lld result(s)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld risultati"
           }
         }
       }
@@ -890,8 +1065,50 @@
         }
       }
     },
+    "%lld transactions • %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld transactions • %2$@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld transazioni • %@"
+          }
+        }
+      }
+    },
     "%lld." : {
       "shouldTranslate" : false
+    },
+    "%lld%% packet loss" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%% di pacchetti persi"
+          }
+        }
+      }
+    },
+    "%lldms ±%lldms latency" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lldms ±%2$lldms latency"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Latenza %lld ms ±%lld ms"
+          }
+        }
+      }
     },
     "• ⌘K to open the command palette\n• ⌘⌥K to clear captured flows\n• Manage → Device for QR pairing" : {
       "localizations" : {
@@ -935,6 +1152,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "• ⌘K 打开命令面板\n• ⌘⌥K 清除已捕获的流量\n• 管理 → 设备 进行 QR 配对"
+          }
+        }
+      }
+    },
+    "+%lldms response delay" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%lld ms di ritardo della risposta"
           }
         }
       }
@@ -985,11 +1212,47 @@
         }
       }
     },
+    "$.items[*].id" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "$.items[*].id"
+          }
+        }
+      }
+    },
     "200" : {
       "shouldTranslate" : false
     },
     "A" : {
       "shouldTranslate" : false
+    },
+    "A profile with this name already exists." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esiste già un profilo con questo nome."
+          }
+        }
+      }
+    },
+    "A: %@\nB: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "A: %1$@\nB: %2$@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A: %@\nB: %@"
+          }
+        }
+      }
     },
     "About FRTMProxy" : {
       "localizations" : {
@@ -1033,6 +1296,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "关于 FRTMProxy"
+          }
+        }
+      }
+    },
+    "absent" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "assente"
           }
         }
       }
@@ -1221,6 +1494,16 @@
         }
       }
     },
+    "Active Profile" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profilo attivo"
+          }
+        }
+      }
+    },
     "Add" : {
       "localizations" : {
         "de" : {
@@ -1313,6 +1596,16 @@
         }
       }
     },
+    "Add a hostname without a URL path." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inserisci un nome host senza percorso URL."
+          }
+        }
+      }
+    },
     "Add Action" : {
       "localizations" : {
         "de" : {
@@ -1360,6 +1653,7 @@
       }
     },
     "Add at least one action before saving this rule." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1428,7 +1722,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aggiungi breakpoint"
+            "value" : "Aggiungi punto di interruzione"
           }
         },
         "ja" : {
@@ -1447,6 +1741,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "添加断点"
+          }
+        }
+      }
+    },
+    "Add Field…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi campo…"
+          }
+        }
+      }
+    },
+    "Add fields or choose visible columns" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi campi o scegli le colonne visibili"
           }
         }
       }
@@ -1474,7 +1788,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aggiungi header"
+            "value" : "Aggiungi intestazione"
           }
         },
         "ja" : {
@@ -1493,6 +1807,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "添加 Header"
+          }
+        }
+      }
+    },
+    "Add Member" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi elemento"
           }
         }
       }
@@ -1681,6 +2005,16 @@
         }
       }
     },
+    "Add Variable" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi variabile"
+          }
+        }
+      }
+    },
     "Adds a new ordered traffic action" : {
       "localizations" : {
         "de" : {
@@ -1750,7 +2084,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aggiunge un criterio di corrispondenza per un header della richiesta"
+            "value" : "Aggiunge un criterio di corrispondenza per un’intestazione della richiesta"
           }
         },
         "ja" : {
@@ -1865,6 +2199,16 @@
         }
       }
     },
+    "Alert rules configured: %lld" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regole di avviso configurate: %lld"
+          }
+        }
+      }
+    },
     "Alerts" : {
       "localizations" : {
         "de" : {
@@ -1911,6 +2255,26 @@
         }
       }
     },
+    "All traffic" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutto il traffico"
+          }
+        }
+      }
+    },
+    "All Traffic" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutto il traffico"
+          }
+        }
+      }
+    },
     "All-in-one toolkit for debugging HTTPS traffic with mitmproxy, SwiftUI and plenty of quality-of-life utilities." : {
       "localizations" : {
         "de" : {
@@ -1934,7 +2298,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Toolkit all-in-one per il debug del traffico HTTPS con mitmproxy, SwiftUI e numerose utility che migliorano l'esperienza d'uso."
+            "value" : "Una suite completa per analizzare il traffico HTTPS con mitmproxy e SwiftUI, con tanti strumenti utili."
           }
         },
         "ja" : {
@@ -1953,6 +2317,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "一体化工具包，使用 mitmproxy、SwiftUI 以及大量实用的便捷工具调试 HTTPS 流量。"
+          }
+        }
+      }
+    },
+    "Also routing this Mac" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Include anche il traffico di questo Mac"
           }
         }
       }
@@ -2052,6 +2426,26 @@
         }
       }
     },
+    "App bundle ID" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ID bundle dell’app"
+          }
+        }
+      }
+    },
+    "App bundle ID (com.example.app)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ID bundle dell’app (com.example.app)"
+          }
+        }
+      }
+    },
     "App language" : {
       "localizations" : {
         "de" : {
@@ -2146,18 +2540,55 @@
     },
     "Applied" : {
       "comment" : "A label indicating that a workspace import resource has been successfully applied.",
+      "extractionState" : "stale",
       "isCommentAutoGenerated" : true,
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Angewendet" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Aplicado" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Appliqué" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Applicato" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "適用済み" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Aplicado" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已应用" } }
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Angewendet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aplicado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appliqué"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applicato"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "適用済み"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aplicado"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已应用"
+          }
+        }
       }
     },
     "Apply Workspace" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2204,6 +2635,7 @@
       }
     },
     "Arguments" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2296,6 +2728,7 @@
       }
     },
     "Automation, scripting, and custom routing" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2392,6 +2825,36 @@
     },
     "BIN" : {
       "shouldTranslate" : false
+    },
+    "Block" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocca"
+          }
+        }
+      }
+    },
+    "Body" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corpo"
+          }
+        }
+      }
+    },
+    "Body is Base64 (send decoded bytes)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il corpo è in Base64 (invia i byte decodificati)"
+          }
+        }
+      }
     },
     "Bookmark" : {
       "localizations" : {
@@ -2508,7 +2971,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Segnato"
+            "value" : "Nei segnalibri"
           }
         },
         "ja" : {
@@ -2554,7 +3017,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Branch"
+            "value" : "Ramo"
           }
         },
         "ja" : {
@@ -2600,7 +3063,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Branch / Tag / Commit"
+            "value" : "Ramo / tag / commit"
           }
         },
         "ja" : {
@@ -2646,7 +3109,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nome del branch (es. main)"
+            "value" : "Nome del branch (ad es. main)"
           }
         },
         "ja" : {
@@ -2692,7 +3155,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Breakpoint"
+            "value" : "Punto di interruzione"
           }
         },
         "ja" : {
@@ -2738,7 +3201,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Breakpoint"
+            "value" : "Punti di interruzione"
           }
         },
         "ja" : {
@@ -2876,7 +3339,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Catturare"
+            "value" : "Acquisizione"
           }
         },
         "ja" : {
@@ -2895,6 +3358,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "捕获"
+          }
+        }
+      }
+    },
+    "Capture profile" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profilo di acquisizione"
+          }
+        }
+      }
+    },
+    "Capture profile error: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Errore del profilo di acquisizione: %@"
+          }
+        }
+      }
+    },
+    "Capture profile: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profilo di acquisizione: %@"
+          }
+        }
+      }
+    },
+    "Capture profiles" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profili di acquisizione"
+          }
+        }
+      }
+    },
+    "Capture profiles exceed the storage limit (50 profiles, 128 members per profile, 256 KiB)." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I profili di acquisizione superano il limite di archiviazione (50 profili, 128 elementi per profilo, 256 KiB)."
+          }
+        }
+      }
+    },
+    "Capture stopped: session writer queue is full. This session is incomplete; accepted data remains available for retry." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acquisizione interrotta: la coda di scrittura della sessione è piena. Questa sessione è incompleta; i dati già accettati restano disponibili per un nuovo tentativo."
           }
         }
       }
@@ -2946,7 +3469,18 @@
         }
       }
     },
+    "Captured rules: %lld" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld regole acquisite"
+          }
+        }
+      }
+    },
     "Captured sessions will appear here." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3131,6 +3665,7 @@
       }
     },
     "Choose a capture from the sidebar to inspect its timeline." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3177,6 +3712,7 @@
       }
     },
     "Choose a target, then launch it with the proxy environment." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3218,6 +3754,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "选择一个目标，然后使用代理环境启动它。"
+          }
+        }
+      }
+    },
+    "Choose a valid request, host, or app." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli una richiesta, un host o un’app valida."
           }
         }
       }
@@ -3264,6 +3810,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "为应用界面和检查器面板选择外观预设。"
+          }
+        }
+      }
+    },
+    "Choose HAR File…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli file HAR…"
           }
         }
       }
@@ -3361,6 +3917,7 @@
       }
     },
     "Choose…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3405,9 +3962,6 @@
           }
         }
       }
-    },
-    "Chromium" : {
-      "shouldTranslate" : false
     },
     "Clear" : {
       "localizations" : {
@@ -3478,7 +4032,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cancellare tutto il traffico catturato?"
+            "value" : "Vuoi cancellare tutto il traffico acquisito?"
           }
         },
         "ja" : {
@@ -3589,6 +4143,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "清除流量"
+          }
+        }
+      }
+    },
+    "Clear History" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancella cronologia"
           }
         }
       }
@@ -3823,6 +4387,16 @@
         }
       }
     },
+    "Close the active session before exporting its complete capture. Loaded flows can be exported now." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiudi la sessione attiva per esportare l’acquisizione completa. Puoi esportare subito i flussi già caricati."
+          }
+        }
+      }
+    },
     "Close this session before deleting it." : {
       "localizations" : {
         "de" : {
@@ -3870,6 +4444,7 @@
       }
     },
     "Closes this window without stopping a launched target." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3892,7 +4467,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chiude questa finestra senza fermare un bersaglio lanciato."
+            "value" : "Chiude questa finestra senza arrestare il target avviato."
           }
         },
         "ja" : {
@@ -3911,6 +4486,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "关闭此窗口而不停止已启动的目标。"
+          }
+        }
+      }
+    },
+    "Collapsed" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiuso"
           }
         }
       }
@@ -3938,7 +4523,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nome della collection"
+            "value" : "Nome della raccolta"
           }
         },
         "ja" : {
@@ -3984,7 +4569,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Collection non trovata."
+            "value" : "Raccolta non trovata."
           }
         },
         "ja" : {
@@ -4030,7 +4615,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Collections"
+            "value" : "Raccolte"
           }
         },
         "ja" : {
@@ -4076,7 +4661,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Collezioni…"
+            "value" : "Raccolte…"
           }
         },
         "ja" : {
@@ -4095,6 +4680,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "收藏…"
+          }
+        }
+      }
+    },
+    "Command arguments" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Argomenti del comando"
           }
         }
       }
@@ -4122,7 +4718,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Command Palette"
+            "value" : "Palette dei comandi"
           }
         },
         "ja" : {
@@ -4168,7 +4764,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Command Palette (⌘K)"
+            "value" : "Palette dei comandi (⌘K)"
           }
         },
         "ja" : {
@@ -4214,7 +4810,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Command Palette…"
+            "value" : "Palette dei comandi…"
           }
         },
         "ja" : {
@@ -4398,7 +4994,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Identità di commit usata durante la pubblicazione delle collection in un repository Git."
+            "value" : "Identità di commit usata per pubblicare raccolte in un repository Git."
           }
         },
         "ja" : {
@@ -4513,7 +5109,18 @@
         }
       }
     },
+    "Comparison" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confronto"
+          }
+        }
+      }
+    },
     "Compose" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -4628,7 +5235,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Componi richiesta..."
+            "value" : "Componi richiesta…"
           }
         },
         "ja" : {
@@ -4674,7 +5281,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configura i repository in Collections → Git."
+            "value" : "Configura i repository in Raccolte → Git."
           }
         },
         "ja" : {
@@ -4744,6 +5351,7 @@
       }
     },
     "Confirm the supported resources before changing the current setup." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5112,6 +5720,16 @@
         }
       }
     },
+    "Copy Results" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copia risultati"
+          }
+        }
+      }
+    },
     "Copy share targets" : {
       "localizations" : {
         "de" : {
@@ -5273,7 +5891,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Crea e abilita breakpoint persistenti per richieste e risposte."
+            "value" : "Crea e attiva punti di interruzione persistenti per richieste e risposte."
           }
         },
         "ja" : {
@@ -5292,6 +5910,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "为请求和响应创建并启用持久断点。"
+          }
+        }
+      }
+    },
+    "Create Profile" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crea profilo"
+          }
+        }
+      }
+    },
+    "Create Profile…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crea profilo…"
           }
         }
       }
@@ -5346,7 +5984,25 @@
       "shouldTranslate" : false
     },
     "cURL…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "cURL…"
+          }
+        }
+      },
       "shouldTranslate" : false
+    },
+    "Customize in Settings > Traffic" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personalizza in Impostazioni > Traffico"
+          }
+        }
+      }
     },
     "Dark Themes" : {
       "localizations" : {
@@ -5486,6 +6142,16 @@
         }
       }
     },
+    "Delay" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ritardo"
+          }
+        }
+      }
+    },
     "Delay in milliseconds" : {
       "localizations" : {
         "de" : {
@@ -5579,6 +6245,7 @@
       }
     },
     "Delete Action" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5647,7 +6314,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Elimina breakpoint"
+            "value" : "Elimina punto di interruzione"
           }
         },
         "ja" : {
@@ -5762,6 +6429,16 @@
         }
       }
     },
+    "Delete capture profile?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vuoi eliminare il profilo di acquisizione?"
+          }
+        }
+      }
+    },
     "Delete captured session?" : {
       "localizations" : {
         "de" : {
@@ -5850,6 +6527,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "删除地图本地规则？"
+          }
+        }
+      }
+    },
+    "Delete Profile" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elimina profilo"
           }
         }
       }
@@ -6314,6 +7001,16 @@
         }
       }
     },
+    "Device pairing QR code" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codice QR per abbinare il dispositivo"
+          }
+        }
+      }
+    },
     "Device setup" : {
       "localizations" : {
         "de" : {
@@ -6430,7 +7127,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configurazione dispositivo..."
+            "value" : "Configurazione dispositivo…"
           }
         },
         "ja" : {
@@ -6546,6 +7243,7 @@
       }
     },
     "Done" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -6587,6 +7285,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "完毕"
+          }
+        }
+      }
+    },
+    "Duration" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Durata"
           }
         }
       }
@@ -6684,6 +7392,7 @@
       }
     },
     "Edit Action" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -6913,9 +7622,6 @@
         }
       }
     },
-    "Electron" : {
-      "shouldTranslate" : false
-    },
     "Enable" : {
       "localizations" : {
         "de" : {
@@ -7054,6 +7760,16 @@
         }
       }
     },
+    "Enable untitled script" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abilita lo script senza titolo"
+          }
+        }
+      }
+    },
     "Enabled" : {
       "localizations" : {
         "de" : {
@@ -7100,8 +7816,29 @@
         }
       }
     },
+    "End" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fine"
+          }
+        }
+      }
+    },
+    "Enter a profile name of at most 128 UTF-8 bytes." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inserisci un nome del profilo di massimo 128 byte UTF-8."
+          }
+        }
+      }
+    },
     "Enter one argument per line. Arguments are passed directly without a shell." : {
       "comment" : "A description below the text editor in the `SelectiveCaptureView` that explains how to use it.",
+      "extractionState" : "stale",
       "isCommentAutoGenerated" : true,
       "localizations" : {
         "de" : {
@@ -7190,6 +7927,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "输入 SSID"
+          }
+        }
+      }
+    },
+    "Entire Session — Full Capture (includes secrets)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intera sessione — acquisizione completa (include i segreti)"
+          }
+        }
+      }
+    },
+    "Entire Session — Redacted" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intera sessione — dati oscurati"
           }
         }
       }
@@ -7333,6 +8090,7 @@
       }
     },
     "Executable" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -7374,6 +8132,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "可执行文件"
+          }
+        }
+      }
+    },
+    "Expanded" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aperto"
           }
         }
       }
@@ -7424,6 +8192,37 @@
         }
       }
     },
+    "Export captured bytes, including content encoding, from encrypted local storage." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esporta i byte acquisiti, inclusa la codifica del contenuto, dall’archivio locale cifrato."
+          }
+        }
+      }
+    },
+    "Export HAR…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esporta HAR…"
+          }
+        }
+      }
+    },
+    "Export Original Body…" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esporta corpo originale…"
+          }
+        }
+      }
+    },
     "Export the collection as `.har`, create a commit, and push to a branch. Optionally create a tag too." : {
       "localizations" : {
         "de" : {
@@ -7447,7 +8246,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Esporta la collection come `.har`, crea un commit ed esegui il push su un branch. Facoltativamente crea anche un tag."
+            "value" : "Esporta la raccolta in formato `.har`, crea un commit e pubblicalo su un branch. Puoi anche creare un tag."
           }
         },
         "ja" : {
@@ -7466,6 +8265,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "将集合导出为 `.har`，创建提交并推送到分支。也可选择创建标签。"
+          }
+        }
+      }
+    },
+    "Export the complete capture or the loaded page." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esporta l’intera acquisizione oppure la pagina caricata."
           }
         }
       }
@@ -7608,6 +8417,16 @@
         }
       }
     },
+    "Flow note" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nota sul flusso"
+          }
+        }
+      }
+    },
     "Flow Notes" : {
       "localizations" : {
         "de" : {
@@ -7696,6 +8515,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "流量"
+          }
+        }
+      }
+    },
+    "Focus sets: %lld; replaces local saved focus sets." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insiemi di filtri: %lld; sostituiscono quelli salvati localmente."
           }
         }
       }
@@ -7798,6 +8628,16 @@
     "GET" : {
       "shouldTranslate" : false
     },
+    "Get started" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Per iniziare"
+          }
+        }
+      }
+    },
     "Git" : {
       "localizations" : {
         "de" : {
@@ -7867,7 +8707,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Collections Git"
+            "value" : "Raccolte Git"
           }
         },
         "ja" : {
@@ -7913,7 +8753,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Raggruppa le regole Map Local in collection esportabili e abilita set di regole con un clic."
+            "value" : "Raggruppa le regole Map Local in raccolte esportabili e attiva i relativi set con un clic."
           }
         },
         "ja" : {
@@ -7932,6 +8772,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "将 Map Local 分组为可导出的集合，一键启用规则集。"
+          }
+        }
+      }
+    },
+    "Group requests, hosts, and apps into named profiles." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Raggruppa richieste, host e app in profili con un nome."
           }
         }
       }
@@ -7982,6 +8832,46 @@
         }
       }
     },
+    "Header Columns" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Colonne delle intestazioni"
+          }
+        }
+      }
+    },
+    "Header matcher mode" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modalità del criterio sull’intestazione"
+          }
+        }
+      }
+    },
+    "Header matcher name" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nome del criterio sull’intestazione"
+          }
+        }
+      }
+    },
+    "Header matcher pattern" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pattern del criterio sull’intestazione"
+          }
+        }
+      }
+    },
     "Header matchers" : {
       "localizations" : {
         "de" : {
@@ -8005,7 +8895,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Criteri di corrispondenza degli header"
+            "value" : "Criteri sulle intestazioni"
           }
         },
         "ja" : {
@@ -8051,7 +8941,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nome dell'intestazione"
+            "value" : "Nome dell’intestazione"
           }
         },
         "ja" : {
@@ -8070,6 +8960,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "标头名称"
+          }
+        }
+      }
+    },
+    "Header name, e.g. X-Request-ID" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nome dell’intestazione, ad es. X-Request-ID"
           }
         }
       }
@@ -8143,7 +9043,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Header, una coppia Nome: valore per riga"
+            "value" : "Intestazioni, una coppia Nome: valore per riga"
           }
         },
         "ja" : {
@@ -8162,6 +9062,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "标题，每行一个名称冒号值对"
+          }
+        }
+      }
+    },
+    "Hex" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esadecimale"
+          }
+        }
+      }
+    },
+    "History" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cronologia"
+          }
+        }
+      }
+    },
+    "Host" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Host"
+          }
+        }
+      }
+    },
+    "Host (api.example.com)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Host (api.example.com)"
           }
         }
       }
@@ -8254,6 +9194,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "主机/路径"
+          }
+        }
+      }
+    },
+    "Hosts: %@ · Apps: %@ · Devices: %@ · mapped=%@ · errors=%@" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Hosts: %1$@ · Apps: %2$@ · Devices: %3$@ · mapped=%4$@ · errors=%5$@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Host: %@ · App: %@ · Dispositivi: %@ · mappati=%@ · errori=%@"
           }
         }
       }
@@ -8451,6 +9408,16 @@
         }
       }
     },
+    "Image" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Immagine"
+          }
+        }
+      }
+    },
     "Import" : {
       "localizations" : {
         "de" : {
@@ -8520,7 +9487,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Importa e sincronizza le collection da un repository Git (branch/tag/commit). Le collection vengono lette dai file `.har` nel repo."
+            "value" : "Importa e sincronizza le raccolte da un repository Git (branch/tag/commit). Le raccolte vengono lette dai file `.har` nel repository."
           }
         },
         "ja" : {
@@ -8544,6 +9511,7 @@
       }
     },
     "Import Complete" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -8589,7 +9557,28 @@
         }
       }
     },
+    "Import HAR" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importa HAR"
+          }
+        }
+      }
+    },
+    "Import HAR…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importa HAR…"
+          }
+        }
+      }
+    },
     "Import or export a local, Git-friendly debugging workspace." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -8658,7 +9647,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le collection importate rimarranno nel tuo workspace; la sincronizzazione verrà disabilitata."
+            "value" : "Le raccolte importate resteranno nell’area di lavoro; la sincronizzazione sarà disattivata."
           }
         },
         "ja" : {
@@ -8677,6 +9666,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "导入的集合将保留在工作区中；同步将被禁用。"
+          }
+        }
+      }
+    },
+    "Includes a migrated saved filter." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Include un filtro salvato e migrato."
           }
         }
       }
@@ -8727,6 +9726,16 @@
         }
       }
     },
+    "INCOMPLETE" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "INCOMPLETA"
+          }
+        }
+      }
+    },
     "Inject latency, bandwidth caps, and packet loss on intercepted traffic." : {
       "localizations" : {
         "de" : {
@@ -8769,6 +9778,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "为拦截的流量注入延迟、带宽限制和丢包。"
+          }
+        }
+      }
+    },
+    "Inspector preferences applied" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preferenze dell’Inspector applicate"
+          }
+        }
+      }
+    },
+    "Inspector: %lld header columns; configuration and sort order will replace local preferences." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inspector: %lld colonne di intestazione; la configurazione e l’ordinamento sostituiranno le preferenze locali."
           }
         }
       }
@@ -9187,6 +10218,16 @@
         }
       }
     },
+    "Interface scale %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scala dell’interfaccia %@"
+          }
+        }
+      }
+    },
     "Invalid regular expression: %@" : {
       "localizations" : {
         "de" : {
@@ -9284,15 +10325,81 @@
     },
     "JavaScript files are preserved but not imported as script rules." : {
       "comment" : "A description of why JavaScript files are not imported as script rules during a workspace import.",
+      "extractionState" : "stale",
       "isCommentAutoGenerated" : true,
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "JavaScript-Dateien bleiben erhalten, werden aber nicht als Skriptregeln importiert." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Los archivos JavaScript se conservan, pero no se importan como reglas de script." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Les fichiers JavaScript sont conservés, mais ne sont pas importés comme règles de script." } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "I file JavaScript vengono conservati, ma non importati come regole di script." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "JavaScriptファイルは保持されますが、スクリプトルールとしては読み込まれません。" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Os arquivos JavaScript são preservados, mas não são importados como regras de script." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "JavaScript 文件会被保留，但不会作为脚本规则导入。" } }
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JavaScript-Dateien bleiben erhalten, werden aber nicht als Skriptregeln importiert."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los archivos JavaScript se conservan, pero no se importan como reglas de script."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les fichiers JavaScript sont conservés, mais ne sont pas importés comme règles de script."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I file JavaScript vengono conservati, ma non importati come regole di script."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JavaScriptファイルは保持されますが、スクリプトルールとしては読み込まれません。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Os arquivos JavaScript são preservados, mas não são importados como regras de script."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JavaScript 文件会被保留，但不会作为脚本规则导入。"
+          }
+        }
+      }
+    },
+    "JSON key or value search" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerca una chiave o un valore JSON"
+          }
+        }
+      }
+    },
+    "JSONPath expression" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Espressione JSONPath"
+          }
+        }
+      }
+    },
+    "JSONPath supports $, .field, [index], [*], .* and [\"quoted key\"]." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JSONPath supporta $, .campo, [indice], [*], .* e [\"chiave tra virgolette\"]."
+          }
+        }
       }
     },
     "Key" : {
@@ -9337,6 +10444,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "键"
+          }
+        }
+      }
+    },
+    "Key or value" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiave o valore"
           }
         }
       }
@@ -9434,6 +10551,7 @@
       }
     },
     "Launch" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -9480,6 +10598,7 @@
       }
     },
     "Launch one target through FRTMProxy without changing the system proxy." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -9526,6 +10645,7 @@
       }
     },
     "Launch profile" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -9572,6 +10692,7 @@
       }
     },
     "Launches the selected target using the current FRTMProxy connection." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -9618,6 +10739,7 @@
       }
     },
     "Launching target…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -9640,7 +10762,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lancio obiettivo..."
+            "value" : "Avvio del target…"
           }
         },
         "ja" : {
@@ -9758,6 +10880,16 @@
         }
       }
     },
+    "Live WebSocket preview limited to 1000 frames / 4 MiB. Older or oversized frames are omitted; recorded sessions receive events before this limit." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’anteprima WebSocket live è limitata a 1000 frame / 4 MiB. I frame più vecchi o troppo grandi vengono omessi; le sessioni registrate ricevono gli eventi prima dell’applicazione di questo limite."
+          }
+        }
+      }
+    },
     "Load More" : {
       "localizations" : {
         "de" : {
@@ -9804,7 +10936,38 @@
         }
       }
     },
+    "Loaded Flows — Full Capture (includes secrets)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flussi caricati — acquisizione completa (include i segreti)"
+          }
+        }
+      }
+    },
+    "Loaded Flows — Redacted (bodies omitted)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flussi caricati — dati oscurati (corpi omessi)"
+          }
+        }
+      }
+    },
+    "Loaded flows: %lld" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld flussi caricati"
+          }
+        }
+      }
+    },
     "Loading captured flows…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -9873,7 +11036,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Caricamento altro..."
+            "value" : "Caricamento di altri elementi…"
           }
         },
         "ja" : {
@@ -9892,6 +11055,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "加载更多..."
+          }
+        }
+      }
+    },
+    "Local Variables" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Variabili locali"
           }
         }
       }
@@ -9919,7 +11092,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Log"
+            "value" : "Registro"
           }
         },
         "ja" : {
@@ -10127,6 +11300,16 @@
         }
       }
     },
+    "Manage Profiles…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gestisci profili…"
+          }
+        }
+      }
+    },
     "Manage saved mock responses and quickly enable/disable rules." : {
       "localizations" : {
         "de" : {
@@ -10169,6 +11352,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "管理已保存的模拟响应，快速启用/禁用规则。"
+          }
+        }
+      }
+    },
+    "Map" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mappa"
           }
         }
       }
@@ -10288,7 +11481,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mappa Regole locali…"
+            "value" : "Regole Map Local…"
           }
         },
         "ja" : {
@@ -10353,6 +11546,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Map Local…"
+          }
+        }
+      }
+    },
+    "Map Remote" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mappatura remota"
           }
         }
       }
@@ -10495,6 +11698,26 @@
         }
       }
     },
+    "Member count: %lld" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elementi nel profilo: %lld"
+          }
+        }
+      }
+    },
+    "Member type" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tipo di elemento"
+          }
+        }
+      }
+    },
     "Message" : {
       "localizations" : {
         "de" : {
@@ -10537,6 +11760,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "消息"
+          }
+        }
+      }
+    },
+    "Messages" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Messaggi"
           }
         }
       }
@@ -10629,6 +11862,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "方法（留空保存）"
+          }
+        }
+      }
+    },
+    "Mock Response" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Risposta simulata"
           }
         }
       }
@@ -11003,6 +12246,26 @@
         }
       }
     },
+    "NAME" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "NOME"
+          }
+        }
+      }
+    },
+    "Name a set of requests, hosts, or apps to keep together." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assegna un nome al gruppo di richieste, host o app."
+          }
+        }
+      }
+    },
     "Network Profile" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -11119,7 +12382,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nuovo breakpoint"
+            "value" : "Nuovo punto di interruzione"
           }
         },
         "ja" : {
@@ -11138,6 +12401,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "新建断点"
+          }
+        }
+      }
+    },
+    "New capture profile" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuovo profilo di acquisizione"
           }
         }
       }
@@ -11188,7 +12461,58 @@
         }
       }
     },
+    "New Profile" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuovo profilo"
+          }
+        }
+      }
+    },
+    "New Profile…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuovo profilo…"
+          }
+        }
+      }
+    },
+    "New Script" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuovo script"
+          }
+        }
+      }
+    },
+    "Next" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avanti"
+          }
+        }
+      }
+    },
+    "Next onboarding step" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passaggio successivo"
+          }
+        }
+      }
+    },
     "No Actions" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -11281,6 +12605,7 @@
       }
     },
     "No Captured Flows" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -11322,6 +12647,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "没有捕获的流量"
+          }
+        }
+      }
+    },
+    "No differences in the compared data" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna differenza nei dati confrontati"
           }
         }
       }
@@ -11441,7 +12776,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nessun header"
+            "value" : "Nessuna intestazione"
           }
         },
         "ja" : {
@@ -11487,7 +12822,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nessun header disponibile"
+            "value" : "Nessuna intestazione disponibile"
           }
         },
         "ja" : {
@@ -11533,7 +12868,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nessuna Map Local registrata. Mappa un flusso per iniziare a popolare la collection."
+            "value" : "Nessuna regola Map Local registrata. Mappa un flusso per iniziare a popolare la raccolta."
           }
         },
         "ja" : {
@@ -11552,6 +12887,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "尚未记录 Map Local。映射一个流量即可开始填充集合。"
+          }
+        }
+      }
+    },
+    "No matching headers" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna intestazione corrispondente"
           }
         }
       }
@@ -11602,7 +12947,18 @@
         }
       }
     },
+    "No request body" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun corpo della richiesta"
+          }
+        }
+      }
+    },
     "No Resources" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -11648,7 +13004,18 @@
         }
       }
     },
+    "No response body" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun corpo della risposta"
+          }
+        }
+      }
+    },
     "No Sessions" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -11740,6 +13107,33 @@
         }
       }
     },
+    "No throttling applied" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna limitazione applicata"
+          }
+        }
+      }
+    },
+    "Noise: %@ · %@" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Noise: %1$@ · %2$@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rumore: %@ · %@"
+          }
+        }
+      }
+    },
     "Not bookmarked" : {
       "localizations" : {
         "de" : {
@@ -11763,7 +13157,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Non segnalibro"
+            "value" : "Non nei segnalibri"
           }
         },
         "ja" : {
@@ -11782,6 +13176,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "未添加书签"
+          }
+        }
+      }
+    },
+    "Not selected" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non selezionato"
           }
         }
       }
@@ -11993,7 +13397,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Onboarding"
+            "value" : "Introduzione"
           }
         },
         "ja" : {
@@ -12248,6 +13652,7 @@
       }
     },
     "Opens advanced debugging and automation tools" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -12408,7 +13813,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sovrascrivi il proxy di macOS"
+            "value" : "Imposta il proxy di macOS"
           }
         },
         "ja" : {
@@ -12523,6 +13928,16 @@
         }
       }
     },
+    "Path" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Percorso"
+          }
+        }
+      }
+    },
     "Path (e.g. /v1/resource)" : {
       "localizations" : {
         "de" : {
@@ -12546,7 +13961,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Percorso (es. /v1/resource)"
+            "value" : "Percorso (ad es. /v1/resource)"
           }
         },
         "ja" : {
@@ -12592,7 +14007,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Percorso (es. /v1/users)"
+            "value" : "Percorso (ad es. /v1/users)"
           }
         },
         "ja" : {
@@ -12611,6 +14026,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "路径（例如 /v1/users）"
+          }
+        }
+      }
+    },
+    "Path / Offset" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Percorso / offset"
           }
         }
       }
@@ -12776,7 +14201,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "In attesa di"
+            "value" : "In sospeso"
           }
         },
         "ja" : {
@@ -12841,6 +14266,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "永久删除此捕获的会话。"
+          }
+        }
+      }
+    },
+    "Phase" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fase"
           }
         }
       }
@@ -13213,6 +14648,46 @@
         }
       }
     },
+    "Pretty" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Formattato"
+          }
+        }
+      }
+    },
+    "Preview truncated at 2 MB" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anteprima limitata a 2 MB"
+          }
+        }
+      }
+    },
+    "Preview truncated at 2 MiB — %lld bytes received" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anteprima limitata a 2 MiB — ricevuti %lld byte"
+          }
+        }
+      }
+    },
+    "Preview URLs are redacted. Stored data preserves the file, including secrets. Up to 32 MiB and 10,000 entries; body previews are limited to 2 MiB and originals are retained. Missing bodies and timing phases cannot be reconstructed." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gli URL nell’anteprima sono oscurati. I dati archiviati mantengono il file originale, inclusi i segreti. Limite: 32 MiB e 10.000 voci; anteprime dei corpi fino a 2 MiB, mentre gli originali vengono conservati. Non è possibile ricostruire i corpi mancanti né le fasi temporali."
+          }
+        }
+      }
+    },
     "Priority" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -13306,7 +14781,18 @@
         }
       }
     },
+    "Processing capture…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elaborazione dell’acquisizione…"
+          }
+        }
+      }
+    },
     "Profile" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -13348,6 +14834,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "轮廓"
+          }
+        }
+      }
+    },
+    "Profile name" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nome del profilo"
+          }
+        }
+      }
+    },
+    "Profile: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profilo: %@"
+          }
+        }
+      }
+    },
+    "Profile: Off" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profilo: disattivato"
+          }
+        }
+      }
+    },
+    "Profiles" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profili"
           }
         }
       }
@@ -13444,7 +14970,18 @@
         }
       }
     },
+    "Proxy listening on port %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proxy in ascolto sulla porta %@"
+          }
+        }
+      }
+    },
     "Proxy ready at 127.0.0.1:%lld" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -13467,7 +15004,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Proxy pronto a 127.0.0.1:%lld"
+            "value" : "Proxy pronto su 127.0.0.1:%lld"
           }
         },
         "ja" : {
@@ -13651,7 +15188,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pubblica Collection"
+            "value" : "Pubblica raccolta"
           }
         },
         "ja" : {
@@ -13697,7 +15234,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Push"
+            "value" : "Pubblica"
           }
         },
         "ja" : {
@@ -13743,7 +15280,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Push Collection"
+            "value" : "Pubblica raccolta"
           }
         },
         "ja" : {
@@ -13767,6 +15304,7 @@
       }
     },
     "QR code" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -13789,7 +15327,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "QR code"
+            "value" : "Codice QR"
           }
         },
         "ja" : {
@@ -13950,6 +15488,16 @@
         }
       }
     },
+    "Raw" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Testo"
+          }
+        }
+      }
+    },
     "Recording \"%@\"" : {
       "localizations" : {
         "de" : {
@@ -14065,7 +15613,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ref: %@"
+            "value" : "Riferimento: %@"
           }
         },
         "ja" : {
@@ -14157,7 +15705,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aggiorna avviati"
+            "value" : "Aggiorna i simulatori avviati"
           }
         },
         "ja" : {
@@ -14456,6 +16004,16 @@
         }
       }
     },
+    "Remove %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovi %@"
+          }
+        }
+      }
+    },
     "Remove Bookmark" : {
       "localizations" : {
         "de" : {
@@ -14503,6 +16061,7 @@
       }
     },
     "Remove header" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -14525,7 +16084,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rimuovi header"
+            "value" : "Rimuovi intestazione"
           }
         },
         "ja" : {
@@ -14590,6 +16149,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "删除标题"
+          }
+        }
+      }
+    },
+    "Remove member" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovi elemento"
           }
         }
       }
@@ -15148,6 +16717,26 @@
         }
       }
     },
+    "Request header name" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nome dell’intestazione della richiesta"
+          }
+        }
+      }
+    },
+    "Request header value" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valore dell’intestazione della richiesta"
+          }
+        }
+      }
+    },
     "Request matcher" : {
       "localizations" : {
         "de" : {
@@ -15263,7 +16852,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Richiedi permesso"
+            "value" : "Richiedi autorizzazione"
           }
         },
         "ja" : {
@@ -15282,6 +16871,96 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "请求权限"
+          }
+        }
+      }
+    },
+    "Request size" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dimensione della richiesta"
+          }
+        }
+      }
+    },
+    "Request unavailable" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Richiesta non disponibile"
+          }
+        }
+      }
+    },
+    "Requests" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Richieste"
+          }
+        }
+      }
+    },
+    "Requests will appear here as they arrive." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le richieste appariranno qui man mano che arrivano."
+          }
+        }
+      }
+    },
+    "Reset" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ripristina"
+          }
+        }
+      }
+    },
+    "Reset Configuration" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ripristina configurazione"
+          }
+        }
+      }
+    },
+    "Reset header column configuration?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vuoi ripristinare la configurazione delle colonne?"
+          }
+        }
+      }
+    },
+    "Reset local composer state?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vuoi ripristinare i dati locali del compositore?"
+          }
+        }
+      }
+    },
+    "Reset Local State" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ripristina dati locali"
           }
         }
       }
@@ -15333,6 +17012,7 @@
       }
     },
     "Resources" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -15562,6 +17242,16 @@
         }
       }
     },
+    "Response size" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dimensione della risposta"
+          }
+        }
+      }
+    },
     "Response status %lld" : {
       "localizations" : {
         "de" : {
@@ -15604,6 +17294,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "响应状态 %lld"
+          }
+        }
+      }
+    },
+    "Response unavailable" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Risposta non disponibile"
           }
         }
       }
@@ -15792,7 +17492,18 @@
         }
       }
     },
+    "Review before importing. Capture files may contain credentials and personal data. Imported sessions remain local and encrypted; they do not enable mocks." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controlla prima di importare. I file di acquisizione possono contenere credenziali e dati personali. Le sessioni importate restano locali e cifrate; non attivano risposte simulate."
+          }
+        }
+      }
+    },
     "Review Import" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -15834,6 +17545,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "检查导入"
+          }
+        }
+      }
+    },
+    "Rewrite Request" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riscrivi richiesta"
+          }
+        }
+      }
+    },
+    "Rewrite Response" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riscrivi risposta"
           }
         }
       }
@@ -16071,6 +17802,16 @@
         }
       }
     },
+    "Rules configured: %lld · top rule runs first" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regole configurate: %lld · la prima voce dell’elenco viene eseguita per prima"
+          }
+        }
+      }
+    },
     "Rules execute by ascending priority. Actions within a rule execute top to bottom." : {
       "comment" : "A description below the general section of the unified traffic rule editor, explaining how the rules are ordered and how actions are executed within them.",
       "extractionState" : "stale",
@@ -16143,7 +17884,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le regole vengono eseguite dall'alto verso il basso. Riordinali nell'elenco Regole del traffico."
+            "value" : "Le regole vengono eseguite dall’alto verso il basso. Riordinalle nell’elenco Regole del traffico."
           }
         },
         "ja" : {
@@ -16350,6 +18091,16 @@
         }
       }
     },
+    "Save Name" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salva nome"
+          }
+        }
+      }
+    },
     "Save Rule" : {
       "localizations" : {
         "de" : {
@@ -16488,7 +18239,28 @@
         }
       }
     },
+    "Saved capture profiles could not be read. Existing data has been preserved." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile leggere i profili di acquisizione salvati. I dati esistenti sono stati conservati."
+          }
+        }
+      }
+    },
+    "Saving will replace the unreadable column configuration. Captured traffic is preserved." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il salvataggio sostituirà la configurazione delle colonne illeggibile. Il traffico acquisito verrà conservato."
+          }
+        }
+      }
+    },
     "Schema %lld" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -16673,6 +18445,7 @@
       }
     },
     "Scripts" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -16760,6 +18533,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "脚本..."
+          }
+        }
+      }
+    },
+    "Search covers the truncated preview only." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La ricerca riguarda solo l’anteprima troncata."
+          }
+        }
+      }
+    },
+    "Search JSON Preview" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerca nell’anteprima JSON"
+          }
+        }
+      }
+    },
+    "Search Mode" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modalità di ricerca"
+          }
+        }
+      }
+    },
+    "Search: keywords, host:, app:, method:, status:, type:, device: (use -term to exclude)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerca: parole, host:, app:, method:, status:, type:, device: (usa -term per escludere)"
+          }
+        }
+      }
+    },
+    "Searching…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricerca…"
+          }
+        }
+      }
+    },
+    "Section" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sezione"
           }
         }
       }
@@ -16857,6 +18690,7 @@
       }
     },
     "Select a Session" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -16902,7 +18736,28 @@
         }
       }
     },
+    "Selected" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selezionato"
+          }
+        }
+      }
+    },
+    "Selected live preview exceeds 64 MiB. The last bounded preview is retained; open the recorded session for newer data." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’anteprima live selezionata supera 64 MiB. Viene mantenuta l’ultima anteprima entro il limite; apri la sessione registrata per i dati più recenti."
+          }
+        }
+      }
+    },
     "Selective Capture" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -16949,6 +18804,7 @@
       }
     },
     "Selective Capture…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -17128,6 +18984,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "会话操作失败"
+          }
+        }
+      }
+    },
+    "Session name" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nome della sessione"
           }
         }
       }
@@ -17409,6 +19275,7 @@
       }
     },
     "Show or hide columns" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -17780,6 +19647,7 @@
     },
     "Skipped" : {
       "comment" : "A status label indicating that a workspace import resource was skipped.",
+      "extractionState" : "stale",
       "isCommentAutoGenerated" : true,
       "localizations" : {
         "de" : {
@@ -17849,7 +19717,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alcune finestre di dialogo di proprietà del sistema seguono il linguaggio macOS e potrebbero richiedere la riapertura."
+            "value" : "Alcune finestre di dialogo di sistema seguono la lingua di macOS e potrebbe essere necessario riaprirle."
           }
         },
         "ja" : {
@@ -17868,6 +19736,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "某些系统拥有的对话框遵循 macOS 语言，可能需要重新打开。"
+          }
+        }
+      }
+    },
+    "Sort by this header; click again to reverse" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordina per questa intestazione; fai clic di nuovo per invertire l’ordine"
           }
         }
       }
@@ -17965,6 +19843,7 @@
       }
     },
     "Standard environment" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -18052,6 +19931,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "启动"
+          }
+        }
+      }
+    },
+    "Start capture to inspect requests." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avvia l’acquisizione per esaminare le richieste."
           }
         }
       }
@@ -18241,6 +20130,7 @@
       }
     },
     "Start the proxy before launching a selective target." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -18286,6 +20176,24 @@
         }
       }
     },
+    "Start Time" : {
+      "comment" : "Traffic table timestamp column, not the action to start the proxy.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Start"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inizio"
+          }
+        }
+      }
+    },
     "Started %@" : {
       "localizations" : {
         "de" : {
@@ -18309,7 +20217,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Avviata %@"
+            "value" : "Avvio completato: %@"
           }
         },
         "ja" : {
@@ -18585,7 +20493,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Arrestare la registrazione della collection?"
+            "value" : "Vuoi interrompere la registrazione della raccolta?"
           }
         },
         "ja" : {
@@ -18696,6 +20604,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已停止"
+          }
+        }
+      }
+    },
+    "Stream active" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flusso attivo"
+          }
+        }
+      }
+    },
+    "Structured" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strutturato"
           }
         }
       }
@@ -18976,6 +20904,16 @@
         }
       }
     },
+    "Table fields" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Campi della tabella"
+          }
+        }
+      }
+    },
     "Tag (optional)" : {
       "localizations" : {
         "de" : {
@@ -19116,6 +21054,7 @@
       }
     },
     "Target" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -19138,7 +21077,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bersaglio"
+            "value" : "Target"
           }
         },
         "ja" : {
@@ -19210,6 +21149,16 @@
     "TEXT" : {
       "shouldTranslate" : false
     },
+    "The capture profile no longer exists." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il profilo di acquisizione non esiste più."
+          }
+        }
+      }
+    },
     "The function `transform(flow)` receives `{ request: { url, method, headers, body }, response: { status, headers, body } }`. Return an object with `status`, `headers`, `body` to override, or `null` to pass through." : {
       "localizations" : {
         "de" : {
@@ -19257,6 +21206,7 @@
       }
     },
     "The launched target keeps running if you close this window." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -19279,7 +21229,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Il bersaglio lanciato continua a funzionare se chiudi questa finestra."
+            "value" : "Il target avviato continua a funzionare anche se chiudi questa finestra."
           }
         },
         "ja" : {
@@ -19348,7 +21298,28 @@
         }
       }
     },
+    "The proxy stopped unexpectedly. The session may be incomplete; saved traffic remains available." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il proxy si è arrestato in modo imprevisto. La sessione potrebbe essere incompleta; il traffico salvato resta disponibile."
+          }
+        }
+      }
+    },
+    "The unreadable encrypted file is kept as a backup. History and variables will start empty." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il file cifrato illeggibile verrà conservato come backup. La cronologia e le variabili saranno vuote."
+          }
+        }
+      }
+    },
     "The workspace manifest does not reference any resources." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -19440,6 +21411,36 @@
         }
       }
     },
+    "This App" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questa app"
+          }
+        }
+      }
+    },
+    "This Call" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questa chiamata"
+          }
+        }
+      }
+    },
+    "This Host" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo host"
+          }
+        }
+      }
+    },
     "This permanently removes the session and its captured flows. This action cannot be undone." : {
       "localizations" : {
         "de" : {
@@ -19482,6 +21483,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "这将永久删除会话及其捕获的流。此操作无法撤消。"
+          }
+        }
+      }
+    },
+    "This profile" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo profilo"
           }
         }
       }
@@ -19534,18 +21545,55 @@
     },
     "This resource type is not supported by this version." : {
       "comment" : "A message explaining that a resource type is unsupported by the current version of the extension.",
+      "extractionState" : "stale",
       "isCommentAutoGenerated" : true,
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Dieser Ressourcentyp wird von dieser Version nicht unterstützt." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Esta versión no admite este tipo de recurso." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ce type de ressource n’est pas pris en charge par cette version." } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Questo tipo di risorsa non è supportato da questa versione." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このリソース形式は、このバージョンではサポートされていません。" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Este tipo de recurso não é compatível com esta versão." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "此版本不支持该资源类型。" } }
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser Ressourcentyp wird von dieser Version nicht unterstützt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta versión no admite este tipo de recurso."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce type de ressource n’est pas pris en charge par cette version."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo tipo di risorsa non è supportato da questa versione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このリソース形式は、このバージョンではサポートされていません。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este tipo de recurso não é compatível com esta versão."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此版本不支持该资源类型。"
+          }
+        }
       }
     },
     "This session does not contain any readable flows." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -19614,7 +21662,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tempo"
+            "value" : "Ora"
           }
         },
         "ja" : {
@@ -19633,6 +21681,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "时间"
+          }
+        }
+      }
+    },
+    "Timing" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tempi"
           }
         }
       }
@@ -19660,7 +21718,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Utensili"
+            "value" : "Strumenti"
           }
         },
         "ja" : {
@@ -20190,6 +22248,7 @@
       }
     },
     "Type" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -20282,6 +22341,7 @@
       }
     },
     "Unable to Load Session" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -20369,6 +22429,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法保存笔记"
+          }
+        }
+      }
+    },
+    "Unable to update profile" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile aggiornare il profilo"
           }
         }
       }
@@ -20507,6 +22577,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "未设置的字段匹配任何值。查询和正文值使用规范的请求格式。"
+          }
+        }
+      }
+    },
+    "Untitled" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Senza titolo"
+          }
+        }
+      }
+    },
+    "Up to eight local columns. Repeated values remain separate. Configuration is saved on this Mac; captured values are not stored in preferences." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fino a otto colonne locali. I valori ripetuti restano distinti. La configurazione viene salvata su questo Mac; i dati acquisiti non sono salvati nelle preferenze."
           }
         }
       }
@@ -20695,6 +22785,26 @@
         }
       }
     },
+    "Use {{NAME}} in URL, headers and body. Values are substituted once and stored encrypted on this Mac." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa {{NAME}} nell’URL, nelle intestazioni e nel corpo. I valori vengono sostituiti una sola volta e salvati in forma cifrata su questo Mac."
+          }
+        }
+      }
+    },
+    "Use Profile" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa profilo"
+          }
+        }
+      }
+    },
     "Use selected flow" : {
       "localizations" : {
         "de" : {
@@ -20737,6 +22847,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "使用所选流量"
+          }
+        }
+      }
+    },
+    "Use the app’s bundle identifier." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa l’identificatore bundle dell’app."
           }
         }
       }
@@ -20834,6 +22954,7 @@
       }
     },
     "Uses a temporary browser profile that is removed after the launched app exits." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -21040,7 +23161,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pattern del valore"
+            "value" : "Schema del valore"
           }
         },
         "ja" : {
@@ -21059,6 +23180,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "价值格局"
+          }
+        }
+      }
+    },
+    "Variable name" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nome della variabile"
+          }
+        }
+      }
+    },
+    "Variable value" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valore della variabile"
+          }
+        }
+      }
+    },
+    "Variables" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Variabili"
+          }
+        }
+      }
+    },
+    "Waiting for traffic" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In attesa di traffico"
           }
         }
       }
@@ -21086,7 +23247,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quando abilitato, macOS instrada il traffico HTTP e HTTPS verso localhost sulla porta selezionata."
+            "value" : "Quando è attiva, macOS instrada il traffico HTTP e HTTPS verso localhost sulla porta selezionata."
           }
         },
         "ja" : {
@@ -21151,6 +23312,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "启用后，mitmproxy 仅对活动的固定主机进行 MITM；所有其他 HTTPS 流量将被隧道转发。重启代理以应用更改。"
+          }
+        }
+      }
+    },
+    "Wi-Fi network name" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nome della rete Wi-Fi"
           }
         }
       }
@@ -21248,17 +23419,54 @@
       }
     },
     "Will apply" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wird angewendet" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Se aplicará" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Sera appliqué" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Verrà applicato" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "適用予定" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Será aplicado" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "将应用" } }
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wird angewendet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se aplicará"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sera appliqué"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Da applicare"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "適用予定"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Será aplicado"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将应用"
+          }
+        }
       }
     },
     "Working…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -21305,6 +23513,7 @@
       }
     },
     "Workspace" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -21351,6 +23560,7 @@
       }
     },
     "Workspace operation failed" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -21397,6 +23607,7 @@
       }
     },
     "Workspace…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -21419,7 +23630,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Spazio di lavoro..."
+            "value" : "Area di lavoro…"
           }
         },
         "ja" : {
@@ -21443,6 +23654,7 @@
       }
     },
     "Workspaces" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -21490,6 +23702,1029 @@
     },
     "X-Request-ID…" : {
       "shouldTranslate" : false
+    },
+    "Pause the request before sending it" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sospendi la richiesta prima di inviarla"
+          }
+        }
+      }
+    },
+    "Pause the response before showing it" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sospendi la risposta prima di mostrarla"
+          }
+        }
+      }
+    },
+    "Comparison failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confronto non riuscito"
+          }
+        }
+      }
+    },
+    "Comparing…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confronto in corso…"
+          }
+        }
+      }
+    },
+    "Start the embedded mitmproxy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avvia il motore mitmproxy integrato"
+          }
+        }
+      }
+    },
+    "Stop capturing traffic" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interrompi l’acquisizione del traffico"
+          }
+        }
+      }
+    },
+    "Remove all captured traffic" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancella tutte le chiamate acquisite"
+          }
+        }
+      }
+    },
+    "Open Traffic Rules" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri regole del traffico"
+          }
+        }
+      }
+    },
+    "Mock, redirect, rewrite, block, delay, pause, or script traffic" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Simula, reindirizza, riscrivi, blocca, ritarda, sospendi o modifica il traffico con script"
+          }
+        }
+      }
+    },
+    "Open Rules" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri regole"
+          }
+        }
+      }
+    },
+    "Manage legacy Map Local rules" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gestisci le regole Map Local esistenti"
+          }
+        }
+      }
+    },
+    "Open Breakpoints" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri punti di interruzione"
+          }
+        }
+      }
+    },
+    "Manage breakpoint rules" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gestisci le regole dei punti di interruzione"
+          }
+        }
+      }
+    },
+    "Open Collections" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri raccolte"
+          }
+        }
+      }
+    },
+    "Manage map local collections" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gestisci le raccolte Map Local"
+          }
+        }
+      }
+    },
+    "Open Sessions" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri sessioni"
+          }
+        }
+      }
+    },
+    "Browse persistent captures" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sfoglia le acquisizioni salvate"
+          }
+        }
+      }
+    },
+    "Open Device Setup" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri configurazione dispositivi"
+          }
+        }
+      }
+    },
+    "Pair a simulator or device" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Associa un simulatore o un dispositivo"
+          }
+        }
+      }
+    },
+    "Map Local (Selected Flow)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Map Local (chiamata selezionata)"
+          }
+        }
+      }
+    },
+    "Create a local response for the selected flow" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crea una risposta locale per la chiamata selezionata"
+          }
+        }
+      }
+    },
+    "Retry Request (Selected Flow)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ripeti richiesta (chiamata selezionata)"
+          }
+        }
+      }
+    },
+    "Replay the selected request" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invia di nuovo la richiesta selezionata"
+          }
+        }
+      }
+    },
+    "Copy selected flow URL" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copia l’URL della chiamata selezionata"
+          }
+        }
+      }
+    },
+    "Copy cURL" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copia cURL"
+          }
+        }
+      }
+    },
+    "Copy selected flow as cURL" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copia la chiamata selezionata come comando cURL"
+          }
+        }
+      }
+    },
+    "Compare" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confronta"
+          }
+        }
+      }
+    },
+    "No profile selected" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun profilo selezionato"
+          }
+        }
+      }
+    },
+    "Create a profile such as Intesa, CheBanca, or Curl, then add its requests, hosts, or apps." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crea un profilo, ad esempio Intesa, CheBanca o Curl, e aggiungi richieste, host o app."
+          }
+        }
+      }
+    },
+    "Add a host or app below, or add a request from the traffic list." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi un host o un’app qui sotto, oppure una richiesta dall’elenco del traffico."
+          }
+        }
+      }
+    },
+    "Sending request..." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invio della richiesta…"
+          }
+        }
+      }
+    },
+    "Request failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Richiesta non riuscita"
+          }
+        }
+      }
+    },
+    "No response yet" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna risposta"
+          }
+        }
+      }
+    },
+    "Send a request to see the response" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invia una richiesta per visualizzare la risposta"
+          }
+        }
+      }
+    },
+    "Choose a capture" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli un’acquisizione"
+          }
+        }
+      }
+    },
+    "HAR 1.2 with HTTP or HTTPS transactions." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HAR 1.2 con transazioni HTTP o HTTPS."
+          }
+        }
+      }
+    },
+    "No script rules" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna regola script"
+          }
+        }
+      }
+    },
+    "Add a script to transform responses dynamically." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi uno script per modificare le risposte dinamicamente."
+          }
+        }
+      }
+    },
+    "No rules saved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna regola salvata"
+          }
+        }
+      }
+    },
+    "Create a new rule or use Map Local on a flow to populate this list." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crea una regola o usa Map Local su una chiamata per aggiungerla all’elenco."
+          }
+        }
+      }
+    },
+    "Scheme" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schema"
+          }
+        }
+      }
+    },
+    "Canonical query" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Query normalizzata"
+          }
+        }
+      }
+    },
+    "Canonical body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corpo normalizzato"
+          }
+        }
+      }
+    },
+    "No Traffic Rules" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna regola del traffico"
+          }
+        }
+      }
+    },
+    "Create a rule to mock, redirect, rewrite, block, delay, pause, or script matching traffic." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crea una regola per simulare, reindirizzare, riscrivere, bloccare, ritardare, sospendere o modificare con script il traffico corrispondente."
+          }
+        }
+      }
+    },
+    "Finding booted simulators…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricerca dei simulatori avviati…"
+          }
+        }
+      }
+    },
+    "No booted simulators" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun simulatore avviato"
+          }
+        }
+      }
+    },
+    "Open a simulator in Xcode, then refresh the list." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avvia un simulatore in Xcode, poi aggiorna l’elenco."
+          }
+        }
+      }
+    },
+    "Scan the QR code with Camera/Safari and download the configuration profile." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scansiona il codice QR con Fotocamera o Safari e scarica il profilo di configurazione."
+          }
+        }
+      }
+    },
+    "Go to Settings → Profile Downloaded, install it and confirm with the device passcode." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri Impostazioni → Profilo scaricato, installalo e conferma con il codice del dispositivo."
+          }
+        }
+      }
+    },
+    "Trust the mitmproxy CA under Settings → General → About → Certificate Trust Settings." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abilita l’attendibilità della CA mitmproxy in Impostazioni → Generali → Info → Impostazioni attendibilità certificati."
+          }
+        }
+      }
+    },
+    "Pause before it starts" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sospendi prima dell’invio"
+          }
+        }
+      }
+    },
+    "Pause before displaying it" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sospendi prima della visualizzazione"
+          }
+        }
+      }
+    },
+    "No breakpoints configured" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun punto di interruzione configurato"
+          }
+        }
+      }
+    },
+    "Add a host/path to pause requests or responses before they pass through the proxy." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi un host o un percorso per sospendere richieste o risposte prima che attraversino il proxy."
+          }
+        }
+      }
+    },
+    "No repository configured." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun repository configurato."
+          }
+        }
+      }
+    },
+    "Add a repository above to import collections collaboratively via Git." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi un repository per importare raccolte condivise tramite Git."
+          }
+        }
+      }
+    },
+    "New Collection" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuova raccolta"
+          }
+        }
+      }
+    },
+    "Mapped requests captured while recording is active will be saved in this collection." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le richieste mappate acquisite durante la registrazione vengono salvate in questa raccolta."
+          }
+        }
+      }
+    },
+    "Rename Collection" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rinomina raccolta"
+          }
+        }
+      }
+    },
+    "Update the name to better organize your collections." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifica il nome per organizzare le raccolte."
+          }
+        }
+      }
+    },
+    "No collections" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna raccolta"
+          }
+        }
+      }
+    },
+    "Start a recording to automatically save a Map Local collection." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avvia una registrazione per salvare automaticamente una raccolta Map Local."
+          }
+        }
+      }
+    },
+    "Select a collection to view its rules." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seleziona una raccolta per visualizzare le regole."
+          }
+        }
+      }
+    },
+    "No rules saved in this collection" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna regola salvata in questa raccolta"
+          }
+        }
+      }
+    },
+    "No profile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun profilo"
+          }
+        }
+      }
+    },
+    "3G Urban" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3G urbano"
+          }
+        }
+      }
+    },
+    "LTE (congested)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LTE (congestionato)"
+          }
+        }
+      }
+    },
+    "High Latency VPN" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VPN ad alta latenza"
+          }
+        }
+      }
+    },
+    "Packet loss 8%" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Perdita di pacchetti 8%"
+          }
+        }
+      }
+    },
+    "Advanced (manual)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avanzato (manuale)"
+          }
+        }
+      }
+    },
+    "Compact size for dense layouts." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dimensioni compatte per visualizzare più contenuti."
+          }
+        }
+      }
+    },
+    "Balanced size (default)." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dimensioni equilibrate (predefinite)."
+          }
+        }
+      }
+    },
+    "Comfortable size with larger spacing." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dimensioni più ampie con maggiore spaziatura."
+          }
+        }
+      }
+    },
+    "QR profile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profilo tramite QR"
+          }
+        }
+      }
+    },
+    "Certificate install" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installazione del certificato"
+          }
+        }
+      }
+    },
+    "Request Body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corpo della richiesta"
+          }
+        }
+      }
+    },
+    "Response Body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corpo della risposta"
+          }
+        }
+      }
+    },
+    "Request Headers" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intestazioni della richiesta"
+          }
+        }
+      }
+    },
+    "Response Headers" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intestazioni della risposta"
+          }
+        }
+      }
+    },
+    "Structure" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Struttura"
+          }
+        }
+      }
+    },
+    "Bytes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Byte"
+          }
+        }
+      }
+    },
+    "Start the proxy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avvia il proxy"
+          }
+        }
+      }
+    },
+    "Monitor traffic" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monitora il traffico"
+          }
+        }
+      }
+    },
+    "Quick filters" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filtri rapidi"
+          }
+        }
+      }
+    },
+    "Request inspector" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inspector della richiesta"
+          }
+        }
+      }
+    },
+    "Press Start to run the proxy and begin capturing traffic from your device." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premi Avvia per avviare il proxy e acquisire il traffico del dispositivo."
+          }
+        }
+      }
+    },
+    "In Settings > Proxy Behavior, enable \"Override macOS proxy\" to route Mac traffic to localhost and the proxy port." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Impostazioni > Comportamento proxy, abilita «Imposta il proxy di macOS» per instradare il traffico del Mac verso localhost e la porta del proxy."
+          }
+        }
+      }
+    },
+    "The traffic table fills here with all HTTP/HTTPS requests in real time." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La tabella mostra tutte le richieste HTTP e HTTPS in tempo reale."
+          }
+        }
+      }
+    },
+    "Use the search bar and filters to quickly narrow results." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa la ricerca e i filtri per trovare rapidamente le chiamate."
+          }
+        }
+      }
+    },
+    "Select a request in the table to open the Inspector with headers and body." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seleziona una richiesta per aprire l’Inspector con intestazioni e corpo."
+          }
+        }
+      }
+    },
+    "After selecting a request, use Map Local to simulate local responses without touching the server." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dopo aver selezionato una richiesta, usa Map Local per simulare risposte locali senza modificare il server."
+          }
+        }
+      }
+    },
+    "1 flow" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 chiamata"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

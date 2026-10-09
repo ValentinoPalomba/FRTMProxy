@@ -199,15 +199,17 @@ struct WorkspaceImportValidationTests {
         let enhanced = try WorkspaceImportPlan.prepare(.init(manifest: manifest, resources: plan.bundle.resources))
         let result = try viewModel.applyWorkspaceBundle(enhanced, defaults: defaults)
         #expect(result.inspectorPreferencesApplied)
-        #expect(try WorkspaceInspectorPreferences.read(from: defaults) == preferences)
-        #expect(viewModel.currentWorkspaceBundle(defaults: defaults)?.manifest.inspectorPreferences == preferences)
+        var migratedPreferences = preferences
+        migratedPreferences.captureProfiles = try CaptureProfileStore.migratedProfiles(from: preferences.focusSets ?? [])
+        #expect(try WorkspaceInspectorPreferences.read(from: defaults) == migratedPreferences)
+        #expect(viewModel.currentWorkspaceBundle(defaults: defaults)?.manifest.inspectorPreferences == migratedPreferences)
 
         #expect(service.replacedDocuments.count == syncCountBeforeImport + 1)
         #expect(result.appliedResources.count == 1)
         #expect(result.skippedResources.isEmpty)
         let legacyResult = try viewModel.applyWorkspaceBundle(plan, defaults: defaults)
         #expect(!legacyResult.inspectorPreferencesApplied)
-        #expect(try WorkspaceInspectorPreferences.read(from: defaults) == preferences)
+        #expect(try WorkspaceInspectorPreferences.read(from: defaults) == migratedPreferences)
     }
     @Test @MainActor func partialLiveSnapshotsDoNotDiscardOtherPausedFlows() {
         let model = ProxyViewModel(

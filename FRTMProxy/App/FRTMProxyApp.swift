@@ -270,11 +270,11 @@ struct FRTMProxyApp: App {
     private func startMCPServerIfNeeded() {
         guard appDelegate.mcpServer == nil else { return }
         let router = MCPAutomationRouter(
-            sessionStore: proxyViewModel.sessionStore,
+            sessionStoreProvider: { proxyViewModel.sessionStore },
             flowProvider: { proxyViewModel.flows },
             ruleUpdater: { try proxyViewModel.saveUnifiedTrafficRulesNow($0) }
         )
-        let socketURL = URL.applicationSupportDirectory
+        let socketURL = CaptureStorageConfiguration.root
             .appending(path: "FRTMProxy", directoryHint: .isDirectory)
             .appending(path: "Automation", directoryHint: .isDirectory)
             .appending(path: "mcp.sock")
@@ -324,9 +324,6 @@ private struct InspectorNavigationCommands: Commands {
             Button("Sessions…") {
                 post(.sessions)
             }
-            Button("Selective Capture…") {
-                post(.selectiveCapture)
-            }
             Button("Device Setup…") {
                 post(.deviceSetup)
             }
@@ -354,9 +351,6 @@ private struct InspectorNavigationCommands: Commands {
             Button("Scripts…") {
                 post(.scripts)
             }
-            Button("Workspace…") {
-                post(.workspace)
-            }
         }
     }
 
@@ -367,7 +361,6 @@ private struct InspectorNavigationCommands: Commands {
 
 enum InspectorNavigationRequest {
     case sessions
-    case selectiveCapture
     case deviceSetup
     case trafficRules
     case mapLocalRules
@@ -375,7 +368,6 @@ enum InspectorNavigationRequest {
     case collections
     case composer
     case scripts
-    case workspace
 }
 
 extension Notification.Name {

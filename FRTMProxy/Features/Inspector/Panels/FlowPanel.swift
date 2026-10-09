@@ -25,13 +25,13 @@ struct FlowTimingData {
 // MARK: - FlowPanel
 
 struct FlowPanel: View {
-    let title: String
+    let title: LocalizedStringKey
     let method: String?
     let status: Int?
     let headers: [String: String]
     let queryParameters: [(String, String)]
     let bodyFlow: String?
-    let emptyText: String
+    let emptyText: LocalizedStringKey
     let isMapped: Bool
     let colors: DesignSystem.ColorPalette
     var timingData: FlowTimingData? = nil
@@ -61,6 +61,7 @@ struct FlowPanel: View {
     }
 
     var body: some View {
+        GeometryReader { geometry in
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             FlowPanelHeader(
                 title: title,
@@ -69,32 +70,26 @@ struct FlowPanel: View {
                 isMapped: isMapped,
                 colors: colors,
                 tabs: tabs,
-                selection: $detailTab
+                selection: $detailTab,
+                onShareBody: originalBodyReference.map { reference in
+                    { CaptureBodyExporter.export(reference: reference, flowID: flowID, phase: phase) }
+                },
+                shareIdentifier: "inspector.\(phase).shareBody"
             )
 
             if bodyTruncated {
                 Label("Preview truncated at 2 MB", systemImage: "exclamationmark.triangle")
                     .font(DesignSystem.Fonts.caption)
                     .foregroundStyle(colors.warning)
+                    .lineLimit(2)
             }
-            if let originalBodyReference {
-                ControlButton(title: "Export Original Body…", systemImage: "square.and.arrow.up", style: .ghost(colors)) {
-                    CaptureBodyExporter.export(reference: originalBodyReference, flowID: flowID, phase: phase)
-                }
-                .font(DesignSystem.Fonts.caption)
-                .help("Export captured bytes, including content encoding, from encrypted local storage.")
-            }
-
             Group {
                 switch detailTab {
                 case .headers:
-                    HeadersList(headers: headers, colors: colors, fields: headerFields)
+                    FlowHTTPHeadersList(headers: headers, colors: colors, fields: headerFields)
                 case .query:
                     QueryParametersList(parameters: queryParameters, colors: colors)
                 case .body:
-                    if let bodyFlow {
-                        JSONBodyQueryView(payload: bodyFlow, isTruncated: bodyTruncated, colors: colors)
-                    }
                     BodyInspector(payload: bodyFlow, headers: headers, emptyText: emptyText, colors: colors)
                 case .messages:
                     WebSocketMessagesPanel(messages: websocketMessages, colors: colors)
@@ -107,6 +102,8 @@ struct FlowPanel: View {
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .padding(DesignSystem.Spacing.md)
+        .frame(width: geometry.size.width, height: geometry.size.height, alignment: .topLeading)
+        .clipped()
         .background(
             RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous)
                 .fill(colors.surface)
@@ -115,6 +112,7 @@ struct FlowPanel: View {
                         .stroke(colors.border.opacity(0.65), lineWidth: 1)
                 )
         )
+        }
         .onAppear {
             guard !hasQueryParameters, detailTab == .query else { return }
             detailTab = .body
@@ -133,13 +131,15 @@ struct FlowPanel: View {
 }
 
 private struct FlowPanelHeader: View {
-    let title: String
+    let title: LocalizedStringKey
     let method: String?
     let status: Int?
     let isMapped: Bool
     let colors: DesignSystem.ColorPalette
     let tabs: [DetailTab]
     @Binding var selection: DetailTab
+    let onShareBody: (() -> Void)?
+    let shareIdentifier: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
@@ -171,6 +171,14 @@ private struct FlowPanelHeader: View {
                 Spacer()
 
                 FlowPanelInlineTabs(tabs: tabs, selection: $selection, colors: colors)
+                if let onShareBody {
+                    ControlButton(
+                        title: "Share", systemImage: "square.and.arrow.up",
+                        style: .ghost(colors), iconOnly: true, action: onShareBody
+                    )
+                    .help("Export captured bytes, including content encoding, from encrypted local storage.")
+                    .accessibilityIdentifier(shareIdentifier)
+                }
             }
 
             Divider().overlay(colors.border.opacity(0.5))
@@ -200,7 +208,7 @@ private struct FlowPanelInlineTabs: View {
                 Button {
                     selection = tab
                 } label: {
-                    Text(tab.rawValue)
+                    Text(tab.localizedTitle)
                         .font(DesignSystem.Fonts.sans(12, weight: selection == tab ? .semibold : .medium))
                         .foregroundStyle(selection == tab ? colors.textPrimary : colors.textSecondary)
                         .padding(.horizontal, DesignSystem.Spacing.sm)
@@ -221,22 +229,19 @@ private struct FlowPanelInlineTabs: View {
 }
 
 // MARK: - Headers
-private struct HeadersList: View {
+private struct FlowHTTPHeadersList: View {
     let headers: [String: String]
     let colors: DesignSystem.ColorPalette
     var fields: [HTTPHeaderField]? = nil
-    @State private var query = ""
 
     var body: some View {
         let all = fields ?? headers.sorted(by: { $0.key.lowercased() < $1.key.lowercased() }).map {
             HTTPHeaderField(name: $0.key, value: $0.value)
         }
-        let rows = all.filter { query.isEmpty || $0.name.localizedStandardContains(query) || $0.value.localizedStandardContains(query) }
+        let rows = all
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            SearchField(text: $query, placeholder: "Search header name or value", colors: colors)
-                .accessibilityLabel("Search header name or value")
             if rows.isEmpty {
-                Text(all.isEmpty ? "No headers available" : "No matching headers")
+                Text(all.isEmpty ? String(localized: "No headers available", bundle: AppLocalization.bundle) : String(localized: "No matching headers", bundle: AppLocalization.bundle))
                     .foregroundStyle(colors.textSecondary)
             } else {
                 ScrollView {
@@ -267,6 +272,7 @@ private struct HeaderRow: View {
                 .textSelection(.enabled)
                 .foregroundStyle(colors.textPrimary)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(DesignSystem.Spacing.sm)
         .background(
             RoundedRectangle(cornerRadius: DesignSystem.Radius.md)
@@ -308,7 +314,7 @@ private struct QueryParametersList: View {
 private struct BodyInspector: View {
     let payload: String?
     let headers: [String: String]
-    let emptyText: String
+    let emptyText: LocalizedStringKey
     let colors: DesignSystem.ColorPalette
 
     private let imagePreviewHeight: CGFloat = DesignSystem.Metrics.scaled(240)
@@ -380,7 +386,8 @@ private struct BodyInspector: View {
                     } else {
                         CodeEditorView(
                             text: $renderedText,
-                            isEditable: false
+                            isEditable: false,
+                            colors: colors
                         )
                         .frame(minHeight: 0, maxHeight: .infinity, alignment: .top)
                         .padding(DesignSystem.Spacing.sm)
@@ -708,7 +715,7 @@ private struct TimingView: View {
 
 private struct TimingStatRow: View {
     let icon: String
-    let label: String
+    let label: LocalizedStringKey
     let value: String
     let colors: DesignSystem.ColorPalette
 
@@ -828,13 +835,13 @@ private enum BodyMode: CaseIterable {
 
     var label: String {
         switch self {
-        case .image: return "Image"
-        case .raw: return "Raw"
-        case .pretty: return "Pretty"
-        case .hex: return "Hex"
+        case .image: return String(localized: "Image", bundle: AppLocalization.bundle)
+        case .raw: return String(localized: "Raw", bundle: AppLocalization.bundle)
+        case .pretty: return String(localized: "Pretty", bundle: AppLocalization.bundle)
+        case .hex: return String(localized: "Hex", bundle: AppLocalization.bundle)
         case .graphql: return "GraphQL"
         case .grpc: return "gRPC"
-        case .structured: return "Structured"
+        case .structured: return String(localized: "Structured", bundle: AppLocalization.bundle)
         }
     }
 }
@@ -891,4 +898,14 @@ private enum DetailTab: String, CaseIterable {
     case body = "Body"
     case messages = "Messages"
     case timing = "Timing"
+
+    var localizedTitle: LocalizedStringKey {
+        switch self {
+        case .headers: return "Headers"
+        case .query: return "Query"
+        case .body: return "Body"
+        case .messages: return "Messages"
+        case .timing: return "Timing"
+        }
+    }
 }

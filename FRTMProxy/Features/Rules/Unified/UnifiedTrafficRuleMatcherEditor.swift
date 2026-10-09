@@ -4,6 +4,7 @@ struct UnifiedTrafficRuleMatcherEditor: View {
     @Bindable var draft: UnifiedTrafficRuleDraft
     let colors: DesignSystem.ColorPalette
     @FocusState private var focusedHeader: UUID?
+    @State private var addedHeader: UUID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
@@ -15,16 +16,16 @@ struct UnifiedTrafficRuleMatcherEditor: View {
 
             Grid(alignment: .leading, horizontalSpacing: DesignSystem.Spacing.lg) {
                 GridRow {
-                    UnifiedTrafficRulePatternEditor(title: "Scheme", pattern: $draft.rule.matcher.scheme)
-                    UnifiedTrafficRulePatternEditor(title: "Host", pattern: $draft.rule.matcher.host)
+                    UnifiedTrafficRulePatternEditor(title: "Scheme", colors: colors, pattern: $draft.rule.matcher.scheme)
+                    UnifiedTrafficRulePatternEditor(title: "Host", colors: colors, pattern: $draft.rule.matcher.host)
                 }
                 GridRow {
-                    UnifiedTrafficRulePatternEditor(title: "Path", pattern: $draft.rule.matcher.path)
-                    UnifiedTrafficRulePatternEditor(title: "Method", pattern: $draft.rule.matcher.method)
+                    UnifiedTrafficRulePatternEditor(title: "Path", colors: colors, pattern: $draft.rule.matcher.path)
+                    UnifiedTrafficRulePatternEditor(title: "Method", colors: colors, pattern: $draft.rule.matcher.method)
                 }
                 GridRow {
-                    UnifiedTrafficRulePatternEditor(title: "Canonical query", pattern: $draft.rule.matcher.query)
-                    UnifiedTrafficRulePatternEditor(title: "Canonical body", pattern: $draft.rule.matcher.body)
+                    UnifiedTrafficRulePatternEditor(title: "Canonical query", colors: colors, pattern: $draft.rule.matcher.query)
+                    UnifiedTrafficRulePatternEditor(title: "Canonical body", colors: colors, pattern: $draft.rule.matcher.body)
                 }
             }
 
@@ -34,7 +35,7 @@ struct UnifiedTrafficRuleMatcherEditor: View {
                 Spacer()
                 ControlButton(title: "Add Header", systemImage: "plus", style: .ghost(colors)) {
                     draft.addHeaderMatcher()
-                    focusedHeader = draft.headerMatchers.last?.id
+                    addedHeader = draft.headerMatchers.last?.id
                 }
                 .accessibilityHint("Adds a request header matcher")
             }
@@ -44,11 +45,24 @@ struct UnifiedTrafficRuleMatcherEditor: View {
                     .font(DesignSystem.Fonts.caption)
                     .foregroundStyle(colors.textSecondary)
             } else {
-                VStack(spacing: DesignSystem.Spacing.sm) {
-                    ForEach(draft.headerMatchers) { header in
-                        UnifiedTrafficRuleHeaderMatcherRow(draft: draft, headerID: header.id, colors: colors, focusedHeader: $focusedHeader)
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(spacing: DesignSystem.Spacing.sm) {
+                            ForEach(draft.headerMatchers) { header in
+                                UnifiedTrafficRuleHeaderMatcherRow(draft: draft, headerID: header.id, colors: colors, focusedHeader: $focusedHeader)
+                                    .id(header.id)
+                            }
+                        }
+                    }
+                    .task(id: addedHeader) {
+                        guard let id = addedHeader else { return }
+                        proxy.scrollTo(id, anchor: .bottom)
+                        await Task.yield()
+                        guard !Task.isCancelled, draft.headerMatchers.contains(where: { $0.id == id }) else { return }
+                        focusedHeader = id
                     }
                 }
+                .frame(maxHeight: DesignSystem.Metrics.scaled(260))
             }
         }
     }
@@ -64,9 +78,11 @@ private struct UnifiedTrafficRuleHeaderMatcherRow: View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             HStack(spacing: DesignSystem.Spacing.sm) {
             TextField("Header name", text: headerName)
+                .accessibilityLabel("Header matcher name")
                 .focused(focusedHeader, equals: headerID)
                 .frame(minWidth: DesignSystem.Metrics.scaled(140))
             TextField("Value pattern", text: headerValue)
+                .accessibilityLabel("Header matcher pattern")
             }
             HStack(spacing: DesignSystem.Spacing.sm) {
             Picker("Mode", selection: headerMode) {
@@ -75,6 +91,7 @@ private struct UnifiedTrafficRuleHeaderMatcherRow: View {
                 }
             }
             .labelsHidden()
+            .accessibilityLabel("Header matcher mode")
             .frame(width: DesignSystem.Metrics.scaled(145))
             Toggle("Case sensitive", isOn: headerCaseSensitivity)
             Spacer()

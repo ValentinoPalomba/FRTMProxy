@@ -16,19 +16,18 @@ final class SimulatorSetupViewModel: ObservableObject {
         statusMessage = nil
         errorMessage = nil
 
-        Task.detached(priority: .userInitiated) { [weak self] in
+        let installer = installer
+        Task { [weak self] in
             do {
-                let devices = try self?.installer.bootedSimulators() ?? []
-                await MainActor.run {
-                    self?.bootedSimulators = devices
-                    self?.isRefreshing = false
-                }
+                let devices = try await Task.detached(priority: .userInitiated) {
+                    try installer.bootedSimulators()
+                }.value
+                self?.bootedSimulators = devices
+                self?.isRefreshing = false
             } catch {
-                await MainActor.run {
-                    self?.bootedSimulators = []
-                    self?.isRefreshing = false
-                    self?.errorMessage = error.localizedDescription
-                }
+                self?.bootedSimulators = []
+                self?.isRefreshing = false
+                self?.errorMessage = error.localizedDescription
             }
         }
     }
@@ -39,20 +38,19 @@ final class SimulatorSetupViewModel: ObservableObject {
         statusMessage = nil
         errorMessage = nil
 
-        Task.detached(priority: .userInitiated) { [weak self] in
+        let installer = installer
+        Task { [weak self] in
             do {
-                let message = try self?.installer.installCertificateOnBootedSimulators() ?? ""
-                let devices = try self?.installer.bootedSimulators() ?? []
-                await MainActor.run {
-                    self?.bootedSimulators = devices
-                    self?.isInstalling = false
-                    self?.statusMessage = message.isEmpty ? "Certificate installed successfully." : message
-                }
+                let result = try await Task.detached(priority: .userInitiated) {
+                    let message = try installer.installCertificateOnBootedSimulators()
+                    return (message, try installer.bootedSimulators())
+                }.value
+                self?.bootedSimulators = result.1
+                self?.isInstalling = false
+                self?.statusMessage = result.0.isEmpty ? "Certificate installed successfully." : result.0
             } catch {
-                await MainActor.run {
-                    self?.isInstalling = false
-                    self?.errorMessage = error.localizedDescription
-                }
+                self?.isInstalling = false
+                self?.errorMessage = error.localizedDescription
             }
         }
     }
@@ -83,10 +81,10 @@ struct SimulatorSetupView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
             Text("iOS Simulator")
-                .font(DesignSystem.Fonts.mono(16, weight: .bold))
+                .font(DesignSystem.Fonts.heading)
                 .foregroundStyle(colors.textPrimary)
             Text("Install the mitmproxy certificate on booted simulators with one click.")
-                .font(DesignSystem.Fonts.sans(12, weight: .medium))
+                .font(DesignSystem.Fonts.body)
                 .foregroundStyle(colors.textSecondary)
         }
     }
@@ -102,17 +100,23 @@ struct SimulatorSetupView: View {
     private var simulatorSection: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             Text("Simulators")
-                .font(DesignSystem.Fonts.sans(12, weight: .semibold))
+                .font(DesignSystem.Fonts.label)
                 .foregroundStyle(colors.textSecondary)
 
-            if model.bootedSimulators.isEmpty {
-                callout("No booted simulators detected. Open Simulator/Xcode and tap “Refresh booted”.", icon: "exclamationmark.circle", tint: colors.warning)
+            if model.isRefreshing {
+                StateView(kind: .loading(message: "Finding booted simulators…"), palette: colors)
+            } else if model.bootedSimulators.isEmpty {
+                StateView(kind: .empty(title: "No booted simulators", message: "Open a simulator in Xcode, then refresh the list.", systemImage: "macwindow"), palette: colors)
             } else {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                    ForEach(model.bootedSimulators, id: \.udid) { simulator in
-                        simulatorBadge(simulator)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                        ForEach(model.bootedSimulators, id: \.udid) { simulator in
+                            simulatorBadge(simulator)
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .frame(maxHeight: DesignSystem.Metrics.scaled(200))
             }
         }
     }
@@ -155,11 +159,11 @@ struct SimulatorSetupView: View {
     private func instructionRow(_ step: Int, _ text: String) -> some View {
         HStack(alignment: .top, spacing: DesignSystem.Spacing.sm) {
             Text("\(step).")
-                .font(DesignSystem.Fonts.mono(12, weight: .bold))
+                .font(DesignSystem.Fonts.monoBody)
                 .foregroundStyle(colors.accent)
-                .frame(width: 24, alignment: .leading)
+                .frame(width: DesignSystem.Metrics.scaled(24), alignment: .leading)
             Text(text)
-                .font(DesignSystem.Fonts.sans(12, weight: .medium))
+                .font(DesignSystem.Fonts.body)
                 .foregroundStyle(colors.textPrimary)
         }
     }
@@ -168,20 +172,25 @@ struct SimulatorSetupView: View {
         HStack(alignment: .top, spacing: DesignSystem.Spacing.sm) {
             RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous)
                 .fill(colors.surfaceElevated)
-                .frame(width: 42, height: 42)
+                .frame(width: DesignSystem.Metrics.scaled(42), height: DesignSystem.Metrics.scaled(42))
                 .overlay(
                     Image(systemName: "iphone")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(DesignSystem.Fonts.heading)
                         .foregroundStyle(colors.accentSecondary)
                 )
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
                 Text(simulator.name)
-                    .font(DesignSystem.Fonts.sans(13, weight: .semibold))
+                    .lineLimit(2)
+                    .help(simulator.name)
+                    .font(DesignSystem.Fonts.label)
                     .foregroundStyle(colors.textPrimary)
                 Text(simulator.udid)
                     .font(DesignSystem.Fonts.mono(11))
                     .foregroundStyle(colors.textSecondary)
                     .textSelection(.enabled)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .help(simulator.udid)
             }
         }
         .padding(.vertical, DesignSystem.Spacing.xs)
@@ -190,12 +199,12 @@ struct SimulatorSetupView: View {
     private func callout(_ text: String, icon: String, tint: Color) -> some View {
         HStack(alignment: .top, spacing: DesignSystem.Spacing.sm) {
             Image(systemName: icon)
-                .font(.system(size: 14, weight: .semibold))
+                .font(DesignSystem.Fonts.label)
                 .foregroundStyle(tint)
                 .padding(DesignSystem.Spacing.sm)
                 .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: DesignSystem.Radius.md, style: .continuous))
             Text(text)
-                .font(DesignSystem.Fonts.sans(12, weight: .medium))
+                .font(DesignSystem.Fonts.body)
                 .foregroundStyle(colors.textPrimary)
         }
         .padding(DesignSystem.Spacing.sm)

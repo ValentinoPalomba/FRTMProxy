@@ -3,6 +3,7 @@ import SwiftUI
 struct SessionFlowRow: View {
     let item: CaptureSessionFlow
     let colors: DesignSystem.ColorPalette
+    var isSelected = false
     let onEditMetadata: () -> Void
     let onToggleBookmark: () -> Void
     let onOpen: () -> Void
@@ -10,35 +11,37 @@ struct SessionFlowRow: View {
     var body: some View {
         HStack(spacing: DesignSystem.Spacing.md) {
             Image(systemName: item.isBookmarked ? "star.fill" : "star")
-                .foregroundStyle(item.isBookmarked ? colors.warning : colors.textSecondary.opacity(0.45))
+                .foregroundStyle(isSelected ? .white : (item.isBookmarked ? colors.warning : colors.textSecondary.opacity(0.45)))
                 .frame(width: DesignSystem.Metrics.scaled(18))
                 .accessibilityLabel(item.isBookmarked ? "Bookmarked" : "Not bookmarked")
 
             Text(formattedTime)
                 .font(DesignSystem.Fonts.caption)
-                .foregroundStyle(colors.textSecondary)
+                .foregroundStyle(isSelected ? .white.opacity(0.85) : colors.textSecondary)
                 .monospacedDigit()
                 .frame(width: DesignSystem.Metrics.scaled(78), alignment: .leading)
 
             Text(item.flow.request?.method.uppercased() ?? "—")
                 .font(DesignSystem.Fonts.label)
-                .foregroundStyle(DesignSystem.Colors.methodColor(item.flow.request?.method ?? "", palette: colors))
+                .foregroundStyle(isSelected ? .white : DesignSystem.Colors.methodColor(item.flow.request?.method ?? "", palette: colors))
                 .frame(width: DesignSystem.Metrics.scaled(62), alignment: .leading)
 
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
                 Text(displayHost)
                     .font(DesignSystem.Fonts.label)
-                    .foregroundStyle(colors.textPrimary)
+                    .foregroundStyle(isSelected ? .white : colors.textPrimary)
                     .lineLimit(1)
                 Text(displayPath)
                     .font(DesignSystem.Fonts.monoBody)
-                    .foregroundStyle(colors.textSecondary)
+                    .foregroundStyle(isSelected ? .white.opacity(0.85) : colors.textSecondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
+                    .help(item.flow.request?.url ?? displayPath)
                 if let note = item.note, !note.isEmpty {
                     Label(note, systemImage: "note.text")
+                        .help(note)
                         .font(DesignSystem.Fonts.caption)
-                        .foregroundStyle(colors.textSecondary)
+                        .foregroundStyle(isSelected ? .white.opacity(0.85) : colors.textSecondary)
                         .lineLimit(1)
                 }
             }
@@ -48,12 +51,12 @@ struct SessionFlowRow: View {
             if let status = item.flow.response?.status {
                 Text(status, format: .number.grouping(.never))
                     .font(DesignSystem.Fonts.label)
-                    .foregroundStyle(statusColor)
+                    .foregroundStyle(isSelected ? .white : statusColor)
                     .frame(width: DesignSystem.Metrics.scaled(44), alignment: .trailing)
             } else {
                 Text("Pending")
                     .font(DesignSystem.Fonts.caption)
-                    .foregroundStyle(colors.textSecondary)
+                    .foregroundStyle(isSelected ? .white.opacity(0.85) : colors.textSecondary)
                     .frame(width: DesignSystem.Metrics.scaled(54), alignment: .trailing)
             }
         }

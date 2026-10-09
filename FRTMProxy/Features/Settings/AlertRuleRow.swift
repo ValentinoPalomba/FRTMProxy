@@ -11,17 +11,21 @@ struct AlertRuleRow: View {
         HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
             Toggle(isOn: Binding(get: { rule.isEnabled }, set: onToggle)) {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    Text(rule.name.isEmpty ? "Untitled" : rule.name)
+                    Text(rule.name.isEmpty ? String(localized: "Untitled", bundle: AppLocalization.bundle) : rule.name)
                         .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                         .foregroundStyle(colors.textPrimary)
+                        .lineLimit(1)
+                        .help(rule.name)
                     Text(rule.query.isEmpty ? "—" : rule.query)
                         .font(DesignSystem.Fonts.mono(11))
                         .foregroundStyle(colors.textSecondary)
                         .textSelection(.enabled)
                         .lineLimit(2)
+                        .help(rule.query)
                 }
             }
-            .toggleStyle(SwitchToggleStyle())
+            .toggleStyle(.switch)
+            .tint(colors.accent)
 
             Spacer()
 

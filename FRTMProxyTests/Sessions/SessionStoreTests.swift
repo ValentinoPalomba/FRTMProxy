@@ -13,6 +13,18 @@ final class SessionStoreTests: XCTestCase {
         }
     }
 
+    func testIncompleteActiveSessionIsNotReusedForNewCapture() async throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: "frtm-incomplete-restart-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = try SQLiteSessionStore(databaseURL: directory.appending(path: "sessions.sqlite"), keyProvider: CaptureStorageConfiguration.keyProvider)
+        let incomplete = try await store.createSession(name: "Saturated")
+        try await store.markSessionIncomplete(id: incomplete.id, reason: "Queue full")
+        let next = try await store.activeSessionOrCreate(name: "New capture", at: .now)
+        XCTAssertNotEqual(next.id, incomplete.id)
+        let previous = try await store.session(id: incomplete.id)
+        XCTAssertEqual(previous?.incompleteReason, "Queue full")
+    }
+
     private func temporaryDatabaseURL() throws -> URL {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "FRTMProxySessionStoreTests")
@@ -45,7 +57,7 @@ final class SessionStoreTests: XCTestCase {
         try await store.upsert(flow: captured, in: first.id)
         try await store.upsert(flow: captured, in: second.id)
         // Recreate a v1 database with encrypted legacy references, then migrate it.
-        try executeSQL("DROP TABLE body_references; DROP TABLE body_cleanup; DROP TABLE body_reference_state; PRAGMA user_version = 1", at: databaseURL)
+        try executeSQL("DROP TABLE body_references; DROP TABLE body_cleanup; DROP TABLE body_reference_state; ALTER TABLE sessions DROP COLUMN incomplete_reason; PRAGMA user_version = 1", at: databaseURL)
         let migrated = try SQLiteSessionStore(databaseURL: databaseURL,
             keyProvider: FixedKeyProvider(data: Data(repeating: 0x2A, count: 32)), bodyDirectory: bodyDirectory)
         try await migrated.deleteSession(id: first.id)
@@ -218,6 +230,106 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertEqual(closedSession?.flowCount, 40)
         XCTAssertEqual(closedSession?.endedAt, Date(timeIntervalSince1970: 101))
         XCTAssertEqual(mergedFlow?.flow.response?.body, "complete")
+    }
+
+    func testWriterCapacityPreflightPreservesBothSessionsAndMergedResponses() async throws {
+        let store = FailingSessionStore()
+        let writer = ProxyViewModel.SessionCaptureWriter(store: store, maximumQueuedFlows: 3)
+        let first = UUID(), second = UUID()
+        XCTAssertTrue(writer.enqueue(flow(id: "shared", timestamp: 1), sessionID: first))
+        XCTAssertTrue(writer.enqueue(flow(id: "second", timestamp: 2), sessionID: second))
+        XCTAssertTrue(writer.enqueue(flow(id: "third", timestamp: 3), sessionID: first))
+        XCTAssertTrue(writer.enqueue(flow(id: "shared", event: "response", timestamp: 4, responseBody: "complete"), sessionID: first))
+        XCTAssertEqual(writer.queueUsage.flows, 3)
+        let before = writer.queueUsage
+        XCTAssertFalse(writer.enqueue(flow(id: "overflow", timestamp: 5), sessionID: second))
+        XCTAssertEqual(writer.queueUsage.flows, before.flows)
+        XCTAssertEqual(writer.queueUsage.bytes, before.bytes)
+        do { try await writer.flush(sessionID: first) } catch { }
+        try await writer.flush(sessionID: first)
+        try await writer.flush(sessionID: second)
+        let snapshot = await store.snapshot()
+        XCTAssertEqual(Set(snapshot.flows.keys), ["shared", "second", "third"])
+        XCTAssertEqual(snapshot.flows["shared"]?.response?.body, "complete")
+        XCTAssertEqual(writer.queueUsage.flows, 0)
+        XCTAssertEqual(writer.queueUsage.bytes, 0)
+    }
+
+    func testWriterSaturationPreservesAcceptedDataAcrossDiskFailure() async throws {
+        let store = FailingSessionStore()
+        let writer = ProxyViewModel.SessionCaptureWriter(store: store, maximumQueuedBytes: 4096, maximumQueuedFlows: 2)
+        let sessionID = UUID()
+        XCTAssertTrue(writer.enqueue(flow(id: "accepted-1", timestamp: 1), sessionID: sessionID))
+        XCTAssertTrue(writer.enqueue(flow(id: "accepted-2", timestamp: 2), sessionID: sessionID))
+        let reserved = writer.queueUsage
+        XCTAssertFalse(writer.enqueue(flow(id: "rejected", timestamp: 3), sessionID: sessionID))
+        XCTAssertEqual(writer.queueUsage.flows, 2)
+        do { try await writer.flush(sessionID: sessionID); XCTFail("First disk write must fail") } catch { }
+        XCTAssertEqual(writer.queueUsage.bytes, reserved.bytes)
+        XCTAssertEqual(writer.queueUsage.flows, reserved.flows)
+        try await writer.flush(sessionID: sessionID)
+        XCTAssertEqual(writer.queueUsage.bytes, 0)
+        XCTAssertEqual(writer.queueUsage.flows, 0)
+        let snapshot = await store.snapshot()
+        XCTAssertEqual(Set(snapshot.flows.keys), ["accepted-1", "accepted-2"])
+        XCTAssertFalse(writer.enqueue(flow(id: "late", timestamp: 4), sessionID: sessionID), "Incomplete capture must remain stopped")
+        let nextSession = UUID()
+        XCTAssertTrue(writer.enqueue(flow(id: "next", timestamp: 5), sessionID: nextSession))
+        try await writer.flush(sessionID: nextSession)
+        XCTAssertEqual(writer.queueUsage.flows, 0)
+    }
+
+    func testWriterByteLimitRejectsMergedGrowthWithoutChangingAcceptedSnapshot() async throws {
+        let url = try temporaryDatabaseURL()
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let store = try makeStore(at: url)
+        let session = try await store.createSession(name: "Byte budget")
+        let first = flow(id: "same", timestamp: 1, responseBody: "accepted")
+        let writer = ProxyViewModel.SessionCaptureWriter(store: store, maximumQueuedBytes: LiveFlowMemoryBudget.cost(first), maximumQueuedFlows: 10)
+        XCTAssertTrue(writer.enqueue(first, sessionID: session.id))
+        XCTAssertFalse(writer.enqueue(flow(id: "same", timestamp: 2, responseBody: String(repeating: "x", count: 8192)), sessionID: session.id))
+        try await writer.flush(sessionID: session.id)
+        let persisted = try await store.flow(id: "same", in: session.id)
+        XCTAssertEqual(persisted?.flow.response?.body, "accepted")
+        XCTAssertEqual(writer.queueUsage.bytes, 0)
+    }
+
+    func testWriterCapacityIncludesBatchDuringSlowDiskWrite() async throws {
+        let gate = SessionWriteGate()
+        let store = FailingSessionStore(writeGate: gate)
+        let writer = ProxyViewModel.SessionCaptureWriter(store: store, maximumQueuedFlows: 1)
+        let sessionID = UUID()
+        XCTAssertTrue(writer.enqueue(flow(id: "in-flight", timestamp: 1), sessionID: sessionID))
+        let entered = await Task.detached { gate.entered.wait(timeout: .now() + 5) == .success }.value
+        XCTAssertTrue(entered)
+        XCTAssertEqual(writer.queueUsage.flows, 1)
+        XCTAssertFalse(writer.enqueue(flow(id: "overflow", timestamp: 2), sessionID: sessionID))
+        gate.resume.signal()
+        do { try await writer.flush(sessionID: sessionID) } catch { }
+        try await writer.flush(sessionID: sessionID)
+        XCTAssertEqual(writer.queueUsage.flows, 0)
+        let snapshot = await store.snapshot()
+        XCTAssertEqual(Set(snapshot.flows.keys), ["in-flight"])
+    }
+
+    func testIncompleteSessionStatusSurvivesMigrationAndReopen() async throws {
+        let url = try temporaryDatabaseURL()
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let store = try makeStore(at: url)
+        let session = try await store.createSession(name: "Incomplete")
+        try await store.upsert(flow: flow(id: "saved", timestamp: 1), in: session.id)
+        try executeSQL("ALTER TABLE sessions DROP COLUMN incomplete_reason; PRAGMA user_version = 2", at: url)
+        let migrated = try makeStore(at: url)
+        try await migrated.markSessionIncomplete(id: session.id, reason: "Writer capacity exceeded")
+        try await migrated.closeSession(id: session.id)
+        let reopened = try makeStore(at: url)
+        let saved = try await reopened.session(id: session.id)
+        XCTAssertEqual(saved?.incompleteReason, "Writer capacity exceeded")
+        XCTAssertEqual(saved?.flowCount, 1)
+        XCTAssertEqual(saved?.isActive, false)
+        try await reopened.markSessionIncomplete(id: session.id, reason: "Another error")
+        let retained = try await reopened.session(id: session.id)
+        XCTAssertEqual(retained?.incompleteReason, "Writer capacity exceeded")
     }
 
     func testCaptureWriterRetriesFailedCoalescedFlowsOnLaterFlush() async throws {
@@ -412,6 +524,11 @@ final class SessionStoreTests: XCTestCase {
     }
 }
 
+private final class SessionWriteGate: @unchecked Sendable {
+    let entered = DispatchSemaphore(value: 0)
+    let resume = DispatchSemaphore(value: 0)
+}
+
 private actor FailingSessionStore: SessionStoreProtocol {
     static let schemaVersion = 1
 
@@ -422,6 +539,9 @@ private actor FailingSessionStore: SessionStoreProtocol {
     private var shouldFailNextBatch = true
     private var storedFlows: [String: MitmFlow] = [:]
     private var batchSizes: [Int] = []
+    private var writeGate: SessionWriteGate?
+
+    init(writeGate: SessionWriteGate? = nil) { self.writeGate = writeGate }
 
     func createSession(name: String, at date: Date) throws -> CaptureSession {
         CaptureSession(
@@ -451,6 +571,11 @@ private actor FailingSessionStore: SessionStoreProtocol {
         in sessionID: UUID
     ) throws -> SessionFlowUpsertSummary {
         batchSizes.append(flows.count)
+        if let gate = writeGate {
+            writeGate = nil
+            gate.entered.signal()
+            _ = gate.resume.wait(timeout: .now() + 5)
+        }
         if shouldFailNextBatch {
             shouldFailNextBatch = false
             throw ExpectedFailure.firstWrite

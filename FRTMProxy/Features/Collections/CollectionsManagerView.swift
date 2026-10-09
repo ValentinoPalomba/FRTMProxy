@@ -37,7 +37,10 @@ struct CollectionsManagerView: View {
             content
         }
         .padding(DesignSystem.Spacing.lg)
-        .frame(minWidth: 1240, minHeight: 680)
+        .frame(minWidth: DesignSystem.Metrics.scaled(960), minHeight: DesignSystem.Metrics.scaled(620))
+        .font(DesignSystem.Fonts.body)
+        .foregroundStyle(colors.textPrimary)
+        .tint(colors.accent)
         .background(colors.background)
         .sheet(isPresented: $showStartSheet) {
             CollectionNameSheet(
@@ -141,13 +144,14 @@ struct CollectionsManagerView: View {
     }
 
     private var header: some View {
-        HStack(spacing: DesignSystem.Spacing.md) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+            HStack(spacing: DesignSystem.Spacing.md) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text("Collections")
-                    .font(DesignSystem.Fonts.mono(22, weight: .semibold))
+                    .font(DesignSystem.Fonts.title)
                     .foregroundStyle(colors.textPrimary)
                 Text("Group Map Local into exportable collections and enable rule sets in one click.")
-                    .font(DesignSystem.Fonts.mono(13))
+                    .font(DesignSystem.Fonts.caption)
                     .foregroundStyle(colors.textSecondary)
             }
 
@@ -156,7 +160,10 @@ struct CollectionsManagerView: View {
             }
 
             Spacer()
-
+            ControlButton(title: "Close", systemImage: "xmark", style: .ghost(colors)) { dismiss() }
+                .keyboardShortcut(.cancelAction)
+            }
+            HStack(spacing: DesignSystem.Spacing.sm) {
             ControlButton(
                 title: "Start Registration",
                 systemImage: "record.circle",
@@ -201,12 +208,6 @@ struct CollectionsManagerView: View {
                 exportSelectedCollection()
             }
 
-            ControlButton(
-                title: "Close",
-                systemImage: "xmark",
-                style: .ghost(colors)
-            ) {
-                dismiss()
             }
         }
     }
@@ -214,7 +215,7 @@ struct CollectionsManagerView: View {
     private var content: some View {
         HStack(spacing: DesignSystem.Spacing.lg) {
             collectionSidebar
-                .frame(width: 320)
+                .frame(width: DesignSystem.Metrics.scaled(260))
             VStack(spacing: DesignSystem.Spacing.lg) {
                 if viewModel.isRecordingCollection {
                     RecordingPreviewView(
@@ -332,9 +333,11 @@ struct CollectionsManagerView: View {
         HStack(spacing: DesignSystem.Spacing.sm) {
             Circle()
                 .fill(colors.danger)
-                .frame(width: 10, height: 10)
+                .frame(width: DesignSystem.Metrics.scaled(8), height: DesignSystem.Metrics.scaled(8))
             Text("Recording \"\(name)\" (\(count) \(count == 1 ? "rule" : "rules"))")
-                .font(DesignSystem.Fonts.mono(12, weight: .semibold))
+                .font(DesignSystem.Fonts.label)
+                .lineLimit(1)
+                .help(name)
         }
         .padding(.horizontal, DesignSystem.Spacing.sm)
         .padding(.vertical, DesignSystem.Spacing.xs)
@@ -451,15 +454,22 @@ private struct CollectionCard: View {
 
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+            Button(action: onSelect) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text(collection.name)
-                    .font(DesignSystem.Fonts.sans(16, weight: .semibold))
+                    .lineLimit(2)
+                    .help(collection.name)
+                    .font(DesignSystem.Fonts.heading)
                     .foregroundStyle(colors.textPrimary)
                 Text("\(collection.rules.count) rules • \(collection.createdAt.formatted(date: .abbreviated, time: .shortened))")
                     .font(DesignSystem.Fonts.mono(11))
                     .foregroundStyle(colors.textSecondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(.rect)
             }
-            Spacer()
+            .buttonStyle(.pressable)
+            .accessibilityAddTraits(isSelected ? [.isSelected] : [])
             Toggle(isOn: Binding(get: { collection.isEnabled }, set: { onToggle($0) })) {
                 Text("Enabled")
             }
@@ -476,9 +486,6 @@ private struct CollectionCard: View {
                 )
         )
         .contentShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.lg, style: .continuous))
-        .onTapGesture {
-            onSelect()
-        }
         .contextMenu {
             Button("Rename") { onRename() }
             Button(collection.isEnabled ? "Disable" : "Enable") { onToggle(!collection.isEnabled) }
@@ -499,8 +506,10 @@ private struct RecordingPreviewView: View {
             HStack {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
                     Text("Recording \"\(collectionName)\"")
-                        .font(DesignSystem.Fonts.sans(18, weight: .semibold))
-                    Text("\(rules.count) \(rules.count == 1 ? "rule" : "rules") captured so far")
+                        .font(DesignSystem.Fonts.title)
+                        .lineLimit(2)
+                        .help(collectionName)
+                    Text("Captured rules: \(rules.count)")
                         .font(DesignSystem.Fonts.mono(12))
                         .foregroundStyle(colors.textSecondary)
                 }
@@ -509,7 +518,7 @@ private struct RecordingPreviewView: View {
             Divider()
             if rules.isEmpty {
                 Text("No Map Local recorded yet. Map a flow to start populating the collection.")
-                    .font(DesignSystem.Fonts.sans(13))
+                    .font(DesignSystem.Fonts.body)
                     .foregroundStyle(colors.textSecondary)
             } else {
                 ScrollView {
@@ -523,7 +532,7 @@ private struct RecordingPreviewView: View {
                         }
                     }
                 }
-                .frame(maxHeight: 220)
+                .frame(maxHeight: DesignSystem.Metrics.scaled(220))
             }
         }
         .padding(DesignSystem.Spacing.lg)
@@ -547,9 +556,14 @@ private struct RecordingPreviewRuleRow: View {
         HStack(spacing: DesignSystem.Spacing.md) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
                 Text(rule.path)
+                    .lineLimit(2)
+                    .help(rule.path)
                     .font(DesignSystem.Fonts.mono(11, weight: .semibold))
                 Text(rule.host)
-                    .font(DesignSystem.Fonts.sans(13))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .help(rule.host)
+                    .font(DesignSystem.Fonts.body)
                     .foregroundStyle(colors.textSecondary)
                 if let variantLabel {
                     Text(variantLabel)
@@ -570,14 +584,12 @@ private struct RecordingPreviewRuleRow: View {
                     Capsule()
                         .stroke(colors.border.opacity(0.7), lineWidth: 1)
                 )
-            Button {
-                onEdit()
-            } label: {
-                Image(systemName: "pencil")
-                    .foregroundStyle(colors.textPrimary)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Edit rule")
+            Button("Edit rule", systemImage: "pencil", action: onEdit)
+                .labelStyle(.iconOnly)
+                .buttonStyle(.pressable)
+                .hoverHighlight(colors)
+                .foregroundStyle(colors.textPrimary)
+                .help("Edit rule")
         }
         .padding(DesignSystem.Spacing.sm)
         .background(
@@ -616,15 +628,17 @@ private struct CollectionDetailView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-            HStack(alignment: .center, spacing: DesignSystem.Spacing.md) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                     Text(collection.name)
-                        .font(DesignSystem.Fonts.sans(20, weight: .semibold))
+                    .lineLimit(2)
+                    .help(collection.name)
+                        .font(DesignSystem.Fonts.title)
                     Text("Created \(collection.createdAt.formatted(date: .abbreviated, time: .shortened))")
                         .font(DesignSystem.Fonts.mono(12))
                         .foregroundStyle(colors.textSecondary)
                 }
-                Spacer()
+                HStack(spacing: DesignSystem.Spacing.sm) {
                 Toggle(isOn: Binding(get: { collection.isEnabled }, set: { onToggle($0) })) {
                     Text("Enabled")
                 }
@@ -643,6 +657,8 @@ private struct CollectionDetailView: View {
                 }
                 ControlButton(title: "Delete", systemImage: "trash", style: .destructive(colors)) {
                     onDelete()
+                }
+                Spacer()
                 }
             }
             Divider()
@@ -700,8 +716,13 @@ private struct CollectionRuleRow: View {
         HStack(spacing: DesignSystem.Spacing.md) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text(rule.path)
+                    .lineLimit(2)
+                    .help(rule.path)
                     .font(DesignSystem.Fonts.mono(12, weight: .semibold))
                 Text(rule.host)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .help(rule.host)
                     .font(DesignSystem.Fonts.sans(14))
                     .foregroundStyle(colors.textSecondary)
                 if let variantLabel {
@@ -723,22 +744,17 @@ private struct CollectionRuleRow: View {
                     Capsule()
                         .stroke(colors.border.opacity(0.7), lineWidth: 1)
                 )
-            Button {
-                onEdit()
-            } label: {
-                Image(systemName: "pencil")
-                    .padding(DesignSystem.Spacing.sm)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Edit rule")
-            Button(role: .destructive) {
-                onDelete()
-            } label: {
-                Image(systemName: "trash")
-                    .padding(DesignSystem.Spacing.sm)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Delete rule")
+            Button("Edit rule", systemImage: "pencil", action: onEdit)
+                .labelStyle(.iconOnly)
+                .buttonStyle(.pressable)
+                .hoverHighlight(colors)
+                .help("Edit rule")
+            Button("Delete rule", systemImage: "trash", role: .destructive, action: onDelete)
+                .labelStyle(.iconOnly)
+                .buttonStyle(.pressable)
+                .hoverHighlight(colors)
+                .foregroundStyle(colors.destructive)
+                .help("Delete rule")
         }
         .padding(DesignSystem.Spacing.md)
         .background(
@@ -782,25 +798,27 @@ private struct CollectionNameSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-            Text(title)
-                .font(DesignSystem.Fonts.sans(20, weight: .semibold))
-            Text(message)
-                .font(DesignSystem.Fonts.sans(13))
+            Text(LocalizedStringKey(title))
+                .font(DesignSystem.Fonts.title)
+            Text(LocalizedStringKey(message))
+                .font(DesignSystem.Fonts.body)
                 .foregroundStyle(colors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             TextField("Collection name", text: $name)
                 .textFieldStyle(ProxyTextFieldStyle(palette: colors, leadingIcon: "folder"))
             HStack {
                 Spacer()
-                Button("Cancel") { onCancel() }
-                Button(confirmLabel) {
-                    onConfirm()
-                }
-                .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                ControlButton(title: "Cancel", systemImage: "xmark", style: .ghost(colors), action: onCancel)
+                    .keyboardShortcut(.cancelAction)
+                ControlButton(title: LocalizedStringKey(confirmLabel), systemImage: "checkmark", style: .filled(colors), disabled: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, action: onConfirm)
+                    .keyboardShortcut(.defaultAction)
             }
         }
         .padding(DesignSystem.Spacing.xl)
-        .frame(minWidth: 420)
+        .frame(width: DesignSystem.Metrics.scaled(440))
+        .font(DesignSystem.Fonts.body)
+        .foregroundStyle(colors.textPrimary)
+        .background(colors.background)
     }
 }
 
@@ -861,6 +879,6 @@ private struct RuleEditorSheet: View {
                 editorViewModel.load(rule: context.rule)
             }
         }
-        .frame(minWidth: 980, minHeight: 700)
+        .frame(minWidth: DesignSystem.Metrics.scaled(820), minHeight: DesignSystem.Metrics.scaled(620))
     }
 }

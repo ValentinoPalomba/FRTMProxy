@@ -4,23 +4,25 @@ import CoreFoundation
 final class MCPAutomationRouter: @unchecked Sendable {
     typealias FlowProvider = @MainActor @Sendable () -> [MitmFlow]
     typealias RuleUpdater = @MainActor @Sendable (TrafficRuleDocument) throws -> Void
+    typealias SessionStoreProvider = @MainActor @Sendable () -> (any SessionStoreProtocol)?
 
     private let flowProvider: FlowProvider
     private let ruleUpdater: RuleUpdater
     private let redactionPolicy: RedactionPolicy
     private let limits: AutomationLimits
-    private let sessionStore: (any SessionStoreProtocol)?
+    private let sessionStoreProvider: SessionStoreProvider
 
     init(
         redactionPolicy: RedactionPolicy = .defaults,
         limits: AutomationLimits = .defaults,
         sessionStore: (any SessionStoreProtocol)? = nil,
+        sessionStoreProvider: SessionStoreProvider? = nil,
         flowProvider: @escaping FlowProvider,
         ruleUpdater: @escaping RuleUpdater
     ) {
         self.redactionPolicy = redactionPolicy
         self.limits = limits
-        self.sessionStore = sessionStore
+        self.sessionStoreProvider = sessionStoreProvider ?? { sessionStore }
         self.flowProvider = flowProvider
         self.ruleUpdater = ruleUpdater
     }
@@ -103,7 +105,7 @@ final class MCPAutomationRouter: @unchecked Sendable {
                 }
                 result = flowObject(flow)
             case "list_sessions":
-                guard let sessionStore else { throw RouterFailure.invalidArguments("Session history is unavailable") }
+                guard let sessionStore = await sessionStoreProvider() else { throw RouterFailure.invalidArguments("Session history is unavailable") }
                 let offset = try integerArgument("offset", default: 0, arguments: arguments)
                 let limit = try integerArgument("limit", default: 100, arguments: arguments)
                 guard offset >= 0, (1...limits.maximumBatchItems).contains(limit) else {
@@ -118,7 +120,7 @@ final class MCPAutomationRouter: @unchecked Sendable {
                      "isActive": session.isActive, "flowCount": session.flowCount] as [String: Any]
                 }, "nextOffset": page.count < sessions.count - min(offset, sessions.count) ? (offset + page.count) as Any : NSNull()]
             case "query_session_flows":
-                guard let sessionStore else { throw RouterFailure.invalidArguments("Session history is unavailable") }
+                guard let sessionStore = await sessionStoreProvider() else { throw RouterFailure.invalidArguments("Session history is unavailable") }
                 let sessionID = try sessionID(arguments)
                 guard (arguments["query"] == nil || arguments["query"] is String),
                       (arguments["cursor"] == nil || arguments["cursor"] is String) else {
@@ -146,7 +148,7 @@ final class MCPAutomationRouter: @unchecked Sendable {
                           "scannedReadableFlows": page.flows.count, "corruptFlowCount": page.corruptFlowIDs.count,
                           "sessionID": sessionID.uuidString]
             case "get_session_flow":
-                guard let sessionStore, let id = arguments["id"] as? String, !id.isEmpty else {
+                guard let sessionStore = await sessionStoreProvider(), let id = arguments["id"] as? String, !id.isEmpty else {
                     throw RouterFailure.invalidArguments("Session history and flow id are required")
                 }
                 guard let stored = try await sessionStore.flow(id: id, in: sessionID(arguments)) else {
@@ -277,7 +279,9 @@ final class MCPAutomationRouter: @unchecked Sendable {
                 "inputSchema": ["type": "object", "properties": ["document": ["type": "object"]], "required": ["document"]]
             ]
         ]
-        if sessionStore != nil {
+        // Storage is initialized asynchronously and can recover after launch.
+        // Keep discovery stable; calls report unavailability until it is ready.
+        do {
             result += [
                 ["name": "list_sessions", "description": "List captured sessions with paginated metadata; returns no flow bodies or notes.",
                  "inputSchema": ["type": "object", "properties": ["offset": ["type": "integer", "minimum": 0], "limit": ["type": "integer", "minimum": 1, "maximum": limits.maximumBatchItems]]],

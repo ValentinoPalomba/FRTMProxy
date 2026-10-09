@@ -5,8 +5,23 @@ import Network
 
 @MainActor
 final class ProxyViewModel: ObservableObject {
-    @Published var flows: [MitmFlow] = []
-    @Published var selectedFlowID: String?
+    @Published var flows: [MitmFlow] = [] {
+        didSet {
+            if let selected = flows.first(where: { $0.id == selectedFlowID }) {
+                retainSelectedFlow(selected, merging: false, notify: false)
+            }
+        }
+    }
+    @Published var selectedFlowID: String? {
+        didSet {
+            guard selectedFlowID != oldValue else { return }
+            selectedFlowSnapshot = nil
+            if let selected = flows.first(where: { $0.id == selectedFlowID }) {
+                retainSelectedFlow(selected, merging: false, notify: false)
+            }
+        }
+    }
+    private var selectedFlowSnapshot: MitmFlow?
     @Published var logText: String = ""
     @Published var isRunning: Bool = false
     @Published var rules: [String: MapRule] = [:]
@@ -29,7 +44,7 @@ final class ProxyViewModel: ObservableObject {
     let collectionStore: MapCollectionStoreProtocol
     let breakpointStore: BreakpointStoreProtocol
     let scriptStore: ScriptStore
-    let sessionStore: (any SessionStoreProtocol)?
+    var sessionStore: (any SessionStoreProtocol)?
     let trafficRuleStore: TrafficRuleStoreProtocol
     let collectionRecorder = CollectionRecorder()
     var cancellables: Set<AnyCancellable> = []
@@ -62,7 +77,8 @@ final class ProxyViewModel: ObservableObject {
     var isStartingProxy = false
     var captureSessionLoadTask: Task<Void, Never>?
     var captureSessionCloseTask: Task<Void, Never>?
-    lazy var sessionCaptureWriter: SessionCaptureWriter? = sessionStore.map(SessionCaptureWriter.init(store:))
+    var sessionCaptureWriter: SessionCaptureWriter?
+    private var proxyStartGeneration = UUID()
 
     init(
         service: ProxyServiceProtocol = MitmproxyService(config: MitmproxyConfig()),
@@ -79,7 +95,8 @@ final class ProxyViewModel: ObservableObject {
         self.collectionStore = collectionStore
         self.breakpointStore = breakpointStore
         self.scriptStore = scriptStore
-        self.sessionStore = sessionStore ?? Self.makeDefaultSessionStore()
+        self.sessionStore = sessionStore
+        self.sessionCaptureWriter = sessionStore.map { SessionCaptureWriter(store: $0) }
         self.trafficRuleStore = trafficRuleStore
         self.defaultPort = defaultPort
         self.activePort = defaultPort
@@ -93,12 +110,18 @@ final class ProxyViewModel: ObservableObject {
         loadCaptureSessions()
     }
 
-    private static func makeDefaultSessionStore() -> (any SessionStoreProtocol)? {
-        let databaseURL = URL.applicationSupportDirectory
+    nonisolated static func makeDefaultSessionStore() throws -> any SessionStoreProtocol {
+        let databaseURL = CaptureStorageConfiguration.root
             .appending(path: "FRTMProxy", directoryHint: .isDirectory)
             .appending(path: "Sessions", directoryHint: .isDirectory)
             .appending(path: "sessions.sqlite")
-        return try? SQLiteSessionStore(databaseURL: databaseURL)
+        return try SQLiteSessionStore(databaseURL: databaseURL, keyProvider: CaptureStorageConfiguration.keyProvider)
+    }
+
+    func installSessionStore(_ store: any SessionStoreProtocol) {
+        sessionStore = store
+        sessionCaptureWriter = SessionCaptureWriter(store: store)
+        bindSessionWriterUpdates()
     }
 
     deinit {
@@ -109,7 +132,24 @@ final class ProxyViewModel: ObservableObject {
     }
 
     var selectedFlow: MitmFlow? {
-        flows.first(where: { $0.id == selectedFlowID })
+        selectedFlowSnapshot ?? flows.first(where: { $0.id == selectedFlowID })
+    }
+
+    // One retained value keeps the inspector readable when the rolling live window evicts it.
+    // Strings and arrays share storage with the live value until an update mutates them.
+    func retainSelectedFlow(_ incoming: MitmFlow, merging: Bool = true, notify: Bool = true) {
+        guard incoming.id == selectedFlowID else { return }
+        var snapshot = merging ? selectedFlowSnapshot?.mergingSessionSnapshot(with: incoming) ?? incoming : incoming
+        snapshot.livePreviewWarning = incoming.livePreviewWarning ?? snapshot.livePreviewWarning
+        _ = LiveFlowMemoryBudget.trimWebSocket(&snapshot)
+        if LiveFlowMemoryBudget.cost(snapshot) > LiveFlowMemoryBudget.maximumBytes {
+            // Keep the previous readable value instead of retaining an unbounded event graph.
+            var previous = selectedFlowSnapshot ?? MitmFlow(id: incoming.id, event: incoming.event)
+            previous.livePreviewWarning = String(localized: "Selected live preview exceeds 64 MiB. The last bounded preview is retained; open the recorded session for newer data.", bundle: AppLocalization.bundle)
+            snapshot = previous
+        }
+        if notify { objectWillChange.send() }
+        selectedFlowSnapshot = snapshot
     }
 
     var orderedBreakpointRules: [FlowBreakpointRule] {
@@ -120,23 +160,28 @@ final class ProxyViewModel: ObservableObject {
     func startProxy(port: Int? = nil) async {
         guard !isRunning, !isStartingProxy else { return }
         isStartingProxy = true
+        let startGeneration = UUID()
+        proxyStartGeneration = startGeneration
         defer { isStartingProxy = false }
         if autoClearOnStart {
             clear()
         }
         let selectedPort = port ?? defaultPort
         do {
-            await ensureCaptureSession()
+            guard await ensureCaptureSession() else { return }
+            guard proxyStartGeneration == startGeneration, !Task.isCancelled else { return }
             try await service.startProxy(
                 port: selectedPort,
                 restrictToHosts: restrictInterceptionToHosts,
                 hosts: interceptionHosts
             )
+            guard proxyStartGeneration == startGeneration, !Task.isCancelled else { return }
             activePort = selectedPort
             isRunning = true
             updateMacOSProxyOverridePort()
             reapplyStoredRules()
         } catch {
+            guard proxyStartGeneration == startGeneration, !Task.isCancelled else { return }
             logText.append("\n\(error.localizedDescription)")
             onToast?("Failed to start proxy: \(error.localizedDescription)", .error)
         }
@@ -144,6 +189,7 @@ final class ProxyViewModel: ObservableObject {
 
     @MainActor
     func stopProxy() {
+        proxyStartGeneration = UUID()
         service.stopProxy()
         isRunning = false
         syncMacOSProxyOverride()
@@ -191,17 +237,42 @@ final class ProxyViewModel: ObservableObject {
             let flowID: String
         }
 
+        enum CapacityError: LocalizedError {
+            case saturated
+            var errorDescription: String? {
+                String(localized: "Capture stopped: session writer queue is full. This session is incomplete; accepted data remains available for retry.", bundle: AppLocalization.bundle)
+            }
+        }
+
         private struct PendingFlows {
+            private(set) var byteCount = 0
             private(set) var orderedKeys: [FlowKey] = []
             private(set) var flowsByKey: [FlowKey: MitmFlow] = [:]
+
+            func preparedAppend(of flow: MitmFlow, sessionID: UUID) -> (flow: MitmFlow, bytes: Int, flows: Int) {
+                let key = FlowKey(sessionID: sessionID, flowID: flow.id)
+                guard let existing = flowsByKey[key] else { return (flow, LiveFlowMemoryBudget.cost(flow), 1) }
+                let merged = existing.mergingSessionSnapshot(with: flow)
+                return (merged, LiveFlowMemoryBudget.cost(merged) - LiveFlowMemoryBudget.cost(existing), 0)
+            }
+
+            mutating func appendPrepared(_ flow: MitmFlow, sessionID: UUID, additionalBytes: Int) {
+                let key = FlowKey(sessionID: sessionID, flowID: flow.id)
+                if flowsByKey[key] == nil { orderedKeys.append(key) }
+                flowsByKey[key] = flow
+                byteCount += additionalBytes
+            }
 
             mutating func append(_ flow: MitmFlow, sessionID: UUID) {
                 let key = FlowKey(sessionID: sessionID, flowID: flow.id)
                 if let existing = flowsByKey[key] {
-                    flowsByKey[key] = existing.mergingSessionSnapshot(with: flow)
+                    let merged = existing.mergingSessionSnapshot(with: flow)
+                    byteCount += LiveFlowMemoryBudget.cost(merged) - LiveFlowMemoryBudget.cost(existing)
+                    flowsByKey[key] = merged
                 } else {
                     orderedKeys.append(key)
                     flowsByKey[key] = flow
+                    byteCount += LiveFlowMemoryBudget.cost(flow)
                 }
             }
 
@@ -235,6 +306,15 @@ final class ProxyViewModel: ObservableObject {
         private let store: any SessionStoreProtocol
         private let lock = NSLock()
         private var pendingEvents: [Event] = []
+        private let maximumQueuedBytes: Int
+        private let maximumQueuedFlows: Int
+        private var retainedBytes = 0
+        private var retainedFlows = 0
+        private var saturatedSessions = Set<UUID>()
+
+        var queueUsage: (bytes: Int, flows: Int) {
+            lock.withLock { (retainedBytes, retainedFlows) }
+        }
         private let signalContinuation: AsyncStream<Void>.Continuation
         private let updatesSubject = PassthroughSubject<Update, Never>()
         private var consumerTask: Task<Void, Never>?
@@ -245,8 +325,10 @@ final class ProxyViewModel: ObservableObject {
             updatesSubject.eraseToAnyPublisher()
         }
 
-        init(store: any SessionStoreProtocol) {
+        init(store: any SessionStoreProtocol, maximumQueuedBytes: Int = 64 * 1024 * 1024, maximumQueuedFlows: Int = 4096) {
             self.store = store
+            self.maximumQueuedBytes = max(1, maximumQueuedBytes)
+            self.maximumQueuedFlows = max(1, maximumQueuedFlows)
             let streamAndContinuation = AsyncStream<Void>.makeStream(
                 bufferingPolicy: .bufferingNewest(1)
             )
@@ -268,18 +350,33 @@ final class ProxyViewModel: ObservableObject {
             consumerTask?.cancel()
         }
 
-        func enqueue(_ flow: MitmFlow, sessionID: UUID) {
-            lock.withLock {
-                if case var .flows(pending)? = pendingEvents.last {
-                    pending.append(flow, sessionID: sessionID)
-                    pendingEvents[pendingEvents.index(before: pendingEvents.endIndex)] = .flows(pending)
-                } else {
-                    var pending = PendingFlows()
-                    pending.append(flow, sessionID: sessionID)
-                    pendingEvents.append(.flows(pending))
+        @discardableResult
+        func enqueue(_ flow: MitmFlow, sessionID: UUID) -> Bool {
+            let accepted = lock.withLock {
+                guard !saturatedSessions.contains(sessionID) else { return false }
+                var pending = PendingFlows()
+                // Remove the tail before mutation so its dictionary has one owner.
+                // Keeping the old event in the array causes a full COW copy per flow.
+                if case .flows? = pendingEvents.last,
+                   case let .flows(previous) = pendingEvents.removeLast() {
+                    pending = previous
                 }
+                let delta = pending.preparedAppend(of: flow, sessionID: sessionID)
+                let bytes = retainedBytes + delta.bytes
+                let count = retainedFlows + delta.flows
+                guard bytes <= maximumQueuedBytes, count <= maximumQueuedFlows else {
+                    if !pending.orderedKeys.isEmpty { pendingEvents.append(.flows(pending)) }
+                    saturatedSessions.insert(sessionID)
+                    return false
+                }
+                pending.appendPrepared(delta.flow, sessionID: sessionID, additionalBytes: delta.bytes)
+                retainedBytes = bytes
+                retainedFlows = count
+                pendingEvents.append(.flows(pending))
+                return true
             }
-            signalContinuation.yield()
+            if accepted { signalContinuation.yield() }
+            return accepted
         }
 
         func flush(sessionID: UUID) async throws {
@@ -292,13 +389,16 @@ final class ProxyViewModel: ObservableObject {
         }
 
         private func persistPendingEvents() async {
-            let events = lock.withLock {
+            var events = lock.withLock {
                 let snapshot = pendingEvents
                 pendingEvents.removeAll(keepingCapacity: true)
                 return snapshot
             }
             guard !events.isEmpty else { return }
 
+            var releasedBytes = 0
+            var releasedFlows = 0
+            var barriers: [(CheckedContinuation<Void, any Error>, (any Error)?)] = []
             var index = events.startIndex
             while index < events.endIndex {
                 switch events[index] {
@@ -308,6 +408,8 @@ final class ProxyViewModel: ObservableObject {
                         for batch in Self.batches(flows) {
                             do {
                                 let summary = try await store.upsert(flows: batch, in: sessionID)
+                                releasedBytes += batch.reduce(0) { $0 + LiveFlowMemoryBudget.cost($1) }
+                                releasedFlows += batch.count
                                 failedFlowIDsBySession[sessionID]?.subtract(batch.map(\.id))
                                 if failedFlowIDsBySession[sessionID]?.isEmpty != false {
                                     failedFlowIDsBySession[sessionID] = nil
@@ -322,7 +424,9 @@ final class ProxyViewModel: ObservableObject {
                             } catch {
                                 pendingErrorsBySession[sessionID] = error
                                 failedFlowIDsBySession[sessionID, default: []].formUnion(batch.map(\.id))
-                                requeue(flows: batch, sessionID: sessionID)
+                                let reclaimed = requeue(flows: batch, sessionID: sessionID)
+                                releasedBytes += reclaimed.bytes
+                                releasedFlows += reclaimed.flows
                                 updatesSubject.send(Update(sessionID: sessionID, insertedFlowCount: 0,
                                     updatedAt: .now, errorDescription: error.localizedDescription))
                             }
@@ -332,13 +436,19 @@ final class ProxyViewModel: ObservableObject {
                     index += 1
 
                 case let .flush(sessionID, continuation):
-                    if let error = pendingErrorsBySession[sessionID] {
-                        continuation.resume(throwing: error)
-                    } else {
-                        continuation.resume()
-                    }
+                    barriers.append((continuation, pendingErrorsBySession[sessionID]))
                     index += 1
                 }
+            }
+            // Snapshot references must be dropped before admitting more payloads.
+            events.removeAll()
+            lock.withLock {
+                retainedBytes -= releasedBytes
+                retainedFlows -= releasedFlows
+            }
+            for (continuation, error) in barriers {
+                if let error { continuation.resume(throwing: error) }
+                else { continuation.resume() }
             }
         }
 
@@ -359,18 +469,22 @@ final class ProxyViewModel: ObservableObject {
             return result
         }
 
-        private func requeue(flows: [MitmFlow], sessionID: UUID) {
-            guard !flows.isEmpty else { return }
+        private func requeue(flows: [MitmFlow], sessionID: UUID) -> (bytes: Int, flows: Int) {
+            guard !flows.isEmpty else { return (0, 0) }
             var failed = PendingFlows()
             for flow in flows {
                 failed.append(flow, sessionID: sessionID)
             }
-            lock.withLock {
+            return lock.withLock {
                 if case let .flows(newer)? = pendingEvents.first {
+                    let beforeBytes = failed.byteCount + newer.byteCount
+                    let beforeCount = failed.orderedKeys.count + newer.orderedKeys.count
                     failed.appendNewerContents(of: newer)
                     pendingEvents[0] = .flows(failed)
+                    return (beforeBytes - failed.byteCount, beforeCount - failed.orderedKeys.count)
                 } else {
                     pendingEvents.insert(.flows(failed), at: 0)
+                    return (0, 0)
                 }
             }
         }

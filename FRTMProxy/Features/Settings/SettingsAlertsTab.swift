@@ -66,7 +66,7 @@ struct SettingsAlertsTab: View {
             ) {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                     HStack {
-                        Text("\(settings.alertRules.count) configured")
+                        Text("Alert rules configured: \(settings.alertRules.count)")
                             .font(DesignSystem.Fonts.label)
                             .foregroundStyle(colors.textSecondary)
                         Spacer()

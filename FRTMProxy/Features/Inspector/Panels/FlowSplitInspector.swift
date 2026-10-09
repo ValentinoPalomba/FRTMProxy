@@ -48,7 +48,7 @@ struct FlowSplitInspector: View {
                     headers: flow.request?.headers ?? [:],
                     queryParameters: queryParameters(in: flow.request?.url),
                     bodyFlow: flow.request?.body,
-                    emptyText: "Request unavailable",
+                    emptyText: flow.request == nil ? "Request unavailable" : "No request body",
                     isMapped: false,
                     colors: colors,
                     bodyTruncated: flow.request?.bodyTruncated ?? false,
@@ -67,7 +67,7 @@ struct FlowSplitInspector: View {
                     headers: flow.response?.headers ?? [:],
                     queryParameters: [],
                     bodyFlow: flow.response?.body,
-                    emptyText: "Response unavailable",
+                    emptyText: flow.response == nil ? "Response unavailable" : "No response body",
                     isMapped: flow.isMapped,
                     colors: colors,
                     timingData: FlowTimingData(
@@ -311,10 +311,10 @@ private struct BreakpointToggleRow: View {
                     .foregroundStyle(isEnabled ? colors.accent : colors.border)
                     .font(.system(size: DesignSystem.Metrics.scaled(18)))
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xxs) {
-                    Text(title)
+                    Text(LocalizedStringKey(title))
                         .font(DesignSystem.Fonts.sans(13, weight: .semibold))
                         .foregroundStyle(colors.textPrimary)
-                    Text(subtitle)
+                    Text(LocalizedStringKey(subtitle))
                         .font(DesignSystem.Fonts.sans(11))
                         .foregroundStyle(colors.textSecondary)
                 }

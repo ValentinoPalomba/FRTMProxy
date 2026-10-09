@@ -1,5 +1,7 @@
 # Implementazione e validazione
 
+Perimetro UI aggiornato il 6 ottobre 2026: rimosse Workspace e Acquisizione mirata da menu, palette e destinazioni; mantenuti formati e servizi di compatibilità. I profili chiamata/host/app sono dentro Manage. Add Field si apre dal menu slider finale della tabella. Le sezioni workspace/focus/noise e le prove precedenti restano come cronologia tecnica, non come funzionalità attualmente esposte.
+
 Prima tranche della roadmap Rockxy, implementata autonomamente sul progetto FRTMProxy. Nessun sorgente Rockxy copiato e nessuna nuova dipendenza applicativa aggiunta. `project.yml` resta la sorgente del progetto Xcode.
 
 ## Funzionalità implementate
@@ -10,7 +12,7 @@ Prima tranche della roadmap Rockxy, implementata autonomamente sul progetto FRTM
 - Eventi headers/stream/complete/error sullo stesso flow per SSE e NDJSON; byte inoltrati senza modifiche. Le regole che richiedono il body completo impongono buffering con avviso.
 - Header ripetuti, protocollo e timestamp effettivi; preview di massimo 2 MiB, body originali cifrati AES-GCM su disco con chiave Keychain. Esportazione dei byte originali dall'inspector.
 - HAR dei flow caricati o dell’intera sessione chiusa (export paginato e sostituzione atomica): esportazione redatta senza body predefinita, esportazione completa esplicita, header ripetuti e durata registrata. I tempi DNS/connect/TLS non misurati restano sconosciuti.
-- Focus salvabili e filtro rumore che modifica soltanto la vista; riconoscimento SSE, NDJSON, JSON-RPC, forme comuni di API AI e indizi x402.
+- Profili nominati per chiamate, host e app che filtrano soltanto la vista; riconoscimento SSE, NDJSON, JSON-RPC, forme comuni di API AI e indizi x402.
 - MCP `query_flows` e `analyze_flows`: filtro/paginazione della cache live e analisi locale con evidenze redatte. `list_sessions`, `query_session_flows` e `get_session_flow` raggiungono anche lo storico cifrato fuori dalla cache live, con redazione identica e senza body/note predefiniti. Nessun provider LLM remoto.
 - CI macOS con test Swift/Python, fixture end-to-end, verifica SHA-256 del motore e revisione CodeMirror fissata.
 
@@ -158,3 +160,17 @@ Il runner ora conserva i conteggi degli errori client per tipo e numero di richi
 
 
 Replica breve dopo la correzione: 3.256 richieste e altrettanti eventi terminali, zero errori/duplicati/warning, durata 33,73 s, throughput 96,53/s entro la tolleranza, picco RSS campionato 365,27 MiB. P95 assoluto 12,38 ms piccoli / 334,98 ms grandi. [Report dopo la correzione](benchmarks/2026-10-02-proxy-quota-after.json). La nuova prova sostenuta da 180.000 richieste è avviata separatamente; finché non termina il gate resta aperto.
+
+## 5 October: recovery and writer capacity
+
+See [UI_RECOVERY_LOG.md](UI_RECOVERY_LOG.md) for the regression inventory and acceptance state. Queue reservations now include pending/in-flight/retry snapshots (4,096 records / 64 MiB estimated payload). Saturation is explicit and stops capture; accepted data is retained for retry. SQLite schema 3 adds a nullable incomplete reason shown in the session list/timeline. This does not promise an RSS bound or crash durability for uncommitted memory. Full-disk persistence of the marker and whole-app stress remain required.
+
+The final native run passes 186 tests; integration passes 13 and Python passes 11. Composer Add/type/send/response and variable Cancel/Save/reopen pass in dark/light at S/M/L. Rule matcher Add/save/reopen passes in dark/light; actual proxied requests verify wildcard and case-sensitive match/nonmatch. Columns/noise have reviewed medium screenshots; their full editing matrix and the remaining search/diff/session/workspace UI workflows remain open.
+
+The sustained HTTP engine run passes: 180,000 expected/completed/terminal IDs, zero duplicates/client errors, 100 req/s for 30 minutes and peak engine RSS 138.375 MiB. See [raw report](benchmarks/2026-10-05-proxy-sustained.json). This measures engine + bridge, not the Swift app/writer or TLS overhead; whole-app performance gates remain open.
+
+## HAR import into captured sessions
+
+Sessions now offers Import HAR with a local preview and an explicit Import action. It accepts HAR 1.2 up to 32 MiB / 10,000 entries. HTTP/HTTPS URLs and headers are validated; repeated headers, binary base64, recorded HTTP version and elapsed timing are preserved. The preview caps each body at 2 MiB; originals are written as authenticated encrypted files and indexed with the imported closed session in one SQLite transaction. A write failure rolls back the session and cleans up files created by that attempt. Cancel before Import does not write capture data or enable mocks.
+
+HAR export preserves fractional timestamps and uses `-1` for an unknown elapsed time. Missing/redacted bodies and unknown DNS/TLS phases are not reconstructed. Unfinished stream entries retain their event and mark the imported session incomplete. Native import tests cover a 3 MiB binary body, repeated/empty headers, timing, original-byte decryption, redacted data, and rollback under a body-write failure. Full file-picker → preview → import UI acceptance remains open.

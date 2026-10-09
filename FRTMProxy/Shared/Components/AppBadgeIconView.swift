@@ -30,7 +30,7 @@ struct AppBadgeIconView: View {
             )
             .overlay {
                 Text(initials)
-                    .font(.system(size: max(8, size * 0.55), weight: .semibold, design: .rounded))
+                    .font(.system(size: max(8, size * 0.55), weight: .semibold, design: .default))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
