@@ -1,0 +1,82 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-15
+    timeout-minutes: 60
+    environment: release
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require a main commit
+        run: git merge-base --is-ancestor HEAD origin/main
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: .release-pages
+          persist-credentials: false
+      - run: brew install xcodegen
+      - run: make gen
+      - name: Build, sign, notarize and prepare Sparkle update
+        env:
+          DEVELOPER_ID_CERTIFICATE: ${{ secrets.DEVELOPER_ID_CERTIFICATE }}
+          DEVELOPER_ID_PASSWORD: ${{ secrets.DEVELOPER_ID_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: bash scripts/ci_release.sh
+      - name: Upload diagnostics and release artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-diagnostics
+          path: artifacts/
+          retention-days: 14
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" artifacts/FRTMProxy-*.zip \
+            --verify-tag --title "FRTMProxy ${GITHUB_REF_NAME#v}" --generate-notes
+      - name: Preserve website and update feed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp artifacts/appcast.xml .release-pages/appcast.xml
+          gh auth setup-git
+          git -C .release-pages config user.name 'Valentino Palomba'
+          git -C .release-pages config user.email 'valentino.palomba@intesasanpaolo.com'
+          git -C .release-pages add appcast.xml
+          if ! git -C .release-pages diff --cached --quiet; then
+            git -C .release-pages commit -m "Publish Sparkle appcast $GITHUB_REF_NAME"
+            git -C .release-pages push origin HEAD:gh-pages
+          fi
+          rm -rf .release-pages/.git
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .release-pages
+      - uses: actions/deploy-pages@v4
+      - name: Remove signing credentials
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/release.keychain-db" || true
+          rm -f "$RUNNER_TEMP/developer-id.p12" "$RUNNER_TEMP/sparkle.key"

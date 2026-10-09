@@ -10,11 +10,14 @@ enum LiveFlowMemoryBudget {
                 + (fields ?? []).reduce(0) { $0 + $1.name.utf8.count + $1.value.utf8.count }
         }
         // Payload estimate; RSS also includes Swift/Combine/UI allocations and in-flight events.
-        return 1024 + flow.id.utf8.count + (flow.request?.url.utf8.count ?? 0)
-            + (flow.request?.body?.utf8.count ?? 0) + (flow.response?.body?.utf8.count ?? 0)
-            + headers(flow.request?.headers, flow.request?.headerFields)
-            + headers(flow.response?.headers, flow.response?.headerFields)
-            + flow.websocketMessages.reduce(0) { $0 + $1.content.utf8.count + $1.id.utf8.count + 32 }
+        var bytes = 1024 + flow.id.utf8.count
+        bytes += flow.request?.url.utf8.count ?? 0
+        bytes += flow.request?.body?.utf8.count ?? 0
+        bytes += flow.response?.body?.utf8.count ?? 0
+        bytes += headers(flow.request?.headers, flow.request?.headerFields)
+        bytes += headers(flow.response?.headers, flow.response?.headerFields)
+        bytes += flow.websocketMessages.reduce(0) { $0 + $1.content.utf8.count + $1.id.utf8.count + 32 }
+        return bytes
     }
 
     static func trimWebSocket(_ flow: inout MitmFlow, maximumBytes: Int = maximumWebSocketBytes) -> Int {

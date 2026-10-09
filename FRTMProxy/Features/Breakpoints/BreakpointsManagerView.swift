@@ -8,6 +8,8 @@ struct BreakpointsManagerView: View {
 
     @State private var newHost: String = ""
     @State private var newPath: String = "/"
+    @State private var newMethod: String = "ANY"
+    private static let methods = ["ANY", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
     @State private var includeRequest: Bool = true
     @State private var includeResponse: Bool = true
     @State private var isApplyingURLSplit = false
@@ -100,6 +102,12 @@ struct BreakpointsManagerView: View {
             }
 
             HStack(spacing: DesignSystem.Spacing.md) {
+                Picker("HTTP method", selection: $newMethod) {
+                    ForEach(Self.methods, id: \.self) { method in
+                        Text(method == "ANY" ? "Any method" : method).tag(method)
+                    }
+                }
+                .frame(width: 185)
                 PhaseChip(
                     title: "Request",
                     subtitle: "Pause before it starts",
@@ -192,10 +200,12 @@ struct BreakpointsManagerView: View {
             host: newHost,
             path: newPath,
             interceptRequest: includeRequest,
-            interceptResponse: includeResponse
+            interceptResponse: includeResponse,
+            method: newMethod == "ANY" ? nil : newMethod
         ) != nil else { return }
         newHost = ""
         newPath = "/"
+        newMethod = "ANY"
         includeRequest = true
         includeResponse = true
     }
@@ -209,6 +219,8 @@ struct BreakpointsManagerView: View {
         else { return }
         newHost = host
         newPath = url.path.isEmpty ? "/" : url.path
+        let method = flow.request?.method.uppercased() ?? "ANY"
+        newMethod = Self.methods.contains(method) ? method : "ANY"
     }
 
     private func applyURLSplitIfNeeded(changedField: URLInputField, previousValue: String, newValue: String) {
@@ -265,6 +277,9 @@ private struct BreakpointRow: View {
                     .lineLimit(2)
                     .help(rule.path)
                     .font(DesignSystem.Fonts.mono(13))
+                    .foregroundStyle(colors.textSecondary)
+                Text(rule.method ?? "Any HTTP method")
+                    .font(DesignSystem.Fonts.mono(12))
                     .foregroundStyle(colors.textSecondary)
             }
             Spacer()
