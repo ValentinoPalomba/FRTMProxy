@@ -3,19 +3,22 @@ import Foundation
 extension ProxyViewModel {
     func isBreakpointEnabled(for flow: MitmFlow, phase: FlowBreakpointPhase) -> Bool {
         guard let info = mapKey(for: flow) else { return false }
-        guard let rule = breakpointRules[info.key], rule.isEnabled else { return false }
-        switch phase {
-        case .request:
-            return rule.interceptRequest
-        case .response:
-            return rule.interceptResponse
+        let methodKey = FlowBreakpointRule.key(host: info.host, path: info.path, method: flow.request?.method)
+        return [info.key, methodKey].contains { key in
+            guard let rule = breakpointRules[key], rule.isEnabled else { return false }
+            switch phase {
+            case .request: return rule.interceptRequest
+            case .response: return rule.interceptResponse
+            }
         }
     }
 
     func setBreakpoint(for flow: MitmFlow, phase: FlowBreakpointPhase, enabled: Bool) {
         guard let info = mapKey(for: flow) else { return }
-        var rule = breakpointRules[info.key] ?? FlowBreakpointRule(
-            key: info.key,
+        let methodKey = FlowBreakpointRule.key(host: info.host, path: info.path, method: flow.request?.method)
+        let key = breakpointRules[info.key] != nil ? info.key : (breakpointRules[methodKey] != nil ? methodKey : info.key)
+        var rule = breakpointRules[key] ?? FlowBreakpointRule(
+            key: key,
             host: info.host,
             path: info.path,
             scheme: info.scheme,
@@ -40,10 +43,11 @@ extension ProxyViewModel {
 
     func removeBreakpoint(for flow: MitmFlow) {
         guard let info = mapKey(for: flow) else { return }
-        deleteBreakpoint(key: info.key)
+        let methodKey = FlowBreakpointRule.key(host: info.host, path: info.path, method: flow.request?.method)
+        deleteBreakpoint(key: breakpointRules[info.key] != nil ? info.key : methodKey)
     }
 
-    func createBreakpoint(host: String, path: String, interceptRequest: Bool, interceptResponse: Bool) -> FlowBreakpointRule? {
+    func createBreakpoint(host: String, path: String, interceptRequest: Bool, interceptResponse: Bool, method: String? = nil) -> FlowBreakpointRule? {
         let trimmedHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
         var trimmedPath = path.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -56,7 +60,8 @@ extension ProxyViewModel {
         }
         guard interceptRequest || interceptResponse else { return nil }
 
-        let key = trimmedHost + trimmedPath
+        let normalizedMethod = FlowBreakpointRule.normalizedMethod(method)
+        let key = FlowBreakpointRule.key(host: trimmedHost, path: trimmedPath, method: normalizedMethod)
         let rule = FlowBreakpointRule(
             key: key,
             host: trimmedHost,
@@ -64,7 +69,8 @@ extension ProxyViewModel {
             scheme: "https",
             interceptRequest: interceptRequest,
             interceptResponse: interceptResponse,
-            isEnabled: true
+            isEnabled: true,
+            method: normalizedMethod
         )
         saveBreakpointRule(rule)
         return rule
