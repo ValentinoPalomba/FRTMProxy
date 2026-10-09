@@ -54,8 +54,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.valentinopalomba.frtmproxy
         PRODUCT_NAME: "$(TARGET_NAME)"
-        MARKETING_VERSION: "1.9.0"
-        CURRENT_PROJECT_VERSION: "1.9.0"
+        MARKETING_VERSION: "1.9.1"
+        CURRENT_PROJECT_VERSION: "1.9.1"
         DEVELOPMENT_TEAM: 8JS222QZL3
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_IDENTITY: "Apple Development"

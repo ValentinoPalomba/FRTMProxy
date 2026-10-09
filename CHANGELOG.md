@@ -6,7 +6,18 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-10-09
+
+### Added
+- Automated Developer ID signing, Apple notarization and Sparkle update publication through GitHub Actions.
+
+### Changed
 - Use Xcode Light as the default appearance for new installations; preserve saved theme selections.
+
+### Fixed
+- Simplify header-column cells so the traffic table compiles reliably in local and CI builds.
+
+## [1.9.0] - 2026-10-06
 
 ### Added
 - Named capture profiles in Manage, with request, host and app membership, persistent selection,

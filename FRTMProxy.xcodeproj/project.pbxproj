@@ -2182,7 +2182,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.9.0;
+				CURRENT_PROJECT_VERSION = 1.9.1;
 				DEVELOPMENT_ASSET_PATHS = "\"FRTMProxy/Preview Content\"";
 				DEVELOPMENT_TEAM = 8JS222QZL3;
 				ENABLE_PREVIEWS = YES;
@@ -2192,7 +2192,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.9.0;
+				MARKETING_VERSION = 1.9.1;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lsqlite3",
@@ -2348,7 +2348,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.9.0;
+				CURRENT_PROJECT_VERSION = 1.9.1;
 				DEVELOPMENT_ASSET_PATHS = "\"FRTMProxy/Preview Content\"";
 				DEVELOPMENT_TEAM = 8JS222QZL3;
 				ENABLE_PREVIEWS = YES;
@@ -2358,7 +2358,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.9.0;
+				MARKETING_VERSION = 1.9.1;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lsqlite3",
