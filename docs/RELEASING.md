@@ -41,8 +41,10 @@ its contents with the official Pages actions. Restrict the `release` environment
 to maintainer-controlled tags as appropriate.
 
 The workflow builds for **Apple Silicon / arm64**, matching the pinned embedded
-mitmproxy engine. Xcode signs the app and Sparkle helpers with hardened runtime
-and secure timestamps. The upstream engine is never re-signed; its complete
+mitmproxy engine. The app and Sparkle helpers are signed explicitly, inside-out,
+with Developer ID, hardened runtime and secure timestamps. Distribution signing
+uses the app entitlements without `get-task-allow`, and preserves the Downloader
+helper's sandbox entitlements. The upstream engine is never re-signed; its complete
 copied tree is verified against the pinned manifest. Apple notarization must be
 accepted, stapling must validate, and Gatekeeper must accept the app before the
 final ZIP is created. Sparkle signs this final ZIP, historical appcast entries

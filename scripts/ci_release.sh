@@ -25,7 +25,8 @@ xcrun notarytool store-credentials release-notary --keychain "$keychain" \
 xcodebuild -project FRTMProxy.xcodeproj -scheme FRTMProxy_Release \
   -configuration Release -destination 'platform=macOS' -derivedDataPath .build-release \
   CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$identity" DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-  ARCHS=arm64 ONLY_ACTIVE_ARCH=NO OTHER_CODE_SIGN_FLAGS="--timestamp --keychain $keychain" build
+  ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
+  OTHER_CODE_SIGN_FLAGS="--timestamp --keychain $keychain" build
 app='.build-release/Build/Products/Release/FRTMProxy.app'
 version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")"
 [[ "$GITHUB_REF_NAME" == "v$version" || "$GITHUB_REF_NAME" == "v.$version" ]] || {
@@ -39,7 +40,7 @@ sys.path.insert(0, 'scripts')
 from verify_engine import verify
 verify(Path(sys.argv[1]) / 'Contents/Resources', json.loads(Path('FRTMProxy/Resources/mitmdump.metadata.json').read_text()))
 PY
-codesign --verify --deep --strict --verbose=2 "$app"
+bash scripts/sign_release_bundle.sh "$app" "$identity" "$keychain"
 ditto -c -k --sequesterRsrc --keepParent "$app" "$RUNNER_TEMP/notary.zip"
 xcrun notarytool submit "$RUNNER_TEMP/notary.zip" --keychain-profile release-notary \
   --keychain "$keychain" --wait --timeout 30m --output-format json > artifacts/notarization.json
@@ -53,6 +54,7 @@ PY
 xcrun stapler staple "$app"
 xcrun stapler validate "$app"
 spctl --assess --type execute --verbose=2 "$app"
+python3 scripts/verify_release_bundle.py "$app" --require-notarization
 ditto -c -k --sequesterRsrc --keepParent "$app" "artifacts/FRTMProxy-$version.zip"
 
 sparkle_bin="$(find .build-release/SourcePackages/artifacts -type f -name generate_appcast -print -quit)"
