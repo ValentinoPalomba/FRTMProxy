@@ -117,7 +117,10 @@ def run(args):
                     if remaining > 0: time.sleep(remaining)
                     jobs.put((kind, index))
                     scheduled += 1
-                    deadline = max(deadline + 1 / args.rate, time.monotonic())
+                    # Keep the offered rate anchored to the start time. Timer
+                    # oversleep must not accumulate across every request; the
+                    # bounded jobs queue still applies backpressure at capacity.
+                    deadline += 1 / args.rate
                     if scheduled % 1000 == 0:
                         print(json.dumps({"scheduled": scheduled, "completed": len(completed), "elapsed": round(time.monotonic() - started, 1), "rss": memory[-1] if memory else None}), flush=True)
                 if stop.is_set(): break
