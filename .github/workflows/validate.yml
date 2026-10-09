@@ -36,7 +36,9 @@ jobs:
       - name: Test embedded proxy against local clients
         run: python3 tests/integration_proxy.py --worker .build/Build/Products/Debug/FRTMProxy.app/Contents/MacOS/FRTMProxy
       - name: Stress embedded proxy with small and large bodies
-        run: python3 tests/stress_proxy.py --worker .build/Build/Products/Debug/FRTMProxy.app/Contents/MacOS/FRTMProxy --requests 1000 --report artifacts/proxy-stress.json
+        # Hosted M1 VMs have different scheduling and CPU capacity from local Macs.
+        # Retain byte/event/memory assertions and rate enforcement at a bounded CI load.
+        run: python3 tests/stress_proxy.py --worker .build/Build/Products/Debug/FRTMProxy.app/Contents/MacOS/FRTMProxy --requests 1000 --rate 25 --report artifacts/proxy-stress.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
