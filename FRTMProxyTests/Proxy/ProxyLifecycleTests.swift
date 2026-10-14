@@ -4,15 +4,15 @@ import Testing
 
 @Suite("Proxy lifecycle safety")
 struct ProxyLifecycleTests {
-    @Test func upstreamTrustIsEnabled() {
+    @Test func upstreamTLSCompatibilityIsPreserved() {
         let arguments = MitmproxyService.buildArguments(
             scriptURL: URL(fileURLWithPath: "/tmp/bridge.py"),
             selectedPort: 8080,
             restrictToHosts: false,
             hosts: []
         )
-        #expect(arguments.contains("ssl_insecure=false"))
-        #expect(!arguments.contains("ssl_insecure=true"))
+        #expect(arguments.contains("ssl_insecure=true"))
+        #expect(!arguments.contains("ssl_insecure=false"))
     }
 
     @Test func ownershipRequiresTheExactEndpoint() {

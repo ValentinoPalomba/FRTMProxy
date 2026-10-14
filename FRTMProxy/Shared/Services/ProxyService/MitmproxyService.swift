@@ -257,7 +257,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         var args: [String] = [
             "-p", "\(selectedPort)",
             "-s", scriptURL.path,
-            "--set", "ssl_insecure=false",
+            "--set", "ssl_insecure=true",
             "--set", "connection_strategy=lazy"
         ]
 

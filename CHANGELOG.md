@@ -6,7 +6,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [1.9.1] - 2026-10-09
+## [1.9.1] - 2026-10-14
 
 ### Added
 - Automated Developer ID signing, Apple notarization and Sparkle update publication through GitHub Actions.
@@ -15,6 +15,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 - Use Xcode Light as the default appearance for new installations; preserve saved theme selections.
 
 ### Fixed
+- Restore upstream TLS compatibility with corporate HTTPS gateways and self-signed development servers by skipping server certificate verification, matching the behavior before 1.9.0. Clients still need to trust the FRTMProxy CA to inspect HTTPS.
 - Simplify header-column cells so the traffic table compiles reliably in local and CI builds.
 
 ## [1.9.0] - 2026-10-06
