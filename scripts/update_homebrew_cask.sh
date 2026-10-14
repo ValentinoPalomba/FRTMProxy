@@ -175,9 +175,9 @@ end
 EOF
 else
   log "Updating cask: $CASK_FILE"
-  VERSION="$VERSION" perl -i -pe 's{^\s*version\s+"[^"]*"\s*$}{  version "$ENV{VERSION}"}' "$CASK_FILE"
-  SHA256="$SHA256" perl -i -pe 's{^\s*sha256\s+"[^"]*"\s*$}{  sha256 "$ENV{SHA256}"}' "$CASK_FILE"
-  DOWNLOAD_URL="$DOWNLOAD_URL" perl -i -pe 's{^\s*url\s+"[^"]*"\s*$}{  url "$ENV{DOWNLOAD_URL}"}' "$CASK_FILE"
+  VERSION="$VERSION" perl -i -pe 's{^[ \t]*version[ \t]+"[^"]*"[ \t]*$}{  version "$ENV{VERSION}"}' "$CASK_FILE"
+  SHA256="$SHA256" perl -i -pe 's{^[ \t]*sha256[ \t]+"[^"]*"[ \t]*$}{  sha256 "$ENV{SHA256}"}' "$CASK_FILE"
+  DOWNLOAD_URL="$DOWNLOAD_URL" perl -i -pe 's{^[ \t]*url[ \t]+"[^"]*"[ \t]*$}{  url "$ENV{DOWNLOAD_URL}"}' "$CASK_FILE"
 fi
 
 if ! grep -Fqx "  version \"$VERSION\"" "$CASK_FILE"; then
