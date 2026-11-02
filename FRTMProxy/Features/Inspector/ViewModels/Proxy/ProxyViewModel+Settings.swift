@@ -4,8 +4,16 @@ import AppKit
 import Network
 
 extension ProxyViewModel {
+    private func bindUpstreamProxy(settings: SettingsStore) {
+        upstreamProxy = settings.upstreamProxy
+        settings.$upstreamProxy
+            .sink { [weak self] in self?.upstreamProxy = $0 }
+            .store(in: &settingsCancellables)
+    }
+
     func bind(settings: SettingsStore) {
         settingsCancellables.removeAll()
+        bindUpstreamProxy(settings: settings)
 
         settings.$defaultPort
             .receive(on: DispatchQueue.main)

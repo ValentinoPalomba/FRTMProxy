@@ -8,7 +8,9 @@ protocol ProxyServiceProtocol: AnyObject {
     var isRunningPublisher: AnyPublisher<Bool, Never> { get }
     var onLog: ((String) -> Void)? { get set }
 
-    func startProxy(port: Int?, restrictToHosts: Bool, hosts: [String]) async throws
+    func startProxy(
+        port: Int?, restrictToHosts: Bool, hosts: [String], upstream: UpstreamProxyConfiguration
+    ) async throws
     func stopProxy()
     func clearFlows()
     func mockResponse(for flowID: String, body: String)

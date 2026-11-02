@@ -94,12 +94,21 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         warmupProcess?.terminate()
     }
     
-    func startProxy(port: Int? = nil, restrictToHosts: Bool = false, hosts: [String] = []) async throws {
+    func startProxy(
+        port: Int? = nil, restrictToHosts: Bool = false, hosts: [String] = [],
+        upstream: UpstreamProxyConfiguration = .init()
+    ) async throws {
         guard !isRunning, !isStarting else { return }
         let selectedPort = port ?? config.port
         guard (1024...65535).contains(selectedPort) else {
             throw MitmproxyServiceError.failedToRun("Port must be between 1024 and 65535")
         }
+        if let error = upstream.validationError(listenPort: selectedPort) {
+            throw MitmproxyServiceError.failedToRun(error)
+        }
+        let upstreamEnvironment = try upstream.environment(
+            password: upstream.isEnabled && !upstream.username.isEmpty ? UpstreamProxyPasswordStore().load() : ""
+        )
         let executableURL = try bundledMitmdumpExecutableURL()
         let scriptURL = try bridgeScriptURL()
         let launchID = UUID()
@@ -121,7 +130,8 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             restrictToHosts: restrictToHosts,
             hosts: hosts,
             launchID: launchID,
-            bodyEnvironment: bodyEnvironment,
+            bodyEnvironment: bodyEnvironment.merging(upstreamEnvironment) { _, value in value },
+            upstream: upstream,
             onLine: { [weak self] line in
                 self?.handleIncomingLine(line, launchID: launchID)
             },
@@ -179,6 +189,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         hosts: [String],
         launchID: UUID,
         bodyEnvironment: [String: String],
+        upstream: UpstreamProxyConfiguration,
         onLine: @escaping (String) -> Void,
         onError: @escaping (String) -> Void,
         onTermination: @escaping () -> Void
@@ -188,6 +199,7 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
                 let process = Process()
                 process.executableURL = executableURL
                 var environment = ProcessInfo.processInfo.environment
+                environment.removeValue(forKey: "FRTMPROXY_UPSTREAM")
                 environment.merge(bodyEnvironment) { _, value in value }
                 environment["FRTMPROXY_STARTUP_ID"] = launchID.uuidString
                 environment["FRTMPROXY_PARENT_PID"] = String(ProcessInfo.processInfo.processIdentifier)
@@ -199,7 +211,8 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
                     scriptURL: scriptURL,
                     selectedPort: selectedPort,
                     restrictToHosts: restrictToHosts,
-                    hosts: hosts
+                    hosts: hosts,
+                    upstream: upstream
                 )
 
                 let pipe = Pipe()
@@ -252,7 +265,8 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
         scriptURL: URL,
         selectedPort: Int,
         restrictToHosts: Bool,
-        hosts: [String]
+        hosts: [String],
+        upstream: UpstreamProxyConfiguration = .init()
     ) -> [String] {
         var args: [String] = [
             "-p", "\(selectedPort)",
@@ -260,6 +274,8 @@ final class MitmproxyService: ObservableObject, ProxyServiceProtocol {
             "--set", "ssl_insecure=true",
             "--set", "connection_strategy=lazy"
         ]
+
+        args.append(contentsOf: ["--mode", upstream.isEnabled ? "upstream:\(upstream.endpoint)" : "regular"])
 
         #if DEBUG
         if let fixture = ProcessInfo.processInfo.environment["FRTM_UI_TEST_STORAGE"], !fixture.isEmpty {

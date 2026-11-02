@@ -289,7 +289,7 @@ async def run_script(flow, configuration, phase):
         payload = {
             "source": configuration.get("source", ""), "phase": phase,
             "flow": {"request": {"method": flow.request.method, "url": flow.request.pretty_url,
-                "headers": dict(flow.request.headers), "body": flow.request.get_text(strict=False) or ""},
+                "headers": {key: value for key, value in flow.request.headers.items() if key.lower() != "proxy-authorization"}, "body": flow.request.get_text(strict=False) or ""},
                 "response": {"status": flow.response.status_code, "headers": dict(flow.response.headers),
                 "body": flow.response.get_text(strict=False) or ""} if flow.response else {}}
         }
@@ -661,7 +661,7 @@ def try_decode_data_url(payload: str):
     return (mime, data)
 
 def header_fields(headers):
-    return [{"name": str(k), "value": str(v)} for k, v in headers.items(multi=True)]
+    return [{"name": str(k), "value": str(v)} for k, v in headers.items(multi=True) if str(k).lower() != "proxy-authorization"]
 
 def send_flow_event(flow: http.HTTPFlow, event: str, breakpoint_meta=None, stream_body=None):
     client = None
@@ -684,7 +684,7 @@ def send_flow_event(flow: http.HTTPFlow, event: str, breakpoint_meta=None, strea
         "request": {
             "method": flow.request.method,
             "url": flow.request.pretty_url,
-            "headers": dict(flow.request.headers),
+            "headers": {key: value for key, value in flow.request.headers.items() if key.lower() != "proxy-authorization"},
             "body": serialize_message_body(flow.request),
             "httpVersion": getattr(flow.request, "http_version", None),
             "headerFields": header_fields(flow.request.headers),
@@ -794,6 +794,7 @@ def apply_request_updates(flow: http.HTTPFlow, payload):
         flow.request.headers.clear()
         for key, value in headers.items():
             flow.request.headers[str(key)] = value
+    apply_upstream_auth(flow)
 
 def apply_response_updates(flow: http.HTTPFlow, payload):
     if not payload:
@@ -1152,6 +1153,74 @@ def prune_flow_maps():
         EVICTED_BODY_BYTES = 0
 
 
+# Credentials travel in the child environment, never process arguments or captures.
+UPSTREAM_SETTINGS = json.loads(os.environ.pop("FRTMPROXY_UPSTREAM", "{}"))
+UPSTREAM_BYPASS = [host.strip().lower().rstrip(".") for host in UPSTREAM_SETTINGS.get("bypass", "").split(",") if host.strip()]
+
+
+def bypass_upstream(host):
+    candidate = host.lower().strip("[]").rstrip(".")
+    return any(fnmatch.fnmatchcase(candidate, pattern.strip("[]")) for pattern in UPSTREAM_BYPASS)
+
+
+def route_upstream(flow):
+    if not UPSTREAM_SETTINGS:
+        return
+    from mitmproxy import connection
+    mode = flow.client_conn.proxy_mode
+    via = None if bypass_upstream(flow.request.host) else (mode.scheme, mode.address)
+    if flow.server_conn.via != via:
+        # Do not mutate or reuse an already connected socket for another route.
+        flow.server_conn = connection.Server(address=flow.server_conn.address, via=via)
+
+
+def next_layer(nextlayer):
+    if not UPSTREAM_SETTINGS:
+        return
+    from mitmproxy import connection
+    from mitmproxy.proxy.layers import TCPLayer
+    server = nextlayer.context.server
+    if not server.address or not server.via or not bypass_upstream(server.address[0]):
+        return
+    # Script hooks run before the default protocol selector. Ask it to classify
+    # the connection, preserving its TLS sniffing and active pinned-host policy.
+    selector = ctx.master.addons.get("nextlayer")
+    if selector and nextlayer.layer is None:
+        selector.next_layer(nextlayer)
+    if isinstance(nextlayer.layer, TCPLayer):
+        # Ignored TLS and opaque CONNECT tunnels never emit requestheaders.
+        # Give their TCP layer a direct connection instead of the upstream tunnel's socket.
+        nextlayer.context.server = connection.Server(address=server.address)
+        nextlayer.layer = TCPLayer(nextlayer.context, ignore=nextlayer.layer.flow is None)
+
+
+def requestheaders(flow: http.HTTPFlow):
+    if UPSTREAM_SETTINGS:
+        flow.request.headers.pop("Proxy-Authorization", None)
+    route_upstream(flow)
+
+
+def upstream_auth_header():
+    auth = UPSTREAM_SETTINGS.get("auth", "")
+    return "Basic " + base64.b64encode(auth.encode()).decode() if auth else None
+
+
+def apply_upstream_auth(flow):
+    if not UPSTREAM_SETTINGS:
+        return
+    flow.request.headers.pop("Proxy-Authorization", None)
+    route_upstream(flow)
+    auth = upstream_auth_header()
+    if auth and flow.request.scheme == "http" and flow.server_conn.via:
+        flow.request.headers["Proxy-Authorization"] = auth
+
+
+def http_connect_upstream(flow: http.HTTPFlow):
+    auth = upstream_auth_header()
+    if auth:
+        flow.request.headers["Proxy-Authorization"] = auth
+
+
 async def request(flow: http.HTTPFlow):
     if is_internal_flow(flow):
         return
@@ -1217,7 +1286,9 @@ async def request(flow: http.HTTPFlow):
                 debug_log(f"no rule found for {computed_key} (base {base})")
 
     bp_meta = breakpoint_snapshot(flow, "request", "waiting") if waiting_request else None
+    route_upstream(flow)
     send_flow_event(flow, "request", bp_meta)
+    apply_upstream_auth(flow)
 
 def responseheaders(flow: http.HTTPFlow):
     if is_internal_flow(flow):

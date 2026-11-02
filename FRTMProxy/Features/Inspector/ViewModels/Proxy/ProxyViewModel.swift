@@ -49,6 +49,7 @@ final class ProxyViewModel: ObservableObject {
     let collectionRecorder = CollectionRecorder()
     var cancellables: Set<AnyCancellable> = []
     var settingsCancellables: Set<AnyCancellable> = []
+    var upstreamProxy = UpstreamProxyConfiguration()
     var defaultPort: Int
     var autoClearOnStart = false
     var overrideMacOSProxy = false
@@ -173,7 +174,8 @@ final class ProxyViewModel: ObservableObject {
             try await service.startProxy(
                 port: selectedPort,
                 restrictToHosts: restrictInterceptionToHosts,
-                hosts: interceptionHosts
+                hosts: interceptionHosts,
+                upstream: upstreamProxy
             )
             guard proxyStartGeneration == startGeneration, !Task.isCancelled else { return }
             activePort = selectedPort

@@ -36,6 +36,14 @@ final class SettingsStore: ObservableObject {
         didSet { defaults.set(defaultPort, forKey: portKey) }
     }
 
+    @Published var upstreamProxy: UpstreamProxyConfiguration {
+        didSet {
+            if let data = try? JSONEncoder().encode(upstreamProxy) {
+                defaults.set(data, forKey: "settings.upstreamProxy")
+            }
+        }
+    }
+
     @Published var autoStartProxy: Bool {
         didSet { defaults.set(autoStartProxy, forKey: autoStartKey) }
     }
@@ -200,6 +208,9 @@ final class SettingsStore: ObservableObject {
 
     init(defaults: UserDefaults = CaptureStorageConfiguration.preferences) {
         self.defaults = defaults
+        self.upstreamProxy = defaults.data(forKey: "settings.upstreamProxy")
+            .flatMap { try? JSONDecoder().decode(UpstreamProxyConfiguration.self, from: $0) }
+            ?? UpstreamProxyConfiguration()
         self.selectedLanguageID = AppLanguage.language(
             with: defaults.string(forKey: languageKey)
         ).id
@@ -375,6 +386,9 @@ final class SettingsStore: ObservableObject {
         defaults.set(data, forKey: alertRulesKey)
     }
 
+}
+
+extension SettingsStore {
     private static func loadAlertRules(from defaults: UserDefaults, key: String) -> [AlertRule] {
         guard let data = defaults.data(forKey: key),
               let decoded = try? JSONDecoder().decode([AlertRule].self, from: data) else {

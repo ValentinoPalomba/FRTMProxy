@@ -49,6 +49,7 @@ test-bridge: ## Verifica le regole Python senza dipendenze esterne
 
 test-integration: ## Verifica il proxy reale (richiede app compilata in DERIVED)
 	python3 tests/integration_proxy.py --worker $(DERIVED)/Build/Products/Debug/$(SCHEME).app/Contents/MacOS/$(SCHEME)
+	python3 tests/integration_upstream_proxy.py
 
 
 test-stress: ## Carico locale sul motore embedded; genera artifacts/proxy-stress.json

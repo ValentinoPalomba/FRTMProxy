@@ -72,7 +72,7 @@ struct SettingsProxyTab: View {
                         .foregroundStyle(colors.textSecondary)
                 }
             }
-
+            SettingsUpstreamProxySection(colors: colors)
         }
     }
 

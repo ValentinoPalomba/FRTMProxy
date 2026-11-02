@@ -174,3 +174,22 @@ The sustained HTTP engine run passes: 180,000 expected/completed/terminal IDs, z
 Sessions now offers Import HAR with a local preview and an explicit Import action. It accepts HAR 1.2 up to 32 MiB / 10,000 entries. HTTP/HTTPS URLs and headers are validated; repeated headers, binary base64, recorded HTTP version and elapsed timing are preserved. The preview caps each body at 2 MiB; originals are written as authenticated encrypted files and indexed with the imported closed session in one SQLite transaction. A write failure rolls back the session and cleans up files created by that attempt. Cancel before Import does not write capture data or enable mocks.
 
 HAR export preserves fractional timestamps and uses `-1` for an unknown elapsed time. Missing/redacted bodies and unknown DNS/TLS phases are not reconstructed. Unfinished stream entries retain their event and mark the imported session incomplete. Native import tests cover a 3 MiB binary body, repeated/empty headers, timing, original-byte decryption, redacted data, and rollback under a body-write failure. Full file-picker → preview → import UI acceptance remains open.
+
+
+## Proxy upstream (issue #19)
+
+Settings → Proxy → Upstream Proxy abilita un server HTTP o HTTPS con host, porta e
+username opzionale. La password si salva esplicitamente nel Portachiavi tramite
+“Save password in Keychain”; le altre preferenze sono persistenti in UserDefaults.
+Riavviare il proxy dopo le modifiche. Gli host esclusi, separati da virgole,
+supportano nomi esatti, IPv6 e wildcard (`*.local`): si collegano direttamente,
+anche quando la selezione degli host fissati esclude l’ispezione TLS.
+L’autenticazione è HTTP Basic e le credenziali upstream sono escluse da argv,
+catture e payload degli script. Per Clash/Sing-box usare la porta HTTP/mixed:
+il motore mitmproxy 12.2.3 non supporta un upstream SOCKS5.
+
+`python3 tests/integration_upstream_proxy.py` verifica HTTP e HTTPS verso upstream
+HTTP/HTTPS, autenticazione, bypass su connessioni successive, TLS non ispezionato
+e assenza di credenziali upstream nelle destinazioni dirette e nelle catture.
+Le fixture usano certificati e server temporanei locali; non cambiano proxy o CA
+di sistema. La prova è inclusa in `make test-integration` e nella CI Validate.

@@ -6,6 +6,11 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Upstream HTTP/HTTPS proxy settings with optional Basic authentication stored in Keychain,
+  persistent host/port configuration and wildcard bypass hosts. Clash and Sing-box can use
+  their HTTP or mixed listener; the embedded engine does not support SOCKS5 upstream.
+
 ## [1.9.1] - 2026-10-14
 
 ### Added

@@ -35,6 +35,8 @@ jobs:
           CODE_SIGN_IDENTITY='' DEVELOPMENT_TEAM='' test
       - name: Test embedded proxy against local clients
         run: python3 tests/integration_proxy.py --worker .build/Build/Products/Debug/FRTMProxy.app/Contents/MacOS/FRTMProxy
+      - name: Test upstream proxy authentication and bypass routing
+        run: python3 tests/integration_upstream_proxy.py
       - name: Stress embedded proxy with small and large bodies
         # Hosted M1 VMs have different scheduling and CPU capacity from local Macs.
         # Retain byte/event/memory assertions and rate enforcement at a bounded CI load.

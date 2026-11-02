@@ -24725,6 +24725,196 @@
           }
         }
       }
+    },
+    "Bypass hosts (comma-separated)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Host esclusi (separati da virgole)"
+          }
+        }
+      }
+    },
+    "Choose an HTTP or HTTPS upstream proxy." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli un proxy upstream HTTP o HTTPS."
+          }
+        }
+      }
+    },
+    "Could not read the saved password: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile leggere la password salvata: %@"
+          }
+        }
+      }
+    },
+    "Could not save the password: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile salvare la password: %@"
+          }
+        }
+      }
+    },
+    "Enable upstream proxy" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abilita proxy upstream"
+          }
+        }
+      }
+    },
+    "Enter a server hostname or IP address without a protocol or path." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inserisci un nome host o un indirizzo IP senza protocollo o percorso."
+          }
+        }
+      }
+    },
+    "HTTP and HTTPS upstream proxies support Basic authentication. For Clash or Sing-box, use an HTTP or mixed port; SOCKS5 upstream is not supported by the embedded engine." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I proxy upstream HTTP e HTTPS supportano l’autenticazione Basic. Per Clash o Sing-box, usa una porta HTTP o mista; il motore integrato non supporta upstream SOCKS5."
+          }
+        }
+      }
+    },
+    "Password" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Password"
+          }
+        }
+      }
+    },
+    "Password saved. Restart the proxy to apply changes." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Password salvata. Riavvia il proxy per applicare le modifiche."
+          }
+        }
+      }
+    },
+    "Port" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Porta"
+          }
+        }
+      }
+    },
+    "Protocol" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protocollo"
+          }
+        }
+      }
+    },
+    "Restart the proxy to apply changes. Bypassed hosts connect directly and are still captured. Use exact hostnames or wildcards such as *.local." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riavvia il proxy per applicare le modifiche. Gli host esclusi si connettono direttamente e il traffico viene comunque acquisito. Usa nomi host esatti o caratteri jolly come *.local."
+          }
+        }
+      }
+    },
+    "Save password in Keychain" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salva password nel Portachiavi"
+          }
+        }
+      }
+    },
+    "Server host" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Host del server"
+          }
+        }
+      }
+    },
+    "The upstream proxy must not point to FRTMProxy's own listening port." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il proxy upstream non può puntare alla porta di ascolto di FRTMProxy."
+          }
+        }
+      }
+    },
+    "The upstream username cannot contain a colon or a newline." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il nome utente upstream non può contenere due punti o interruzioni di riga."
+          }
+        }
+      }
+    },
+    "Upstream Proxy" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proxy upstream"
+          }
+        }
+      }
+    },
+    "Upstream port must be between 1 and 65535." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La porta upstream deve essere compresa tra 1 e 65535."
+          }
+        }
+      }
+    },
+    "Username (optional)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nome utente (facoltativo)"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

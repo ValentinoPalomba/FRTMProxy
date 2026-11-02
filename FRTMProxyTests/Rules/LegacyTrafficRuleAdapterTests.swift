@@ -325,7 +325,9 @@ private final class TrafficRuleProxyServiceSpy: ProxyServiceProtocol {
     func emit(_ flow: MitmFlow) { flowEvents.send(flow) }
     func emitRunning(_ value: Bool) { running.send(value) }
 
-    func startProxy(port: Int?, restrictToHosts: Bool, hosts: [String]) async throws { await startGate?.wait() }
+    func startProxy(
+        port: Int?, restrictToHosts: Bool, hosts: [String], upstream: UpstreamProxyConfiguration
+    ) async throws { await startGate?.wait() }
     func stopProxy() { stopCount += 1 }
     func clearFlows() {}
     func mockResponse(for flowID: String, body: String) {}
